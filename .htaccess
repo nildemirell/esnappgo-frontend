@@ -1,0 +1,30 @@
+RewriteEngine On
+
+# Handle media files
+RewriteRule ^media/(.*)$ media/$1 [L]
+
+# Handle API requests
+RewriteRule ^api/(.*)$ php-backend/api/index.php [L,QSA]
+
+# Handle all other requests through index.php
+RewriteCond %{REQUEST_FILENAME} !-f
+RewriteCond %{REQUEST_FILENAME} !-d
+RewriteRule ^(.*)$ index.php [L,QSA]
+
+# Security headers
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Prevent access to sensitive files
+<Files "*.php~">
+    Order allow,deny
+    Deny from all
+</Files>
+
+<Files ".ht*">
+    Order allow,deny
+    Deny from all
+</Files>
