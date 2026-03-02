@@ -1701,5 +1701,5 @@ function handleCategories($db, $method, $path_parts, $input) {
             break;
     }
 }
-
+ 
 ?>
