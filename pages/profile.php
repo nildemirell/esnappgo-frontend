@@ -1,7 +1,7 @@
 <?php
 // Giriş kontrolü
 if (!$current_user) {
-    echo '<script>window.location.href = "/login?redirect=/profile";</script>';
+    header('Location: /login?redirect=/profile');
     exit;
 }
 ?>
@@ -238,16 +238,7 @@ if (!$current_user) {
 </div>
 
 <script>
-// Sayfa yüklendiğindeki orijinal değerleri sakla (Dirty State kontrolü için)
-let originalProfileData = {};
-
 document.addEventListener('DOMContentLoaded', function() {
-    // Orijinal profil verilerini kaydet
-    originalProfileData = {
-        full_name: document.getElementById('full_name').value.trim(),
-        phone: document.getElementById('phone').value.trim()
-    };
-
     // Profile form submit
     document.getElementById('profile-form').addEventListener('submit', handleProfileSubmit);
     
@@ -266,7 +257,6 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 });
 
-
 function showSection(sectionId) {
     // Hide all sections
     const sections = document.querySelectorAll('.profile-section');
@@ -275,54 +265,19 @@ function showSection(sectionId) {
     // Show selected section
     document.getElementById(sectionId).style.display = 'block';
     
-    // Update navigation — href="#sectionId" eşleşmesi ile doğru linki bul
+    // Update navigation
     const navLinks = document.querySelectorAll('.profile-nav-link');
-    navLinks.forEach(link => {
-        link.classList.remove('active');
-        if (link.getAttribute('href') === '#' + sectionId) {
-            link.classList.add('active');
-        }
-    });
+    navLinks.forEach(link => link.classList.remove('active'));
+    event.target.classList.add('active');
 }
-
 
 async function handleProfileSubmit(e) {
     e.preventDefault();
     
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) return; // Çift tıklama koruması
-
     const formData = new FormData(e.target);
-    const fullName = formData.get('full_name').trim();
-    const phone = formData.get('phone').trim();
-
-    // Dirty State kontrolü — değişiklik var mı?
-    if (fullName === originalProfileData.full_name && phone === originalProfileData.phone) {
-        showToast('Herhangi bir değişiklik yapmadınız', 'warning');
-        return;
-    }
-
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Kaydediliyor...';
-
-    // Ad Soyad validasyonu
-    if (fullName.length < 3) {
-        showToast('Ad Soyad en az 3 karakter olmalıdır', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        return;
-    }
-    if (!/^[a-zA-ZçÇğĞıİöÖşŞüÜ\s]+$/.test(fullName)) {
-        showToast('Ad Soyad sadece harf içermelidir', 'error');
-        submitBtn.disabled = false;
-        submitBtn.textContent = originalText;
-        return;
-    }
-
     const data = {
-        full_name: fullName,
-        phone: phone
+        full_name: formData.get('full_name'),
+        phone: formData.get('phone')
     };
     
     try {
@@ -333,37 +288,17 @@ async function handleProfileSubmit(e) {
         
         if (response.success) {
             showToast('Profil bilgileri güncellendi', 'success');
-            // Başarılıysa orijinal verileri güncelle (tekrar kaydet'e basınca dirty state çalışsın)
-            originalProfileData.full_name = fullName;
-            originalProfileData.phone = phone;
-        } else {
-            showToast(response.message || 'Güncelleme başarısız', 'error');
         }
         
     } catch (error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-            showToast('Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.', 'error');
-        } else {
-            showToast(error.message || 'Güncelleme yapılamadı', 'error');
-        }
-    } finally {
-        setTimeout(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }, 1000);
+        showToast(error.message, 'error');
     }
 }
-
-
 
 async function handlePasswordSubmit(e) {
     e.preventDefault();
     
-    const submitBtn = e.target.querySelector('button[type="submit"]');
-    if (submitBtn.disabled) return; // Çift tıklama koruması
-
     const formData = new FormData(e.target);
-    const currentPassword = formData.get('current_password');
     const newPassword = formData.get('new_password');
     const confirmPassword = formData.get('confirm_password');
     
@@ -371,23 +306,9 @@ async function handlePasswordSubmit(e) {
         showToast('Yeni şifreler eşleşmiyor', 'error');
         return;
     }
-
-    if (newPassword.length < 6) {
-        showToast('Yeni şifre en az 6 karakter olmalıdır', 'error');
-        return;
-    }
-
-    if (currentPassword === newPassword) {
-        showToast('Yeni şifre mevcut şifrenizle aynı olamaz', 'warning');
-        return;
-    }
-
-    const originalText = submitBtn.textContent;
-    submitBtn.disabled = true;
-    submitBtn.textContent = 'Değiştiriliyor...';
     
     const data = {
-        current_password: currentPassword,
+        current_password: formData.get('current_password'),
         new_password: newPassword
     };
     
@@ -400,25 +321,12 @@ async function handlePasswordSubmit(e) {
         if (response.success) {
             showToast('Şifre başarıyla değiştirildi', 'success');
             e.target.reset();
-        } else {
-            showToast(response.message || 'Şifre değiştirilemedi', 'error');
         }
         
     } catch (error) {
-        if (error.message.includes('Failed to fetch') || error.message.includes('fetch')) {
-            showToast('Sunucuya bağlanılamadı. İnternet bağlantınızı kontrol edin.', 'error');
-        } else {
-            showToast(error.message || 'Şifre değiştirilemedi', 'error');
-        }
-    } finally {
-        setTimeout(() => {
-            submitBtn.disabled = false;
-            submitBtn.textContent = originalText;
-        }, 1000);
+        showToast(error.message, 'error');
     }
 }
-
-
 </script>
 
 <style>
