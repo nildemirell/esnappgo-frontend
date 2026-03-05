@@ -634,7 +634,12 @@ function createProductCardHTML(product) {
         if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
             imageUrl = '/' + imageUrl;
         }
+           
     }
+     const favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
+     const isFavorited = favorites.some(id => Number(id) === Number(product.id));
+
+
     
     const imageHtml = imageUrl ? 
         `<img 
@@ -675,20 +680,21 @@ function createProductCardHTML(product) {
                         <h3 class="font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors flex-1" title="${escapeHtml(product.title)}">
                             ${escapeHtml(product.title)}
                         </h3>
-                        <button 
+                                                <button 
                             onclick="event.preventDefault(); event.stopPropagation(); toggleFavorite(${product.id}, this);" 
-                            class="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 -m-1.5 rounded-full transition-all focus:outline-none flex-shrink-0"
+                            class="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 -m-1.5 rounded-full transition-all focus:outline-none flex-shrink-0 ${isFavorited ? 'text-red-500 bg-red-50' : ''}"
                             title="Favorilere Ekle"
                         >
                             <!-- Boş Kalp -->
-                            <svg class="heart-empty w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="heart-empty w-5 h-5 pointer-events-none ${isFavorited ? 'hidden' : ''}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
                             </svg>
-                            <!-- Dolu Kalp (başlangıçta gizli) -->
-                            <svg class="heart-full w-5 h-5 hidden pointer-events-none text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                            <!-- Dolu Kalp -->
+                            <svg class="heart-full w-5 h-5 pointer-events-none text-red-500 ${isFavorited ? '' : 'hidden'}" fill="currentColor" viewBox="0 0 24 24">
                                 <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"></path>
                             </svg>
                         </button>
+
                     </div>
                     
                     <p class="text-sm text-gray-500 mb-3 line-clamp-2 h-10">

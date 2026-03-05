@@ -189,6 +189,93 @@ if (!$current_user) {
                     </div>
                 </div>
             <?php endif; ?>
+                        <?php if ($current_user['role'] === 'merchant'): 
+                $db = $database->getConnection();
+                $merchant_id = $current_user['id'];
+                
+                // Esnafın mağazasını bul
+                $shop_query = $db->prepare("SELECT id FROM shops WHERE owner_id = ?");
+                $shop_query->execute([$merchant_id]);
+                $shop = $shop_query->fetch();
+                
+                $total_shop_orders = 0;
+                $total_shop_revenue = 0;
+                $pending_shop_orders = 0;
+                
+                if ($shop) {
+                    $shop_id = $shop['id'];
+                    
+                    // Mağazanın toplam sipariş sayısı (Benzersiz siparişler)
+                    $total_shop_orders = $db->query("
+                        SELECT COUNT(DISTINCT o.id) 
+                        FROM orders o 
+                        INNER JOIN order_items oi ON o.id = oi.order_id 
+                        INNER JOIN products p ON oi.product_id = p.id 
+                        WHERE p.shop_id = {$shop_id}
+                    ")->fetchColumn() ?: 0;
+                    
+                    // Mağazanın bekleyen siparişleri
+                    $pending_shop_orders = $db->query("
+                        SELECT COUNT(DISTINCT o.id) 
+                        FROM orders o 
+                        INNER JOIN order_items oi ON o.id = oi.order_id 
+                        INNER JOIN products p ON oi.product_id = p.id 
+                        WHERE p.shop_id = {$shop_id} AND o.status = 'pending'
+                    ")->fetchColumn() ?: 0;
+                    
+                    // Mağazanın toplam kazancı (Sadece bu mağazaya ait satılan ürünlerin tutarı)
+                    $total_shop_revenue = $db->query("
+                        SELECT SUM(oi.quantity * oi.unit_price) 
+                        FROM order_items oi 
+                        INNER JOIN products p ON oi.product_id = p.id 
+                        INNER JOIN orders o ON oi.order_id = o.id
+                        WHERE p.shop_id = {$shop_id} AND o.status IN ('paid', 'shipped', 'delivered')
+                    ")->fetchColumn() ?: 0;
+                }
+            ?>
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Toplam Sipariş</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php echo $total_shop_orders; ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Toplam Ciro</p>
+                            <p class="text-2xl font-bold text-gray-900">₺<?php echo number_format($total_shop_revenue, 2); ?></p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-white p-6 rounded-lg shadow-sm">
+                    <div class="flex items-center">
+                        <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
+                            <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            </svg>
+                        </div>
+                        <div class="ml-4">
+                            <p class="text-sm font-medium text-gray-500">Bekleyen Sipariş</p>
+                            <p class="text-2xl font-bold text-gray-900"><?php echo $pending_shop_orders; ?></p>
+                        </div>
+                    </div>
+                </div>
+            <?php endif; ?>
+
         </div>
 
         <!-- Quick Actions -->
@@ -266,7 +353,47 @@ if (!$current_user) {
                             ];
                         }
                     }
-                    
+                                        elseif ($current_user['role'] === 'merchant') {
+                        // 1. Önce esnafın mağazasını (shop_id) buluyoruz (Doğrudan bağlantı yerine ilişki kuruyoruz)
+                        $shop_stmt = $db->prepare("SELECT id, name FROM shops WHERE owner_id = ?");
+                        $shop_stmt->execute([$user_id]);
+                        $shop = $shop_stmt->fetch();
+                        
+                        if ($shop) {
+                            $shop_id = $shop['id'];
+                            
+                            // 2. Bu mağazaya (shop_id) ait olan son 5 siparişi çekiyoruz
+                            // order_items tablosu üzerinden sipariş -> ürün -> mağaza ilişkisi kuruluyor
+                            $stmt = $db->prepare("
+                                SELECT DISTINCT o.id, o.order_number, o.created_at, o.status, u.full_name as customer_name
+                                FROM orders o
+                                INNER JOIN order_items oi ON o.id = oi.order_id
+                                INNER JOIN products p ON oi.product_id = p.id
+                                INNER JOIN users u ON o.customer_id = u.id
+                                WHERE p.shop_id = ?
+                                ORDER BY o.created_at DESC
+                                LIMIT 5
+                            ");
+                            $stmt->execute([$shop_id]);
+                            $orders = $stmt->fetchAll();
+                            
+                            foreach ($orders as $order) {
+                                // Sipariş durumunu Türkçeleştir
+                                $status_text = 'yeni sipariş';
+                                if ($order['status'] === 'paid') $status_text = 'hazırlanıyor';
+                                if ($order['status'] === 'shipped') $status_text = 'kargoya verildi';
+                                if ($order['status'] === 'delivered') $status_text = 'teslim edildi';
+                                
+                                $activities[] = [
+                                    'type' => 'order',
+                                    'message' => $order['customer_name'] . ' adlı müşteriden ' . $status_text . ' (#' . $order['order_number'] . ')',
+                                    'time' => $order['created_at'],
+                                    'icon' => 'shopping-bag'
+                                ];
+                            }
+                        }
+                    }
+
                     // Profil güncellemesi (tüm kullanıcılar için)
                     if ($current_user['updated_at']) {
                         $activities[] = [

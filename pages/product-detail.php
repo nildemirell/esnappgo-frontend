@@ -152,15 +152,21 @@ if (!isset($product_id) || !is_numeric($product_id)) {
                         <?php if ($current_user): ?>
                         <div class="mb-6">
                             <button 
-                                onclick="toggleFavorite()" 
-                                id="favorite-btn"
-                                class="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition-colors"
-                            >
-                                <svg id="favorite-icon" class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                </svg>
-                                <span id="favorite-text">Favorilere Ekle</span>
-                            </button>
+    onclick="toggleDetailFavorite()" 
+    id="favorite-btn"
+    class="flex items-center space-x-2 text-gray-600 hover:text-red-500 transition-colors focus:outline-none"
+>
+    <!-- Boş Kalp -->
+    <svg id="heart-empty" class="w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+    </svg>
+    <!-- Dolu Kalp (Başlangıçta gizli) -->
+    <svg id="heart-full" class="w-5 h-5 hidden pointer-events-none text-red-500" fill="currentColor" viewBox="0 0 24 24">
+        <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"></path>
+    </svg>
+    <span id="favorite-text">Favorilere Ekle</span>
+</button>
+
                         </div>
                         <?php endif; ?>
                     </div>
@@ -261,6 +267,8 @@ function displayProduct(product) {
     
     // Update quantity controls
     updateQuantityControls();
+        checkFavoriteStatus(currentProduct.id);
+
 }
 
 function setupImages(images) {
@@ -352,40 +360,50 @@ function updateQuantityControls() {
     increaseBtn.disabled = quantity >= currentProduct.stock;
 }
 
-async function toggleFavorite() {
-    if (!currentProduct) return;
+function checkFavoriteStatus(productId) {
+    const favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
+    const emptyHeart = document.getElementById('heart-empty');
+    const fullHeart = document.getElementById('heart-full');
+    const favoriteBtn = document.getElementById('favorite-btn');
+    const favoriteText = document.getElementById('favorite-text');
     
-    try {
-        const favoriteBtn = document.getElementById('favorite-btn');
-        const favoriteIcon = document.getElementById('favorite-icon');
-        const favoriteText = document.getElementById('favorite-text');
-        
-        // Check current state
-        const isFavorited = favoriteIcon.getAttribute('fill') === 'currentColor';
-        
-        if (isFavorited) {
-            // Remove from favorites
-            await apiCall(`favorites/${currentProduct.id}`, { method: 'DELETE' });
-            favoriteIcon.setAttribute('fill', 'none');
-            favoriteIcon.setAttribute('stroke', 'currentColor');
-            favoriteBtn.classList.remove('text-red-500');
-            favoriteBtn.classList.add('text-gray-600');
-            favoriteText.textContent = 'Favorilere Ekle';
-            showToast('Favorilerden kaldırıldı', 'info');
-        } else {
-            // Add to favorites
-            await apiCall(`favorites/${currentProduct.id}`, { method: 'POST' });
-            favoriteIcon.setAttribute('fill', 'currentColor');
-            favoriteIcon.removeAttribute('stroke');
-            favoriteBtn.classList.remove('text-gray-600');
-            favoriteBtn.classList.add('text-red-500');
-            favoriteText.textContent = 'Favorilerden Kaldır';
-            showToast('Favorilere eklendi', 'success');
-        }
-        
-    } catch (error) {
-        showToast(error.message, 'error');
+    if (favorites.includes(productId)) {
+        emptyHeart.classList.add('hidden');
+        fullHeart.classList.remove('hidden');
+        favoriteBtn.classList.add('text-red-500', 'bg-red-50');
+        favoriteBtn.classList.remove('text-gray-600');
+        favoriteText.textContent = 'Favorilerden Çıkar';
+    } else {
+        emptyHeart.classList.remove('hidden');
+        fullHeart.classList.add('hidden');
+        favoriteBtn.classList.remove('text-red-500', 'bg-red-50');
+        favoriteBtn.classList.add('text-gray-600');
+        favoriteText.textContent = 'Favorilere Ekle';
     }
+}
+
+function toggleDetailFavorite() {
+    if (!currentProduct) return;
+    const productId = currentProduct.id;
+    let favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
+    
+    if (favorites.includes(productId)) {
+        // Çıkar
+        favorites = favorites.filter(id => id !== productId);
+        showToast('Ürün favorilerden çıkarıldı', 'info');
+    } else {
+        // Ekle
+        favorites.push(productId);
+        showToast('Ürün favorilere eklendi!', 'success');
+        
+        // Zıplama efekti
+        const btn = document.getElementById('favorite-btn');
+        btn.classList.add('scale-110');
+        setTimeout(() => btn.classList.remove('scale-110'), 200);
+    }
+    
+    localStorage.setItem('my_favorites', JSON.stringify(favorites));
+    checkFavoriteStatus(productId); // Arayüzü anında güncelle
 }
 
 async function addToCartFromDetail() {
