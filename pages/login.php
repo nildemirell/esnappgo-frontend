@@ -140,12 +140,51 @@ if ($current_user) {
 
              
 
-                const response = await apiCall('auth/login', {
-                    method: 'POST',
-                    body: JSON.stringify(data)
-                });
+                const res = await fetch(`${API_BASE}/api/Auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+});
+const response = await res.json();
+if (!res.ok) {
+    // .NET backend hatayı { error: '{"code":400,"error_code":"...","msg":"..."}' } şeklinde sarmalıyor
+    let errorData = response;
+    if (typeof response.error === 'string') {
+        try { errorData = JSON.parse(response.error); } catch(e) {}
+    }
 
-                if (response.success) {
+    const errorMessages = {
+        'invalid_credentials': 'E-posta adresi veya şifre hatalı.',
+        'user_not_found': 'Bu e-posta adresiyle kayıtlı bir hesap bulunamadı.',
+        'account_disabled': 'Hesabınız askıya alınmış. Destek ile iletişime geçin.',
+        'too_many_requests': 'Çok fazla deneme yaptınız. Lütfen biraz bekleyin.'
+    };
+
+    const userMessage = errorMessages[errorData.error_code]
+        || errorData.msg
+        || errorData.message
+        || 'Giriş başarısız';
+
+    throw new Error(userMessage);
+}
+                if (response.token) {
+                    localStorage.setItem('auth_token', response.token);
+                    localStorage.setItem('user_name', response.fullName);
+                    localStorage.setItem('user_email', response.email);
+                    localStorage.setItem('user_role', response.role);
+
+                    // PHP session köprüsü — orijinal sayfaların çalışması için
+                    await fetch('/api/auth/bridge', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        credentials: 'include',
+                        body: JSON.stringify({
+                            email: response.email,
+                            fullName: response.fullName,
+                            role: response.role
+                        })
+                    });
+
                     showToast('Giriş başarılı! Yönlendiriliyorsunuz...', 'success');
 
                     // Redirect after success

@@ -285,19 +285,37 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData(form);
             const data = {
-                full_name: formData.get('full_name'),
-                email: formData.get('email'),
-                phone: formData.get('phone'),
-                password: formData.get('password'),
-                role: formData.get('role')
-            };
-            
-            const response = await apiCall('auth/register', {
-                method: 'POST',
-                body: JSON.stringify(data)
-            });
-            
-            if (response.success) {
+    fullName: formData.get('full_name'),
+    email: formData.get('email'),
+    phoneNumber: formData.get('phone'),
+    password: formData.get('password'),
+    role: formData.get('role')
+};
+
+            const res = await fetch(`${API_BASE}/api/Auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(data)
+});
+const response = await res.json();
+if (!res.ok) {
+    // Spesifik hata kodlarını Türkçe mesajlarla eşleştir
+    const errorMessages = {
+        'user_already_exists': 'Bu e-posta adresi zaten kullanılıyor. Lütfen giriş yapın.',
+        'invalid_email': 'Geçersiz e-posta adresi.',
+        'weak_password': 'Şifre çok zayıf. Lütfen daha güçlü bir şifre seçin.',
+        'invalid_phone': 'Geçersiz telefon numarası.'
+    };
+
+    const userMessage = errorMessages[response.error_code]
+        || response.msg
+        || response.message
+        || response.error
+        || 'Kayıt başarısız';
+
+    throw new Error(userMessage);
+}    
+            if (res.ok) {
                 showToast('Hesap başarıyla oluşturuldu! Giriş yapılıyor...', 'success');
 
                 // GÖREV 3: Race condition düzeltmesi
@@ -308,16 +326,37 @@ document.addEventListener('DOMContentLoaded', function() {
                 // 1.5sn sonra otomatik login dene
                 setTimeout(async () => {
                     try {
-                        const loginResponse = await apiCall('auth/login', {
-                            method: 'POST',
-                            body: JSON.stringify({
-                                email: data.email,
-                                password: data.password
-                            })
-                        });
+                       const loginRes = await fetch(`${API_BASE}/api/Auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+        email: data.email,
+        password: data.password
+    })
+});
+const loginResponse = await loginRes.json();
+
                         
-                        if (loginResponse.success) {
+                        if (loginResponse.token) {
+                            localStorage.setItem('auth_token', loginResponse.token);
+                            localStorage.setItem('user_name', loginResponse.fullName);
+                            localStorage.setItem('user_email', loginResponse.email);
+                            localStorage.setItem('user_role', loginResponse.role);
+
+                            // PHP session köprüsü
+                            await fetch('/api/auth/bridge', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                credentials: 'include',
+                                body: JSON.stringify({
+                                    email: loginResponse.email,
+                                    fullName: loginResponse.fullName,
+                                    role: loginResponse.role
+                                })
+                            });
+
                             window.location.href = '/dashboard';
+
                         } else {
                             window.location.href = '/login';
                         }

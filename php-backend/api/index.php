@@ -142,6 +142,50 @@ function handleAuth($auth, $method, $path_parts, $input) {
                     $result = $auth->logout();
                     echo json_encode($result);
                     break;
+
+                case 'bridge':
+                    // .NET JWT login sonrası PHP session oluştur
+                    $email = $input['email'] ?? '';
+                    $fullName = $input['fullName'] ?? '';
+                    $role = strtolower($input['role'] ?? 'customer');
+
+                    if (empty($email)) {
+                        http_response_code(400);
+                        echo json_encode(['success' => false, 'message' => 'Email gerekli']);
+                        break;
+                    }
+
+                    // Kullanıcıyı DB'de email ile bul
+                    $db = $GLOBALS['database']->getConnection();
+                    $stmt = $db->prepare("SELECT * FROM users WHERE email = ?");
+                    $stmt->execute([$email]);
+                    $user = $stmt->fetch();
+
+                    if ($user) {
+                        // Kullanıcı PHP DB'de var — session oluştur
+                        $_SESSION['user_id'] = $user['id'];
+                        $_SESSION['user_email'] = $user['email'];
+                        $_SESSION['user_role'] = $user['role'];
+                        $_SESSION['user_name'] = $user['full_name'];
+                        echo json_encode(['success' => true, 'message' => 'PHP session oluşturuldu', 'source' => 'db']);
+                    } else {
+                        // Kullanıcı PHP DB'de yok — .NET verisiyle geçici session oluştur
+                        // Önce kullanıcıyı PHP DB'ye de ekle (sync)
+                        $stmt = $db->prepare("INSERT INTO users (email, password_hash, full_name, role) VALUES (?, ?, ?, ?)");
+                        $stmt->execute([$email, password_hash(bin2hex(random_bytes(16)), PASSWORD_DEFAULT), $fullName, $role]);
+                        $newUserId = $db->lastInsertId();
+
+                        // Cüzdan ve sepet oluştur
+                        $db->prepare("INSERT INTO wallets (user_id) VALUES (?)")->execute([$newUserId]);
+                        $db->prepare("INSERT INTO carts (user_id) VALUES (?)")->execute([$newUserId]);
+
+                        $_SESSION['user_id'] = $newUserId;
+                        $_SESSION['user_email'] = $email;
+                        $_SESSION['user_role'] = $role;
+                        $_SESSION['user_name'] = $fullName;
+                        echo json_encode(['success' => true, 'message' => 'Kullanıcı senkronize edildi ve session oluşturuldu', 'source' => 'sync']);
+                    }
+                    break;
                     
                 default:
                     http_response_code(404);
@@ -1701,5 +1745,5 @@ function handleCategories($db, $method, $path_parts, $input) {
             break;
     }
 }
- 
+
 ?>

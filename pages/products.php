@@ -670,12 +670,29 @@ function createProductCardHTML(product) {
                     </div>
                 </div>
 
-                <div class="p-4">
-                    <h3 class="font-semibold text-gray-900 mb-1 line-clamp-1 group-hover:text-blue-600 transition-colors">
-                        ${escapeHtml(product.title)}
-                    </h3>
+                                <div class="p-4">
+                    <div class="flex items-start justify-between mb-1 gap-2">
+                        <h3 class="font-semibold text-gray-900 line-clamp-1 group-hover:text-blue-600 transition-colors flex-1" title="${escapeHtml(product.title)}">
+                            ${escapeHtml(product.title)}
+                        </h3>
+                        <button 
+                            onclick="event.preventDefault(); event.stopPropagation(); toggleFavorite(${product.id}, this);" 
+                            class="text-gray-300 hover:text-red-500 hover:bg-red-50 p-1.5 -m-1.5 rounded-full transition-all focus:outline-none flex-shrink-0"
+                            title="Favorilere Ekle"
+                        >
+                            <!-- Boş Kalp -->
+                            <svg class="heart-empty w-5 h-5 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                            </svg>
+                            <!-- Dolu Kalp (başlangıçta gizli) -->
+                            <svg class="heart-full w-5 h-5 hidden pointer-events-none text-red-500" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M11.645 20.91l-.007-.003-.022-.012a15.247 15.247 0 01-.383-.218 25.18 25.18 0 01-4.244-3.17C4.688 15.36 2.25 12.174 2.25 8.25 2.25 5.322 4.714 3 7.688 3A5.5 5.5 0 0112 5.052 5.5 5.5 0 0116.313 3c2.973 0 5.437 2.322 5.437 5.25 0 3.925-2.438 7.111-4.739 9.256a25.175 25.175 0 01-4.244 3.17 15.247 15.247 0 01-.383.219l-.022.012-.007.004-.003.001a.752.752 0 01-.704 0l-.003-.001z"></path>
+                            </svg>
+                        </button>
+                    </div>
                     
                     <p class="text-sm text-gray-500 mb-3 line-clamp-2 h-10">
+
                         ${escapeHtml(product.description || '')}
                     </p>
 
@@ -729,6 +746,48 @@ function escapeHtml(text) {
     div.textContent = text || '';
     return div.innerHTML;
 }
+function toggleFavorite(productId, btnElement) {
+    const emptyHeart = btnElement.querySelector('.heart-empty');
+    const fullHeart = btnElement.querySelector('.heart-full');
+    
+    // LocalStorage'dan mevcut favorileri al
+    let favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
+    
+    // Kalp şu an boş mu dolu mu kontrol et
+    const isFavorited = !fullHeart.classList.contains('hidden');
+    
+    if (isFavorited) {
+        // Zaten favoriyse: Çıkar
+        fullHeart.classList.add('hidden');
+        emptyHeart.classList.remove('hidden');
+        btnElement.classList.remove('text-red-500'); // hover rengini geri al
+        
+        favorites = favorites.filter(id => id !== productId);
+        showToast('Ürün favorilerden çıkarıldı', 'info');
+    } else {
+        // Favori değilse: Ekle
+        emptyHeart.classList.add('hidden');
+        fullHeart.classList.remove('hidden');
+        btnElement.classList.add('text-red-500'); // Kırmızı kalmasını sağla
+        
+        // Zıplama efekti
+        btnElement.classList.add('scale-125');
+        setTimeout(() => btnElement.classList.remove('scale-125'), 200);
+        
+        if (!favorites.includes(productId)) {
+            favorites.push(productId);
+        }
+        showToast('Ürün favorilere eklendi!', 'success');
+    }
+    
+    // Yeni listeyi kaydet
+    localStorage.setItem('my_favorites', JSON.stringify(favorites));
+}
+
+// Ekstra: Sayfa yüklenince eğer ürün daha önceden favorilere eklenmişse kalbi dolu göster
+// createProductCardHTML fonksiyonunun başlangıcında (satır 630 civarı) productId'yi kontrol edip
+// buton HTML'ini dinamik oluşturmamız gerekir, ama şimdilik bu animasyon yapısı çalışacaktır.
+
 </script>
 
 <style>

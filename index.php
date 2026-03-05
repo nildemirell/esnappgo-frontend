@@ -518,6 +518,11 @@ switch ($page) {
     
     <!-- JavaScript -->
     <script>
+    // -------- API CONFIG --------
+    const API_BASE = window.location.hostname === 'localhost'
+        ? 'http://localhost:5086'
+        : 'https://SENIN-PRODUCTION-DOMAININ.com';
+        
         // Toast notification function
         function showToast(message, type = 'info') {
             const container = document.getElementById('toast-container');

@@ -298,6 +298,10 @@ document.addEventListener('click', function(event) {
 async function logout() {
     try {
         await apiCall('auth/logout', { method: 'POST' });
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
         showToast('Çıkış yapıldı', 'success');
         setTimeout(() => {
             window.location.href = '/';
