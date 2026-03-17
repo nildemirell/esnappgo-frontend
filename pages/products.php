@@ -32,8 +32,9 @@
                                 id="search-input"
                                 placeholder="Ürün ara..." 
                                 class="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"
+                                style="padding-left: 2.5rem;"
                             />
-                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <svg class="w-5 h-5 text-gray-400 absolute left-3 top-1/2 transform -translate-y-1/2 pointer-events-none" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                             </svg>
                         </div>
@@ -221,7 +222,7 @@ let isLoading = false;
 let hasMoreProducts = true;
 let currentFilters = {
     search: '',
-    category: '',
+    category: [], // Burası artık bir dizi (çoklu seçim için)
     minPrice: '',
     maxPrice: '',
     sort: 'newest'
@@ -253,7 +254,7 @@ function parseUrlParams() {
         document.getElementById('search-input').value = currentFilters.search;
     }
     if (urlParams.has('category')) {
-        currentFilters.category = urlParams.get('category');
+        currentFilters.category = urlParams.get('category').split(',').filter(Boolean);
     }
     if (urlParams.has('min_price')) {
         currentFilters.minPrice = urlParams.get('min_price');
@@ -342,19 +343,21 @@ function renderCategories() {
         return;
     }
     
+    const isAllSelected = currentFilters.category.length === 0;
+    
     let html = `
-        <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${!currentFilters.category ? 'bg-blue-50 text-blue-700' : ''}">
-            <input type="radio" name="category" value="" ${!currentFilters.category ? 'checked' : ''} class="mr-3 text-blue-600" onchange="selectCategory('')">
+        <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${isAllSelected ? 'bg-blue-50 text-blue-700' : ''}">
+            <input type="checkbox" value="" ${isAllSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('')">
             <span class="text-sm flex-1">Tüm Kategoriler</span>
         </label>
     `;
     
     categories.forEach(category => {
-        const isSelected = currentFilters.category == category.id;
+        const isSelected = currentFilters.category.includes(String(category.id));
         html += `
             <div class="category-group">
                 <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${isSelected ? 'bg-blue-50 text-blue-700' : ''}">
-                    <input type="radio" name="category" value="${category.id}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600" onchange="selectCategory('${category.id}')">
+                    <input type="checkbox" value="${category.id}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('${category.id}')">
                     <span class="text-sm flex-1">
                         ${category.icon ? category.icon + ' ' : ''}${escapeHtml(category.name)}
                     </span>
@@ -366,10 +369,10 @@ function renderCategories() {
         if (category.children && category.children.length > 0) {
             html += '<div class="ml-6 mt-1 space-y-1">';
             category.children.forEach(child => {
-                const isChildSelected = currentFilters.category == child.id;
+                const isChildSelected = currentFilters.category.includes(String(child.id));
                 html += `
                     <label class="flex items-center p-1.5 rounded cursor-pointer hover:bg-gray-50 transition text-sm ${isChildSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-600'}">
-                        <input type="radio" name="category" value="${child.id}" ${isChildSelected ? 'checked' : ''} class="mr-2 text-blue-600 h-3 w-3" onchange="selectCategory('${child.id}')">
+                        <input type="checkbox" value="${child.id}" ${isChildSelected ? 'checked' : ''} class="mr-2 text-blue-600 h-3 w-3 rounded" onchange="toggleCategory('${child.id}')">
                         <span class="flex-1">${child.icon ? child.icon + ' ' : ''}${escapeHtml(child.name)}</span>
                         <span class="text-xs text-gray-400">${child.product_count || 0}</span>
                     </label>
@@ -384,9 +387,21 @@ function renderCategories() {
     container.innerHTML = html;
 }
 
-function selectCategory(categoryId) {
-    currentFilters.category = categoryId;
-    renderCategories(); // Seçili kategoriyi güncelle
+function toggleCategory(categoryId) {
+    if (categoryId === '') {
+        currentFilters.category = []; // "Tüm Kategoriler" seçilirse diziyi boşalt
+    } else {
+        categoryId = String(categoryId);
+        const index = currentFilters.category.indexOf(categoryId);
+        
+        if (index > -1) {
+            currentFilters.category.splice(index, 1); // Zaten seçiliyse çıkar
+        } else {
+            currentFilters.category.push(categoryId); // Seçili değilse ekle
+        }
+    }
+    
+    renderCategories();
     applyFilters();
 }
 
@@ -416,7 +431,7 @@ function updateUrl() {
     const params = new URLSearchParams();
     
     if (currentFilters.search) params.set('search', currentFilters.search);
-    if (currentFilters.category) params.set('category', currentFilters.category);
+    if (currentFilters.category && currentFilters.category.length > 0) params.set('category', currentFilters.category.join(','));
     if (currentFilters.minPrice) params.set('min_price', currentFilters.minPrice);
     if (currentFilters.maxPrice) params.set('max_price', currentFilters.maxPrice);
     if (currentFilters.sort && currentFilters.sort !== 'newest') params.set('sort', currentFilters.sort);
@@ -433,11 +448,13 @@ function updateActiveFilterTags() {
         html += createFilterTag('search', `"${currentFilters.search}"`);
     }
     
-    if (currentFilters.category) {
-        const cat = findCategoryById(currentFilters.category);
-        if (cat) {
-            html += createFilterTag('category', cat.name);
-        }
+    if (currentFilters.category && currentFilters.category.length > 0) {
+        currentFilters.category.forEach(catId => {
+            const cat = findCategoryById(catId);
+            if (cat) {
+                html += createFilterTag('category_' + catId, cat.name);
+            }
+        });
     }
     
     if (currentFilters.minPrice || currentFilters.maxPrice) {
@@ -469,6 +486,13 @@ function createFilterTag(type, label) {
 }
 
 function removeFilter(type) {
+    if (type.startsWith('category_')) {
+        const catId = type.split('_')[1];
+        currentFilters.category = currentFilters.category.filter(id => id !== catId);
+        renderCategories();
+        applyFilters();
+        return;
+    }
     switch(type) {
         case 'search':
             currentFilters.search = '';
@@ -493,7 +517,7 @@ function removeFilter(type) {
 function clearAllFilters() {
     currentFilters = {
         search: '',
-        category: '',
+        category: [],
         minPrice: '',
         maxPrice: '',
         sort: 'newest'
@@ -553,8 +577,8 @@ async function loadProducts(reset = false) {
         if (currentFilters.search) {
             endpoint += `&search=${encodeURIComponent(currentFilters.search)}`;
         }
-        if (currentFilters.category) {
-            endpoint += `&category=${currentFilters.category}`;
+        if (currentFilters.category && currentFilters.category.length > 0) {
+            endpoint += `&category=${currentFilters.category.join(',')}`;
         }
         if (currentFilters.minPrice) {
             endpoint += `&min_price=${currentFilters.minPrice}`;

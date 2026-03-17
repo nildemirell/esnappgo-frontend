@@ -130,44 +130,43 @@ if (!$current_user) {
                                     <label for="current_password" class="block text-sm font-medium text-gray-700 mb-2">
                                         Mevcut Şifre
                                     </label>
-                                    <input
-                                        type="password"
-                                        id="current_password"
-                                        name="current_password"
-                                        class="w-full"
-                                        required
-                                    />
+                                    <div class="relative rounded-md shadow-sm">
+                                        <input type="password" id="current_password" name="current_password" class="w-full pr-10 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500" required />
+                                        <button type="button" onclick="togglePasswordVisibility('current_password', 'eye-curr-show', 'eye-curr-hide')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                            <svg id="eye-curr-show" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            <svg id="eye-curr-hide" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                        </button>
+                                    </div>
                                 </div>
-                                
+        
                                 <div>
                                     <label for="new_password" class="block text-sm font-medium text-gray-700 mb-2">
                                         Yeni Şifre
                                     </label>
-                                    <input
-                                        type="password"
-                                        id="new_password"
-                                        name="new_password"
-                                        class="w-full"
-                                        minlength="6"
-                                        required
-                                    />
+                                    <div class="relative rounded-md shadow-sm">
+                                        <input type="password" id="new_password" name="new_password" class="w-full pr-10 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500" minlength="6" required />
+                                        <button type="button" onclick="togglePasswordVisibility('new_password', 'eye-new-show', 'eye-new-hide')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                            <svg id="eye-new-show" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            <svg id="eye-new-hide" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                        </button>
+                                    </div>
                                 </div>
-                                
+        
                                 <div>
                                     <label for="confirm_password" class="block text-sm font-medium text-gray-700 mb-2">
                                         Yeni Şifre Tekrar
                                     </label>
-                                    <input
-                                        type="password"
-                                        id="confirm_password"
-                                        name="confirm_password"
-                                        class="w-full"
-                                        required
-                                    />
+                                    <div class="relative rounded-md shadow-sm">
+                                        <input type="password" id="confirm_password" name="confirm_password" class="w-full pr-10 rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500" required />
+                                        <button type="button" onclick="togglePasswordVisibility('confirm_password', 'eye-conf-show', 'eye-conf-hide')" class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 focus:outline-none">
+                                            <svg id="eye-conf-show" class="h-5 w-5 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                            <svg id="eye-conf-hide" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 5.411m0 0L21 21" /></svg>
+                                        </button>
+                                    </div>
                                 </div>
-                                
+        
                                 <div class="flex justify-end">
-                                    <button type="submit" class="btn btn-primary">
+                                    <button type="submit" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">
                                         Şifreyi Değiştir
                                     </button>
                                 </div>
@@ -199,18 +198,18 @@ if (!$current_user) {
                 </div>
                 
                 <!-- Notifications -->
-                <div id="notifications" class="account-section" style="display: none;">
+               <div id="notifications" class="account-section" style="display: none;">
                     <div class="bg-white rounded-lg shadow-sm p-6">
                         <h3 class="text-lg font-medium text-gray-900 mb-6">Bildirim Ayarları</h3>
                         
-                        <div class="space-y-6">
+                        <form id="notifications-form" class="space-y-6">
                             <div class="flex items-center justify-between">
                                 <div>
                                     <h4 class="text-sm font-medium text-gray-900">E-posta Bildirimleri</h4>
                                     <p class="text-sm text-gray-500">Sipariş durumu ve önemli güncellemeler</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <input type="checkbox" id="email_notif" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
@@ -221,7 +220,7 @@ if (!$current_user) {
                                     <p class="text-sm text-gray-500">Kritik güncellemeler için SMS</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer">
+                                    <input type="checkbox" id="sms_notif" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
@@ -232,17 +231,17 @@ if (!$current_user) {
                                     <p class="text-sm text-gray-500">Kampanyalar ve özel teklifler</p>
                                 </div>
                                 <label class="relative inline-flex items-center cursor-pointer">
-                                    <input type="checkbox" class="sr-only peer" checked>
+                                    <input type="checkbox" id="marketing_notif" class="sr-only peer">
                                     <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
                                 </label>
                             </div>
-                        </div>
-                        
-                        <div class="mt-6 flex justify-end">
-                            <button class="btn btn-primary">
-                                Ayarları Kaydet
-                            </button>
-                        </div>
+                            
+                            <div class="mt-6 flex justify-end">
+                                <button type="submit" id="save-notif-btn" class="bg-blue-600 text-white px-4 py-2 rounded-md hover:bg-blue-700 font-medium">
+                                    Ayarları Kaydet
+                                </button>
+                            </div>
+                        </form>
                     </div>
                 </div>
                 
@@ -346,8 +345,11 @@ document.addEventListener('DOMContentLoaded', function() {
     document.getElementById('personal-info-form').addEventListener('submit', handlePersonalInfoSubmit);
     document.getElementById('password-form').addEventListener('submit', handlePasswordSubmit);
     document.getElementById('delete-account-form').addEventListener('submit', handleDeleteAccountSubmit);
+    
+    // YENİ EKLENEN BİLDİRİM DİNLEYİCİLERİ
+    document.getElementById('notifications-form').addEventListener('submit', handleNotificationsSubmit);
+    loadNotificationSettings(); // Sayfa açıldığında backend'den mevcut ayarları çeker
 });
-
 function showSection(sectionId) {
     // Hide all sections
     const sections = document.querySelectorAll('.account-section');
@@ -361,18 +363,33 @@ function showSection(sectionId) {
     navLinks.forEach(link => link.classList.remove('active'));
     event.target.classList.add('active');
 }
+function togglePasswordVisibility(inputId, showIconId, hideIconId) {
+    const input = document.getElementById(inputId);
+    const showIcon = document.getElementById(showIconId);
+    const hideIcon = document.getElementById(hideIconId);
+
+    if (input.type === 'password') {
+        input.type = 'text';
+        showIcon.classList.remove('hidden');
+        hideIcon.classList.add('hidden');
+    } else {
+        input.type = 'password';
+        showIcon.classList.add('hidden');
+        hideIcon.classList.remove('hidden');
+    }
+}
 
 async function handlePersonalInfoSubmit(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
     const data = {
-        full_name: formData.get('full_name'),
-        phone: formData.get('phone')
+        fullName: formData.get('full_name'),   // DTO'daki FullName ile eşleşecek
+        phoneNumber: formData.get('phone')     // DTO'daki PhoneNumber ile eşleşecek
     };
     
     try {
-        const response = await apiCall('users/profile', {
+        const response = await apiCall('api/User/profile', { // Adres 'users' değil 'User' oldu
             method: 'PUT',
             body: JSON.stringify(data)
         });
@@ -385,40 +402,65 @@ async function handlePersonalInfoSubmit(e) {
         showToast(error.message, 'error');
     }
 }
-
 async function handlePasswordSubmit(e) {
     e.preventDefault();
+    const submitBtn = e.target.querySelector('button[type="submit"]');
     
+    // Formdaki şifreleri alıyoruz
     const formData = new FormData(e.target);
+    const currentPassword = formData.get('current_password');
     const newPassword = formData.get('new_password');
     const confirmPassword = formData.get('confirm_password');
     
+    // Üstteki Kişisel Bilgiler formundan e-postayı gizlice çekiyoruz
+    const userEmail = document.getElementById('email').value; 
+    
     if (newPassword !== confirmPassword) {
-        showToast('Yeni şifreler eşleşmiyor', 'error');
+        if(typeof showToast === 'function') showToast('Yeni şifreler eşleşmiyor', 'error');
+        else alert('Yeni şifreler eşleşmiyor');
         return;
     }
     
-    const data = {
-        current_password: formData.get('current_password'),
-        new_password: newPassword
-    };
+    submitBtn.disabled = true;
+    submitBtn.textContent = 'Değiştiriliyor...';
     
     try {
-        const response = await apiCall('users/password', {
-            method: 'PUT',
-            body: JSON.stringify(data)
+        const response = await fetch(`${API_BASE}/api/Auth/change-password`, {
+            method: 'POST', 
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                email: userEmail, // İŞTE EKSİK OLAN PARÇA BUYDU!
+                currentPassword: currentPassword, 
+                newPassword: newPassword
+            })
         });
         
-        if (response.success) {
-            showToast('Şifre başarıyla değiştirildi', 'success');
-            e.target.reset();
+        let data = {};
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+            data = await response.json();
         }
         
+        if (!response.ok) {
+            // Backend'den gelen spesifik bir hata mesajı varsa onu göster, yoksa genel mesajı göster
+            const errorMessage = data.message || data.error || 'Mevcut şifreniz yanlış veya bir hata oluştu.';
+            throw new Error(errorMessage);
+        }
+        
+        if(typeof showToast === 'function') showToast('Şifreniz başarıyla değiştirildi!', 'success');
+        else alert('Şifreniz başarıyla değiştirildi!');
+        
+        e.target.reset(); 
+        
     } catch (error) {
-        showToast(error.message, 'error');
+        console.error("Şifre değiştirme hatası:", error);
+        if(typeof showToast === 'function') showToast(error.message, 'error');
+        else alert(error.message);
+    } finally {
+        submitBtn.disabled = false;
+        submitBtn.textContent = 'Şifreyi Değiştir';
     }
 }
-
 async function handleDeleteAccountSubmit(e) {
     e.preventDefault();
     
@@ -440,6 +482,68 @@ async function handleDeleteAccountSubmit(e) {
         
     } catch (error) {
         showToast(error.message, 'error');
+    }
+}
+// 1. Ayarları Çekme Fonksiyonu
+async function loadNotificationSettings() {
+    try {
+        const token = localStorage.getItem('auth_token'); 
+        const response = await fetch(`${API_BASE}/api/Notifications/settings`, {
+            method: 'GET',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            }
+        });
+        
+        if (response.ok) {
+            const data = await response.json();
+            // İSİMLERİ BACKEND'İN GÖNDERDİĞİ İSİMLERLE BİREBİR AYNI YAPTIK
+            document.getElementById('email_notif').checked = data.emailNotificationsEnabled || false;
+            document.getElementById('sms_notif').checked = data.smsNotificationsEnabled || false;
+            document.getElementById('marketing_notif').checked = data.marketingEmailsEnabled || false;
+        }
+    } catch (error) {
+        console.error("Bildirim ayarları yüklenemedi:", error);
+    }
+}
+
+// 2. Ayarları Kaydetme Fonksiyonu
+async function handleNotificationsSubmit(e) {
+    e.preventDefault();
+    const btn = document.getElementById('save-notif-btn');
+    btn.disabled = true;
+    btn.textContent = 'Kaydediliyor...';
+    
+    // GÖNDERİRKEN DE BACKEND'İN BEKLEDİĞİ İSİMLERLE GÖNDERİYORUZ
+    const data = {
+        emailNotificationsEnabled: document.getElementById('email_notif').checked,
+        smsNotificationsEnabled: document.getElementById('sms_notif').checked,
+        marketingEmailsEnabled: document.getElementById('marketing_notif').checked
+    };
+    
+    try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_BASE}/api/Notifications/settings`, {
+            method: 'PUT',
+            headers: { 
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify(data)
+        });
+        
+        if (!response.ok) throw new Error('Ayarlar kaydedilirken bir hata oluştu.');
+        
+        if(typeof showToast === 'function') showToast('Bildirim ayarları güncellendi', 'success');
+        else alert('Bildirim ayarları güncellendi');
+        
+    } catch (error) {
+        if(typeof showToast === 'function') showToast(error.message, 'error');
+        else alert(error.message);
+    } finally {
+        btn.disabled = false;
+        btn.textContent = 'Ayarları Kaydet';
     }
 }
 </script>

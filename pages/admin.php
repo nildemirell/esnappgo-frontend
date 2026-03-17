@@ -554,9 +554,9 @@ async function loadActivityTimeline() {
 // Helper functions
 function getRoleGradient(role) {
     const gradients = {
-        student: 'from-blue-500 to-blue-600',
-        merchant: 'from-green-500 to-green-600',
-        customer: 'from-purple-500 to-purple-600',
+        student: 'from-blue-500 to-blue-600', ogrenci: 'from-blue-500 to-blue-600',
+        merchant: 'from-green-500 to-green-600', esnaf: 'from-green-500 to-green-600',
+        customer: 'from-purple-500 to-purple-600', musteri: 'from-purple-500 to-purple-600',
         admin: 'from-red-500 to-red-600'
     };
     return gradients[role] || 'from-gray-500 to-gray-600';
@@ -564,9 +564,9 @@ function getRoleGradient(role) {
 
 function getRoleName(role) {
     const roleNames = {
-        customer: 'Müşteri',
-        student: 'Öğrenci', 
-        merchant: 'Esnaf',
+        customer: 'Müşteri', musteri: 'Müşteri',
+        student: 'Öğrenci', ogrenci: 'Öğrenci',
+        merchant: 'Esnaf', esnaf: 'Esnaf',
         admin: 'Admin'
     };
     return roleNames[role] || role;
@@ -574,9 +574,9 @@ function getRoleName(role) {
 
 function getRoleBadgeClass(role) {
     const badgeClasses = {
-        customer: 'primary',
-        student: 'success', 
-        merchant: 'warning',
+        customer: 'primary', musteri: 'primary',
+        student: 'success', ogrenci: 'success',
+        merchant: 'warning', esnaf: 'warning',
         admin: 'error'
     };
     return badgeClasses[role] || 'gray';

@@ -43,8 +43,11 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <select id="role-filter" class="w-full" onchange="filterUsers()">
                         <option value="">Tüm Roller</option>
                         <option value="customer">Müşteri</option>
+                        <option value="musteri">Müşteri</option>
                         <option value="student">Öğrenci</option>
+                        <option value="ogrenci">Öğrenci</option>
                         <option value="merchant">Esnaf</option>
+                        <option value="esnaf">Esnaf</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
@@ -130,6 +133,51 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadUsers() {
     try {
+        // 1. LocalStorage'dan JWT token'ı al
+        const token = localStorage.getItem('token');
+        
+        // Eğer token yoksa, kullanıcı giriş yapmamıştır. Giriş sayfasına yönlendir.
+        if (!token) {
+            window.location.href = '/login';
+            return;
+        }
+
+        // 2. Doğrudan fetch kullanarak .NET backend'e istek at
+        // Base URL'ini duruma göre güncelleyebilirsin.
+        const response = await fetch('http://localhost:5086/api/Admin/users', {
+            method: 'GET',
+            headers: {
+                'Content-Type': 'application/json',
+                // En önemli kısım: Token'ı Bearer formatında gönderiyoruz
+                'Authorization': `Bearer ${token}` 
+            }
+        });
+
+        // 3. Yanıtın başarılı olup olmadığını kontrol et (HTTP 200 OK)
+        if (response.ok) {
+            // .NET API doğrudan bir liste (array) dönüyor, response.data falan yok
+            const data = await response.json(); 
+            allUsers = data;
+            filteredUsers = [...allUsers];
+            displayUsers();
+        } else {
+            // Hata durumunu yönet (örn: 401 Unauthorized veya 403 Forbidden)
+            const errorData = await response.json();
+            throw new Error(errorData.error || 'Kullanıcılar yüklenemedi');
+        }
+        
+    } catch (error) {
+        console.error('Error loading users:', error);
+        // showToast fonksiyonun daha önce tanımlanmış, onu kullanmaya devam edebilirsin
+        showToast('Kullanıcılar yüklenirken hata oluştu: ' + error.message, 'error');
+        
+        // Fallback: empty state
+        allUsers = [];
+        filteredUsers = [];
+        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
+    }
+}
+    try {
         const response = await apiCall('admin/users');
         
         if (response.success) {
@@ -149,7 +197,6 @@ async function loadUsers() {
         filteredUsers = [];
         document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
     }
-}
 
 function displayUsers() {
     const tbody = document.getElementById('users-table-body');
@@ -159,10 +206,10 @@ function displayUsers() {
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                     <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-blue-600">${user.full_name.charAt(0)}</span>
+                        <span class="text-sm font-medium text-blue-600">${user.fullName.charAt(0)}</span>
                     </div>
                     <div class="ml-4">
-                        <div class="text-sm font-medium text-gray-900">${escapeHtml(user.full_name)}</div>
+                        <div class="text-sm font-medium text-gray-900">${escapeHtml(user.fullName)}</div>
                         <div class="text-sm text-gray-500">${escapeHtml(user.email)}</div>
                     </div>
                 </div>
@@ -173,20 +220,20 @@ function displayUsers() {
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <span class="badge badge-${user.is_active ? 'success' : 'error'}">
-                    ${user.is_active ? 'Aktif' : 'Pasif'}
+                <span class="badge badge-${user.isActive ? 'success' : 'error'}">
+                    ${user.isActive ? 'Aktif' : 'Pasif'}
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${formatDate(user.created_at)}
+                ${formatDate(user.createdAt)}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex space-x-2">
                     <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-900">
                         Düzenle
                     </button>
-                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.is_active ? 'red' : 'green'}-600 hover:text-${user.is_active ? 'red' : 'green'}-900">
-                        ${user.is_active ? 'Pasifleştir' : 'Aktifleştir'}
+                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.isActive? 'red' : 'green'}-600 hover:text-${user.isActive ? 'red' : 'green'}-900">
+                        ${user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
                     </button>
                 </div>
             </td>
@@ -201,14 +248,14 @@ function filterUsers() {
     
     filteredUsers = allUsers.filter(user => {
         const matchesSearch = !search || 
-            user.full_name.toLowerCase().includes(search) || 
+          user.fullName.toLowerCase().includes(search) || 
             user.email.toLowerCase().includes(search);
         
         const matchesRole = !roleFilter || user.role === roleFilter;
         
         const matchesStatus = !statusFilter || 
-            (statusFilter === 'active' && user.is_active) ||
-            (statusFilter === 'inactive' && !user.is_active);
+            (statusFilter === 'active' && user.isActive) ||
+            (statusFilter === 'inactive' && !user.isActive);
         
         return matchesSearch && matchesRole && matchesStatus;
     });
@@ -220,18 +267,18 @@ async function toggleUserStatus(userId) {
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
     
-    const action = user.is_active ? 'pasifleştirmek' : 'aktifleştirmek';
+    const action = user.isActive ? 'pasifleştirmek' : 'aktifleştirmek';
     
-    if (!confirm(`${user.full_name} kullanıcısını ${action} istediğinizden emin misiniz?`)) {
+    if (!confirm(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`)) {
         return;
     }
     
     try {
         // API endpoint eklenecek
-        user.is_active = !user.is_active;
+        user.isActive = !user.isActive;
         
         filterUsers();
-        showToast(`Kullanıcı ${user.is_active ? 'aktifleştirildi' : 'pasifleştirildi'}`, 'success');
+        showToast(`Kullanıcı ${user.isActive ? 'aktifleştirildi' : 'pasifleştirildi'}`, 'success');
         
     } catch (error) {
         showToast('Kullanıcı durumu güncellenirken hata oluştu', 'error');
@@ -247,7 +294,7 @@ function exportUsers() {
     const csvContent = "data:text/csv;charset=utf-8," + 
         "Ad Soyad,Email,Rol,Durum,Kayıt Tarihi\n" +
         filteredUsers.map(user => 
-            `"${user.full_name}","${user.email}","${getRoleName(user.role)}","${user.is_active ? 'Aktif' : 'Pasif'}","${user.created_at}"`
+            `"${user.fullName}","${user.email}","${getRoleName(user.role)}","${user.isActive ? 'Aktif' : 'Pasif'}","${user.createdAt}"`
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -263,9 +310,9 @@ function exportUsers() {
 
 function getRoleName(role) {
     const roleNames = {
-        customer: 'Müşteri',
-        student: 'Öğrenci',
-        merchant: 'Esnaf',
+        customer: 'Müşteri', musteri: 'Müşteri',
+        student: 'Öğrenci', ogrenci: 'Öğrenci',
+        merchant: 'Esnaf', esnaf: 'Esnaf',
         admin: 'Admin'
     };
     return roleNames[role] || role;
@@ -273,9 +320,9 @@ function getRoleName(role) {
 
 function getRoleBadgeClass(role) {
     const badgeClasses = {
-        customer: 'primary',
-        student: 'success',
-        merchant: 'warning',
+        customer: 'primary', musteri: 'primary',
+        student: 'success', ogrenci: 'success',
+        merchant: 'warning', esnaf: 'warning',
         admin: 'error'
     };
     return badgeClasses[role] || 'gray';

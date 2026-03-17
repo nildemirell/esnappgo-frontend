@@ -53,13 +53,24 @@
                         </svg>
                         Ürünler
                     </a>
-                    
-                    <a href="/student-intro" class="flex items-center px-5 py-2.5 text-base font-medium rounded-lg transition-colors <?php echo ($current_page === 'student-intro') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'; ?>">
+                    <?php if ($current_user && $current_user['role'] !== 'customer' && $current_user['role'] !== 'musteri'): ?>
+                    <a href="/dashboard" class="flex items-center px-5 py-2.5 text-base font-medium rounded-lg transition-colors <?php echo ($current_page === 'dashboard') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'; ?>">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zM14 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"></path>
                         </svg>
-                        Öğrenci Ol
+                        Dashboard
                     </a>
+                    <?php endif; ?>
+                    
+                   <?php if (!$current_user || $current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): ?>
+    <a href="/student-intro" class="flex items-center px-5 py-2.5 text-base font-medium rounded-lg transition-colors <?php echo ($current_page === 'student-intro') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'; ?>">
+        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+        Öğrenci Ol
+    </a>
+<?php endif; ?>
+
                     
                     <a href="/about" class="flex items-center px-5 py-2.5 text-base font-medium rounded-lg transition-colors <?php echo ($current_page === 'about') ? 'bg-blue-50 text-blue-600' : 'text-slate-600 hover:bg-slate-50 hover:text-slate-900'; ?>">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -112,7 +123,7 @@
                             </div>
                             <div class="hidden md:block text-left">
                                 <div class="text-base font-medium text-slate-800"><?php echo htmlspecialchars(explode(' ', $current_user['full_name'])[0]); ?></div>
-                                <div class="text-sm text-slate-500"><?php echo htmlspecialchars($current_user['role'] === 'merchant' ? 'Esnaf' : ($current_user['role'] === 'student' ? 'Öğrenci' : ($current_user['role'] === 'admin' ? 'Admin' : 'Müşteri'))); ?></div>
+                                <div class="text-sm text-slate-500"><?php echo htmlspecialchars($current_user['role'] === 'esnaf' || $current_user['role'] === 'merchant' ? 'Esnaf' : ($current_user['role'] === 'ogrenci' || $current_user['role'] === 'student' ? 'Öğrenci' : ($current_user['role'] === 'admin' ? 'Admin' : 'Müşteri'))); ?></div>
                             </div>
                             <svg class="w-5 h-5 text-slate-400 hidden md:block" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"></path>
@@ -153,7 +164,7 @@
                                 </a>
                                 <?php endif; ?>
                                 
-                                <?php if ($current_user['role'] === 'merchant'): ?>
+                                <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
                                 <a href="/merchant-orders" class="flex items-center px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50">
                                     <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
@@ -235,12 +246,15 @@
                     </svg>
                     Ürünler
                 </a>
-                <a href="/student-intro" class="flex items-center px-4 py-3 text-base font-medium rounded-lg <?php echo ($current_page === 'student-intro') ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'; ?>">
-                    <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
-                    </svg>
-                    Öğrenci Ol
-                </a>
+                <?php if (!$current_user || $current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): ?>
+    <a href="/student-intro" class="flex items-center px-4 py-3 text-base font-medium rounded-lg <?php echo ($current_page === 'student-intro') ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'; ?>">
+        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+        </svg>
+        Öğrenci Ol
+    </a>
+<?php endif; ?>
+
                 <a href="/about" class="flex items-center px-4 py-3 text-base font-medium rounded-lg <?php echo ($current_page === 'about') ? 'bg-blue-50 text-blue-600' : 'text-slate-700 hover:bg-slate-50'; ?>">
                     <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>

@@ -17,9 +17,11 @@ if (!$current_user) {
                 <?php
                 switch ($current_user['role']) {
                     case 'student':
+                    case 'ogrenci':
                         echo 'Öğrenci dashboard\'unuzdan kazançlarınızı ve ürünlerinizi takip edebilirsiniz.';
                         break;
                     case 'merchant':
+                    case 'esnaf':
                         echo 'Esnaf dashboard\'unuzdan mağazanızı ve siparişlerinizi yönetebilirsiniz.';
                         break;
                     default:
@@ -31,7 +33,7 @@ if (!$current_user) {
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <?php if ($current_user['role'] === 'customer'): 
+            <?php if ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): 
                 // Müşteri için gerçek istatistikleri çek
                 $db = $database->getConnection();
                 $customer_id = $current_user['id'];
@@ -112,7 +114,7 @@ if (!$current_user) {
                 </div>
             <?php endif; ?>
 
-            <?php if ($current_user['role'] === 'student'): 
+            <?php if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci'): 
                 // Öğrenci için gerçek istatistikleri çek
                 $db = $database->getConnection();
                 $student_id = $current_user['id'];
@@ -189,7 +191,7 @@ if (!$current_user) {
                     </div>
                 </div>
             <?php endif; ?>
-                        <?php if ($current_user['role'] === 'merchant'): 
+                        <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): 
                 $db = $database->getConnection();
                 $merchant_id = $current_user['id'];
                 
@@ -289,7 +291,7 @@ if (!$current_user) {
                     $activities = [];
                     $user_id = $current_user['id'];
                     
-                    if ($current_user['role'] === 'student') {
+                    if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci') {
                         // Öğrenci aktiviteleri: Son eklenen ürünler
                         $stmt = $db->prepare("
                             SELECT 'product' as type, title as message, created_at, status
@@ -311,7 +313,7 @@ if (!$current_user) {
                             ];
                         }
                         
-                    } elseif ($current_user['role'] === 'customer') {
+                    } elseif ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri') {
                         // Müşteri aktiviteleri: Son siparişler ve favoriler
                         $stmt = $db->prepare("
                             SELECT 'order' as type, order_number as message, created_at, status
@@ -353,7 +355,7 @@ if (!$current_user) {
                             ];
                         }
                     }
-                                        elseif ($current_user['role'] === 'merchant') {
+                                        elseif ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf') {
                         // 1. Önce esnafın mağazasını (shop_id) buluyoruz (Doğrudan bağlantı yerine ilişki kuruyoruz)
                         $shop_stmt = $db->prepare("SELECT id, name FROM shops WHERE owner_id = ?");
                         $shop_stmt->execute([$user_id]);
@@ -474,7 +476,7 @@ if (!$current_user) {
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Hızlı İşlemler</h3>
                 <div class="space-y-3">
-                    <?php if ($current_user['role'] === 'customer'): ?>
+                    <?php if ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): ?>
                         <a href="/products" class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                             <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
@@ -504,7 +506,7 @@ if (!$current_user) {
                         </a>
                     <?php endif; ?>
                     
-                    <?php if ($current_user['role'] === 'merchant'): ?>
+                    <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
                         <a href="/merchant/orders" class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                             <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
@@ -527,7 +529,7 @@ if (!$current_user) {
                         </a>
                     <?php endif; ?>
 
-                    <?php if ($current_user['role'] === 'student'): ?>
+                    <?php if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci'): ?>
                         <a href="/student/create-product" class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                             <svg class="w-5 h-5 text-blue-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>

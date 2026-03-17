@@ -32,7 +32,7 @@ if (!$current_user) {
                         Şifre Değiştir
                     </a>
                     
-                    <?php if ($current_user['role'] === 'student'): ?>
+                    <?php if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci'): ?>
                     <a href="#wallet" onclick="showSection('wallet')" class="profile-nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
@@ -120,8 +120,11 @@ if (!$current_user) {
                                         <?php
                                         $roleIcons = [
                                             'customer' => '<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>',
+                                            'musteri' => '<svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>',
                                             'student' => '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>',
+                                            'ogrenci' => '<svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.746 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path></svg>',
                                             'merchant' => '<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>',
+                                            'esnaf' => '<svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"></path></svg>',
                                             'admin' => '<svg class="w-5 h-5 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"></path></svg>'
                                         ];
                                         echo $roleIcons[$current_user['role']] ?? '';
@@ -132,8 +135,11 @@ if (!$current_user) {
                                             <?php
                                             $roleNames = [
                                                 'customer' => 'Müşteri',
+                                                'musteri' => 'Müşteri',
                                                 'student' => 'Öğrenci',
+                                                'ogrenci' => 'Öğrenci',
                                                 'merchant' => 'Esnaf',
+                                                'esnaf' => 'Esnaf',
                                                 'admin' => 'Yönetici'
                                             ];
                                             echo $roleNames[$current_user['role']] ?? 'Bilinmiyor';
@@ -271,30 +277,59 @@ function showSection(sectionId) {
     event.target.classList.add('active');
 }
 
+// ✅ YENİ — .NET Backend API'ye bağlı
 async function handleProfileSubmit(e) {
     e.preventDefault();
     
     const formData = new FormData(e.target);
     const data = {
-        full_name: formData.get('full_name'),
-        phone: formData.get('phone')
+        FullName: formData.get('full_name'),
+        PhoneNumber: formData.get('phone')
     };
     
     try {
-        const response = await apiCall('users/profile', {
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
+            setTimeout(() => { window.location.href = '/login'; }, 1500);
+            return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/User/profile`, {
             method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(data)
         });
-        
-        if (response.success) {
-            showToast('Profil bilgileri güncellendi', 'success');
+
+        const response = await res.json();
+
+        if (!res.ok) {
+            // 401 = Token süresi dolmuş
+            if (res.status === 401) {
+                showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
+                localStorage.removeItem('auth_token');
+                setTimeout(() => { window.location.href = '/login'; }, 1500);
+                return;
+            }
+            throw new Error(response.error || response.message || 'Profil güncellenemedi.');
         }
-        
+
+        // localStorage'daki kullanıcı adını da güncelle (header'da görünsün diye)
+        localStorage.setItem('user_name', data.FullName);
+        showToast('Profil bilgileri başarıyla güncellendi!', 'success');
+
     } catch (error) {
-        showToast(error.message, 'error');
+        if (error.message.includes('Failed to fetch')) {
+            showToast('Sunucuya bağlanılamadı.', 'error');
+        } else {
+            showToast(error.message, 'error');
+        }
     }
 }
-
+// ✅ YENİ — .NET Backend API'ye bağlı
 async function handlePasswordSubmit(e) {
     e.preventDefault();
     
@@ -303,30 +338,58 @@ async function handlePasswordSubmit(e) {
     const confirmPassword = formData.get('confirm_password');
     
     if (newPassword !== confirmPassword) {
-        showToast('Yeni şifreler eşleşmiyor', 'error');
+        showToast('Yeni şifreler eşleşmiyor.', 'error');
         return;
     }
     
+    // Backend ChangePasswordDto: Email, CurrentPassword, NewPassword
     const data = {
-        current_password: formData.get('current_password'),
-        new_password: newPassword
+        Email: localStorage.getItem('user_email'),
+        CurrentPassword: formData.get('current_password'),
+        NewPassword: newPassword
     };
     
     try {
-        const response = await apiCall('users/password', {
-            method: 'PUT',
+        const token = localStorage.getItem('auth_token');
+        if (!token) {
+            showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
+            setTimeout(() => { window.location.href = '/login'; }, 1500);
+            return;
+        }
+
+        const res = await fetch(`${API_BASE}/api/Auth/change-password`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
             body: JSON.stringify(data)
         });
-        
-        if (response.success) {
-            showToast('Şifre başarıyla değiştirildi', 'success');
-            e.target.reset();
+
+        const response = await res.json();
+
+        if (!res.ok) {
+            if (res.status === 401) {
+                showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
+                localStorage.removeItem('auth_token');
+                setTimeout(() => { window.location.href = '/login'; }, 1500);
+                return;
+            }
+            throw new Error(response.error || response.message || 'Şifre değiştirilemedi.');
         }
-        
+
+        showToast('Şifreniz başarıyla değiştirildi!', 'success');
+        e.target.reset();
+
     } catch (error) {
-        showToast(error.message, 'error');
+        if (error.message.includes('Failed to fetch')) {
+            showToast('Sunucuya bağlanılamadı.', 'error');
+        } else {
+            showToast(error.message, 'error');
+        }
     }
 }
+
 </script>
 
 <style>

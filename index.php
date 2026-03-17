@@ -47,6 +47,9 @@ switch ($page) {
     case 'login':
         $page_file = 'pages/login.php';
         break;
+    case 'verify-otp':
+        $page_file = 'pages/verify-otp.php';
+        break;
     case 'register':
         $page_file = 'pages/register.php';
         break;
@@ -171,6 +174,9 @@ switch ($page) {
         break;
     case 'forgot-password':
         $page_file = 'pages/forgot-password.php';
+        break;
+    case 'reset-password':
+        $page_file = 'pages/reset-password.php';
         break;
     case 'debug':
         $page_file = 'pages/debug.php';
@@ -561,7 +567,11 @@ switch ($page) {
                 },
                 credentials: 'include' // Cookie'leri her zaman gönder
             };
-            
+            const token = localStorage.getItem('auth_token');
+if (token) {
+    defaultOptions.headers['Authorization'] = 'Bearer ' + token;
+}
+
             const response = await fetch(`/api/${endpoint}`, {
                 ...defaultOptions,
                 ...options,

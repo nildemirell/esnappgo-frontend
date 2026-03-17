@@ -38,7 +38,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="customer"
+                                value="musteri"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'customer' ? 'checked' : ''; ?>
                             />
@@ -52,7 +52,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="student"
+                                value="ogrenci"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'student' ? 'checked' : ''; ?>
                             />
@@ -66,7 +66,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="merchant"
+                                value="esnaf"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'merchant' ? 'checked' : ''; ?>
                             />
@@ -281,93 +281,71 @@ document.addEventListener('DOMContentLoaded', function() {
         // Butonu disable et
         submitBtn.disabled = true;
         submitBtnText.textContent = 'Hesap oluşturuluyor...';
-        
+    
         try {
             const formData = new FormData(form);
+            
+            // Kullanıcının seçtiği Türkçe rolü, Backend'in anladığı İngilizce role çeviriyoruz
+            const selectedRole = formData.get('role');
+            let backendRole = "Customer"; // Varsayılan
+            
+            if (selectedRole === "musteri") backendRole = "Customer";
+            else if (selectedRole === "ogrenci") backendRole = "Student";
+            else if (selectedRole === "esnaf") backendRole = "Merchant";
+
             const data = {
-    fullName: formData.get('full_name'),
-    email: formData.get('email'),
-    phoneNumber: formData.get('phone'),
-    password: formData.get('password'),
-    role: formData.get('role')
-};
+                fullName: formData.get('full_name'),
+                email: formData.get('email'),
+                phoneNumber: formData.get('phone'), // Boşluklu formatıyla gidiyor (0533 616 02 18), sorun yoksa kalsın. İstersen boşlukları silebilirsin.
+                password: formData.get('password'),
+                role: backendRole // Düzeltilmiş İngilizce rol gidiyor
+            };
 
             const res = await fetch(`${API_BASE}/api/Auth/register`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data)
-});
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            });
 const response = await res.json();
 if (!res.ok) {
+    let errorData = response;
+    
+    // Eğer backend Supabase hatasını string (metin) olarak yolladıysa, onu JSON'a çevirmeye çalışıyoruz.
+    if (typeof response.error === 'string') {
+        try { errorData = JSON.parse(response.error); } catch(e) {}
+    }
+
     // Spesifik hata kodlarını Türkçe mesajlarla eşleştir
     const errorMessages = {
-        'user_already_exists': 'Bu e-posta adresi zaten kullanılıyor. Lütfen giriş yapın.',
-        'invalid_email': 'Geçersiz e-posta adresi.',
+        'user_already_exists': 'Bu e-posta adresi zaten kullanılıyor. Lütfen giriş yapmayı deneyin.',
+        'invalid_email': 'Geçersiz bir e-posta adresi girdiniz.',
         'weak_password': 'Şifre çok zayıf. Lütfen daha güçlü bir şifre seçin.',
-        'invalid_phone': 'Geçersiz telefon numarası.'
+        'invalid_phone': 'Geçersiz telefon numarası.',
+        'over_email_send_rate_limit': 'Çok fazla deneme yaptınız. Lütfen biraz bekleyip tekrar deneyin.'
     };
 
-    const userMessage = errorMessages[response.error_code]
-        || response.msg
-        || response.message
-        || response.error
-        || 'Kayıt başarısız';
+    // Supabase error formatını kontrol ederek çevrilmiş mesajı bul
+    const userMessage = errorMessages[errorData.error_code]
+        || errorData.msg
+        || errorData.message
+        || (typeof response.error === 'string' ? response.error : '')
+        || 'Kayıt başarısız, lütfen bilgilerinizi kontrol edin.';
 
     throw new Error(userMessage);
-}    
-            if (res.ok) {
-                showToast('Hesap başarıyla oluşturuldu! Giriş yapılıyor...', 'success');
+}
+                        if (res.ok) {
+                showToast('Hesap başarıyla oluşturuldu! Lütfen giriş yapın.', 'success');
 
-                // GÖREV 3: Race condition düzeltmesi
-                // Başarılıysa formu "başarılı" olarak işaretle
-                // Böylece finally bloğu butonu tekrar aktifleştirmez
                 form.dataset.success = 'true';
                 
-                // 1.5sn sonra otomatik login dene
-                setTimeout(async () => {
-                    try {
-                       const loginRes = await fetch(`${API_BASE}/api/Auth/login`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-        email: data.email,
-        password: data.password
-    })
-});
-const loginResponse = await loginRes.json();
-
-                        
-                        if (loginResponse.token) {
-                            localStorage.setItem('auth_token', loginResponse.token);
-                            localStorage.setItem('user_name', loginResponse.fullName);
-                            localStorage.setItem('user_email', loginResponse.email);
-                            localStorage.setItem('user_role', loginResponse.role);
-
-                            // PHP session köprüsü
-                            await fetch('/api/auth/bridge', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                credentials: 'include',
-                                body: JSON.stringify({
-                                    email: loginResponse.email,
-                                    fullName: loginResponse.fullName,
-                                    role: loginResponse.role
-                                })
-                            });
-
-                            window.location.href = '/dashboard';
-
-                        } else {
-                            window.location.href = '/login';
-                        }
-                    } catch (loginError) {
-                        window.location.href = '/login';
-                    }
+                // Kayıt olan kullanıcıyı doğrudan Login sayfasına yönlendiriyoruz
+                setTimeout(() => {
+                    window.location.href = '/login';
                 }, 1500);
 
-                // Başarılıysa return — butonu aktifleştirme
                 return;
             } else {
+
                 showToast(response.message || 'Kayıt başarısız', 'error');
             }
             
