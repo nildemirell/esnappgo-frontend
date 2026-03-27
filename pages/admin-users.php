@@ -19,7 +19,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 <h1 class="text-3xl font-bold text-gray-900">Kullanıcı Yönetimi</h1>
             </div>
         </div>
-        
+
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -27,15 +27,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
                         Ara
                     </label>
-                    <input
-                        type="text"
-                        id="search"
-                        placeholder="Ad, email ara..."
-                        class="w-full"
-                        onkeyup="filterUsers()"
-                    />
+                    <input type="text" id="search" placeholder="Ad, email ara..." class="w-full"
+                        onkeyup="filterUsers()" />
                 </div>
-                
+
                 <div>
                     <label for="role-filter" class="block text-sm font-medium text-gray-700 mb-2">
                         Rol
@@ -51,7 +46,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                
+
                 <div>
                     <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">
                         Durum
@@ -62,18 +57,20 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         <option value="inactive">Pasif</option>
                     </select>
                 </div>
-                
+
                 <div class="flex items-end">
                     <button onclick="exportUsers()" class="btn btn-outline w-full">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
                         </svg>
                         Dışa Aktar
                     </button>
                 </div>
             </div>
         </div>
-        
+
         <!-- Users Table -->
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="overflow-x-auto">
@@ -100,21 +97,29 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <tbody id="users-table-body" class="bg-white divide-y divide-gray-200">
                         <!-- Loading rows -->
                         <?php for ($i = 0; $i < 5; $i++): ?>
-                        <tr class="animate-pulse">
-                            <td class="px-6 py-4">
-                                <div class="flex items-center">
-                                    <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
-                                    <div class="ml-4">
-                                        <div class="h-4 bg-gray-200 rounded mb-1"></div>
-                                        <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                            <tr class="animate-pulse">
+                                <td class="px-6 py-4">
+                                    <div class="flex items-center">
+                                        <div class="w-8 h-8 bg-gray-200 rounded-full"></div>
+                                        <div class="ml-4">
+                                            <div class="h-4 bg-gray-200 rounded mb-1"></div>
+                                            <div class="h-3 bg-gray-200 rounded w-3/4"></div>
+                                        </div>
                                     </div>
-                                </div>
-                            </td>
-                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-20"></div></td>
-                            <td class="px-6 py-4"><div class="h-4 bg-gray-200 rounded w-16"></div></td>
-                        </tr>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="h-4 bg-gray-200 rounded w-16"></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="h-4 bg-gray-200 rounded w-16"></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="h-4 bg-gray-200 rounded w-20"></div>
+                                </td>
+                                <td class="px-6 py-4">
+                                    <div class="h-4 bg-gray-200 rounded w-16"></div>
+                                </td>
+                            </tr>
                         <?php endfor; ?>
                     </tbody>
                 </table>
@@ -124,84 +129,63 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 </div>
 
 <script>
-let allUsers = [];
-let filteredUsers = [];
+    let allUsers = [];
+    let filteredUsers = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadUsers();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadUsers();
+    });
 
-async function loadUsers() {
-    try {
-        // 1. LocalStorage'dan JWT token'ı al
-        const token = localStorage.getItem('token');
-        
-        // Eğer token yoksa, kullanıcı giriş yapmamıştır. Giriş sayfasına yönlendir.
-        if (!token) {
-            window.location.href = '/login';
-            return;
-        }
+    async function loadUsers() {
+        try {
+            // 1. LocalStorage'dan JWT token'ı al (Doğru anahtar: auth_token)
+            const token = localStorage.getItem('auth_token');
 
-        // 2. Doğrudan fetch kullanarak .NET backend'e istek at
-        // Base URL'ini duruma göre güncelleyebilirsin.
-        const response = await fetch('http://localhost:5086/api/Admin/users', {
-            method: 'GET',
-            headers: {
-                'Content-Type': 'application/json',
-                // En önemli kısım: Token'ı Bearer formatında gönderiyoruz
-                'Authorization': `Bearer ${token}` 
+            // Eğer token yoksa, kullanıcı giriş yapmamıştır. Giriş sayfasına yönlendir.
+            if (!token) {
+                window.location.href = '/login';
+                return;
             }
-        });
 
-        // 3. Yanıtın başarılı olup olmadığını kontrol et (HTTP 200 OK)
-        if (response.ok) {
-            // .NET API doğrudan bir liste (array) dönüyor, response.data falan yok
-            const data = await response.json(); 
-            allUsers = data;
-            filteredUsers = [...allUsers];
-            displayUsers();
-        } else {
-            // Hata durumunu yönet (örn: 401 Unauthorized veya 403 Forbidden)
-            const errorData = await response.json();
-            throw new Error(errorData.error || 'Kullanıcılar yüklenemedi');
+            const response = await fetch(`${API_BASE}/api/Admin/users`, {
+                method: 'GET',
+                headers: {
+                    'Content-Type': 'application/json',
+                    // En önemli kısım: Token'ı Bearer formatında gönderiyoruz
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+
+            // 3. Yanıtın başarılı olup olmadığını kontrol et (HTTP 200 OK)
+            if (response.ok) {
+                // .NET API doğrudan bir liste (array) dönüyor, response.data falan yok
+                const data = await response.json();
+                allUsers = data;
+                filteredUsers = [...allUsers];
+                displayUsers();
+            } else {
+                // Hata durumunu yönet (örn: 401 Unauthorized veya 403 Forbidden)
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Kullanıcılar yüklenemedi');
+            }
+
+        } catch (error) {
+            console.error('Error loading users:', error);
+            // showToast fonksiyonun daha önce tanımlanmış, onu kullanmaya devam edebilirsin
+            showToast('Kullanıcılar yüklenirken hata oluştu: ' + error.message, 'error');
+
+            // Fallback: empty state
+            allUsers = [];
+            filteredUsers = [];
+            document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
         }
-        
-    } catch (error) {
-        console.error('Error loading users:', error);
-        // showToast fonksiyonun daha önce tanımlanmış, onu kullanmaya devam edebilirsin
-        showToast('Kullanıcılar yüklenirken hata oluştu: ' + error.message, 'error');
-        
-        // Fallback: empty state
-        allUsers = [];
-        filteredUsers = [];
-        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
-    }
-}
-    try {
-        const response = await apiCall('admin/users');
-        
-        if (response.success) {
-            allUsers = response.data;
-            filteredUsers = [...allUsers];
-            displayUsers();
-        } else {
-            throw new Error(response.message || 'Kullanıcılar yüklenemedi');
-        }
-        
-    } catch (error) {
-        console.error('Error loading users:', error);
-        showToast('Kullanıcılar yüklenirken hata oluştu: ' + error.message, 'error');
-        
-        // Fallback: empty state
-        allUsers = [];
-        filteredUsers = [];
-        document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
     }
 
-function displayUsers() {
-    const tbody = document.getElementById('users-table-body');
-    
-    tbody.innerHTML = filteredUsers.map(user => `
+    function displayUsers() {
+        const tbody = document.getElementById('users-table-body');
+
+        tbody.innerHTML = filteredUsers.map(user => `
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
@@ -232,114 +216,117 @@ function displayUsers() {
                     <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-900">
                         Düzenle
                     </button>
-                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.isActive? 'red' : 'green'}-600 hover:text-${user.isActive ? 'red' : 'green'}-900">
+                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.isActive ? 'red' : 'green'}-600 hover:text-${user.isActive ? 'red' : 'green'}-900">
                         ${user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
                     </button>
                 </div>
             </td>
         </tr>
     `).join('');
-}
+    }
 
-function filterUsers() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const roleFilter = document.getElementById('role-filter').value;
-    const statusFilter = document.getElementById('status-filter').value;
-    
-    filteredUsers = allUsers.filter(user => {
-        const matchesSearch = !search || 
-          user.fullName.toLowerCase().includes(search) || 
-            user.email.toLowerCase().includes(search);
-        
-        const matchesRole = !roleFilter || user.role === roleFilter;
-        
-        const matchesStatus = !statusFilter || 
-            (statusFilter === 'active' && user.isActive) ||
-            (statusFilter === 'inactive' && !user.isActive);
-        
-        return matchesSearch && matchesRole && matchesStatus;
-    });
-    
-    displayUsers();
-}
+    function filterUsers() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const roleFilter = document.getElementById('role-filter').value;
+        const statusFilter = document.getElementById('status-filter').value;
 
-async function toggleUserStatus(userId) {
+        filteredUsers = allUsers.filter(user => {
+            const matchesSearch = !search ||
+                user.fullName.toLowerCase().includes(search) ||
+                user.email.toLowerCase().includes(search);
+
+            const matchesRole = !roleFilter || user.role === roleFilter;
+
+            const matchesStatus = !statusFilter ||
+                (statusFilter === 'active' && user.isActive) ||
+                (statusFilter === 'inactive' && !user.isActive);
+
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+
+        displayUsers();
+    }
+
+    async function toggleUserStatus(userId) {
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
-    
+
     const action = user.isActive ? 'pasifleştirmek' : 'aktifleştirmek';
-    
-    if (!confirm(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`)) {
-        return;
-    }
-    
+    if (!confirm(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`)) return;
+
     try {
-        // API endpoint eklenecek
-        user.isActive = !user.isActive;
-        
-        filterUsers();
-        showToast(`Kullanıcı ${user.isActive ? 'aktifleştirildi' : 'pasifleştirildi'}`, 'success');
-        
+        const token = localStorage.getItem('auth_token');
+        // Backend'de DELETE endpoint var — pasifleştirme yerine silme kullanılabilir
+        // Ya da backend'e ToggleStatus endpoint'i eklenene kadar devre dışı bırak:
+        showToast('Bu özellik yakında aktif olacak.', 'warning');
+        return;
+
+        // Endpoint hazır olunca:
+        // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, { method: 'PUT', ... });
     } catch (error) {
-        showToast('Kullanıcı durumu güncellenirken hata oluştu', 'error');
+        showToast('İşlem başarısız.', 'error');
     }
 }
+ catch (error) {
+            showToast('Kullanıcı durumu güncellenirken hata oluştu', 'error');
+        }
+    }
 
-function editUser(userId) {
-    showToast('Kullanıcı düzenleme özelliği yakında eklenecek', 'info');
-}
+    function editUser(userId) {
+        showToast('Kullanıcı düzenleme özelliği yakında eklenecek', 'info');
+    }
 
-function exportUsers() {
-    // Simple CSV export
-    const csvContent = "data:text/csv;charset=utf-8," + 
-        "Ad Soyad,Email,Rol,Durum,Kayıt Tarihi\n" +
-        filteredUsers.map(user => 
-            `"${user.fullName}","${user.email}","${getRoleName(user.role)}","${user.isActive ? 'Aktif' : 'Pasif'}","${user.createdAt}"`
-        ).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "kullanicilar.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast('Kullanıcı listesi indirildi', 'success');
-}
+    function exportUsers() {
+        // Simple CSV export
+        const csvContent = "data:text/csv;charset=utf-8," +
+            "Ad Soyad,Email,Rol,Durum,Kayıt Tarihi\n" +
+            filteredUsers.map(user =>
+                `"${user.fullName}","${user.email}","${getRoleName(user.role)}","${user.isActive ? 'Aktif' : 'Pasif'}","${user.createdAt}"`
+            ).join("\n");
 
-function getRoleName(role) {
-    const roleNames = {
-        customer: 'Müşteri', musteri: 'Müşteri',
-        student: 'Öğrenci', ogrenci: 'Öğrenci',
-        merchant: 'Esnaf', esnaf: 'Esnaf',
-        admin: 'Admin'
-    };
-    return roleNames[role] || role;
-}
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "kullanicilar.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
 
-function getRoleBadgeClass(role) {
-    const badgeClasses = {
-        customer: 'primary', musteri: 'primary',
-        student: 'success', ogrenci: 'success',
-        merchant: 'warning', esnaf: 'warning',
-        admin: 'error'
-    };
-    return badgeClasses[role] || 'gray';
-}
+        showToast('Kullanıcı listesi indirildi', 'success');
+    }
 
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric'
-    });
-}
+    function getRoleName(role) {
+        const roleNames = {
+            customer: 'Müşteri', musteri: 'Müşteri',
+            student: 'Öğrenci', ogrenci: 'Öğrenci',
+            merchant: 'Esnaf', esnaf: 'Esnaf',
+            admin: 'Admin'
+        };
+        return roleNames[role] || role;
+    }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+    function getRoleBadgeClass(role) {
+        const badgeClasses = {
+            customer: 'primary', musteri: 'primary',
+            student: 'success', ogrenci: 'success',
+            merchant: 'warning', esnaf: 'warning',
+            admin: 'error'
+        };
+        return badgeClasses[role] || 'gray';
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('tr-TR', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>

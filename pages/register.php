@@ -38,7 +38,8 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="musteri"
+                                value="Customer"
+
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'customer' ? 'checked' : ''; ?>
                             />
@@ -52,7 +53,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="ogrenci"
+                                value="Student"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'student' ? 'checked' : ''; ?>
                             />
@@ -66,7 +67,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="esnaf"
+                                value="Merchant"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'merchant' ? 'checked' : ''; ?>
                             />
@@ -285,21 +286,14 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData(form);
             
-            // Kullanıcının seçtiği Türkçe rolü, Backend'in anladığı İngilizce role çeviriyoruz
-            const selectedRole = formData.get('role');
-            let backendRole = "Customer"; // Varsayılan
-            
-            if (selectedRole === "musteri") backendRole = "Customer";
-            else if (selectedRole === "ogrenci") backendRole = "Student";
-            else if (selectedRole === "esnaf") backendRole = "Merchant";
+           const data = {
+    fullName: formData.get('full_name'),
+    email: formData.get('email'),
+    phoneNumber: formData.get('phone'),
+    password: formData.get('password'),
+    role: formData.get('role') // musteri / ogrenci / esnaf — backend küçük harfli Türkçe bekliyor
+};
 
-            const data = {
-                fullName: formData.get('full_name'),
-                email: formData.get('email'),
-                phoneNumber: formData.get('phone'), // Boşluklu formatıyla gidiyor (0533 616 02 18), sorun yoksa kalsın. İstersen boşlukları silebilirsin.
-                password: formData.get('password'),
-                role: backendRole // Düzeltilmiş İngilizce rol gidiyor
-            };
 
             const res = await fetch(`${API_BASE}/api/Auth/register`, {
                 method: 'POST',
@@ -334,16 +328,17 @@ if (!res.ok) {
     throw new Error(userMessage);
 }
                         if (res.ok) {
-                showToast('Hesap başarıyla oluşturuldu! Lütfen giriş yapın.', 'success');
+    showToast('Hesabınız oluşturuldu! E-postanıza gönderilen kodu girin.', 'success');
 
-                form.dataset.success = 'true';
-                
-                // Kayıt olan kullanıcıyı doğrudan Login sayfasına yönlendiriyoruz
-                setTimeout(() => {
-                    window.location.href = '/login';
-                }, 1500);
+    form.dataset.success = 'true';
 
-                return;
+    // Backend kuralı: kayıt sonrası OTP doğrulama ekranına yönlendir
+    setTimeout(() => {
+        window.location.href = '/verify-otp?email=' + encodeURIComponent(formData.get('email'));
+    }, 1500);
+
+    return;
+
             } else {
 
                 showToast(response.message || 'Kayıt başarısız', 'error');

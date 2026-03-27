@@ -126,17 +126,31 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     });
 
-    // 2. ADIM: KODU BİRLEŞTİR VE DİĞER SAYFAYA GİT
-    verifyBtn.addEventListener('click', function() {
-        let code = "";
-        otpInputs.forEach(input => code += input.value);
+    verifyBtn.addEventListener('click', async function() {
+    let code = "";
+    otpInputs.forEach(input => code += input.value);
+    if (code.length < 6) { showToast('Lütfen 6 haneli kodu tam girin.', 'error'); return; }
 
-        if (code.length < 6) {
-            showToast('Lütfen 6 haneli kodu tam girin.', 'error');
-            return;
+    verifyBtn.disabled = true;
+    verifyBtn.textContent = 'Doğrulanıyor...';
+
+    try {
+        const res = await fetch(`${API_BASE}/api/Auth/verify-otp`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ email: savedEmail, otpCode: code })
+        });
+        if (!res.ok) {
+            const errData = await res.json();
+            throw new Error(errData.error || errData.message || 'Kod hatalı veya süresi dolmuş.');
         }
-        
         window.location.href = `/reset-password?email=${encodeURIComponent(savedEmail)}&token=${encodeURIComponent(code)}`;
-    });
+    } catch (error) {
+        showToast(error.message, 'error');
+        verifyBtn.disabled = false;
+        verifyBtn.textContent = 'Kodu Doğrula';
+    }
+});
+
 });
 </script>

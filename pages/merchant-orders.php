@@ -318,10 +318,12 @@ function filterOrders(status) {
 
 async function updateOrderStatus(orderId, newStatus) {
     try {
-        const response = await fetch('/api/orders/update-status', {
-            method: 'POST',
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_BASE}/api/Order/update-status`, {
+            method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
             },
             credentials: 'include',
             body: JSON.stringify({

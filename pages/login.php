@@ -125,10 +125,10 @@ if ($current_user) {
             try {
                 const formData = new FormData(form);
                 const data = {
-                    email: formData.get('email'),
-                    password: formData.get('password'),
-                    remember_me: formData.get('remember-me') === 'on'
-                };
+     email: formData.get('email'),
+    password: formData.get('password')
+};
+
 
                 const res = await fetch(`${API_BASE}/api/Auth/login`, {
                     method: 'POST',
@@ -155,20 +155,34 @@ if ($current_user) {
                         || (typeof response.error === 'string' ? response.error : '')
                         || 'Giriş başarısız';
 
-                                        // OTP doğrulaması iptal edildiği için bu blok hata mesajı gösterecek
-                    if (errorData.error_code === 'not_verified' || errorData.error_code === 'email_not_verified' || userMessage.includes('Email not confirmed')) {
-                        showToast('Hesabınız aktif edilmemiş.', 'error');
-                        return; 
-                    }
+                                    // Doğrulanmamış hesap: OTP sayfasına yönlendir
+if (
+    res.status === 403 ||
+    errorData.error_code === 'not_verified' ||
+    errorData.error_code === 'email_not_verified' ||
+    userMessage.includes('Email not confirmed')
+) {
+    showToast('Hesabınız henüz doğrulanmamış. OTP sayfasına yönlendiriliyorsunuz...', 'warning');
+    const emailVal = document.getElementById('email') ? document.getElementById('email').value : '';
+    setTimeout(() => {
+        window.location.href = '/verify-otp?email=' + encodeURIComponent(emailVal);
+    }, 1500);
+    return;
+}
+
                     if(window.triggerSadFaces) { window.triggerSadFaces(); }
                     throw new Error(userMessage);
                 }
                 
                 if (response.token) {
-                    localStorage.setItem('auth_token', response.token);
-                    localStorage.setItem('user_name', response.fullName);
-                    localStorage.setItem('user_email', response.email);
-                    localStorage.setItem('user_role', response.role);
+    localStorage.setItem('auth_token', response.token);
+    localStorage.setItem('user_name', response.fullName);
+    localStorage.setItem('user_email', response.email);
+    localStorage.setItem('user_role', response.role);
+    if (response.phoneNumber) {
+        localStorage.setItem('user_phone', response.phoneNumber);
+    }
+
 
                     await fetch('/api/auth/bridge', {
                         method: 'POST',

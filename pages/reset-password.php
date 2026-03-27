@@ -114,7 +114,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
             if (!res.ok) {
                 const data = await res.json();
-                throw new Error(data.message || 'Bir hata oluştu.');
+                throw new Error(data.error || data.message || 'Bir hata oluştu.');
             }
 
             form.classList.add('hidden');

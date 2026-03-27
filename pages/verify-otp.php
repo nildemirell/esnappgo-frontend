@@ -5,15 +5,8 @@ $email = isset($_GET['email']) ? htmlspecialchars($_GET['email']) : '';
 
 ?>
 
-<!DOCTYPE html>
-<html lang="tr">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Hesap Doğrulama | EsnappGO</title>
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+
     
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
@@ -142,5 +135,3 @@ $email = isset($_GET['email']) ? htmlspecialchars($_GET['email']) : '';
             });
         });
     </script>
-</body>
-</html>
