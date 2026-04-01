@@ -1,6 +1,6 @@
 <?php
 // Esnaf kontrolü
-if (!$current_user || $current_user['role'] !== 'merchant') {
+if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf')) {
     header('Location: /dashboard');
     exit;
 }
@@ -257,24 +257,33 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadMerchantProducts() {
     try {
-        console.log('Loading merchant products...');
-        const response = await apiCall('merchant/products');
-        console.log('API Response:', response);
-        allProducts = response.success ? response.data : [];
-        console.log('All products:', allProducts);
-        
-        // Update counters
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(`${API_BASE}/api/Products/merchant/pending`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error('Ürünler yüklenemedi');
+        const data = await res.json();
+
+        // Backend → Frontend mapping (UI alanlarını koruyoruz)
+        allProducts = data.map(p => ({
+            id: p.id,
+            title: p.name,                             // backend "name" → frontend "title"
+            description: '',                            // ❌ backend'de yok
+            price: p.finalPrice || p.suggestedPrice,
+            suggested_price: p.suggestedPrice,
+            status: (p.status || '').toLowerCase(),     // "Pending" → "pending"
+            images: p.imageUrls || [],
+            stock: 0,                                   // ❌ backend'de yok
+            student_name: p.studentName,
+            created_at: null
+        }));
+
         updateProductCounts();
-        
-        // İlk yüklemede pending ürünleri göster
         const pendingProducts = allProducts.filter(p => p.status === 'pending');
-        console.log('Pending products:', pendingProducts);
         displayProducts(pendingProducts);
-        
     } catch (error) {
         console.error('Error loading merchant products:', error);
-        const container = document.getElementById('merchant-products-container');
-        container.innerHTML = '<div class="col-span-full text-center text-red-500 py-8">Ürünler yüklenirken hata oluştu.</div>';
     }
 }
 
@@ -454,10 +463,29 @@ async function handleProductApproval(e) {
     };
     
     try {
-        const response = await apiCall(`merchant/products/${productId}/approve`, {
-            method: 'PUT',
-            body: JSON.stringify(data)
-        });
+       const token = localStorage.getItem('auth_token');
+const response = await fetch(`${API_BASE}/api/Products/merchant/${productId}/status`, {
+    method: 'PUT',
+    headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${token}`
+    },
+    body: JSON.stringify({
+        status: 'Approved',
+        finalPrice: parseFloat(formData.get('final_price'))
+        // stock → backend DTO'da yok, gönderilemez
+    })
+});
+
+if (response.ok) {
+    showToast('Ürün onaylandı!', 'success');
+    closeApprovalModal();
+    await loadMerchantProducts();
+} else {
+    const err = await response.json();
+    throw new Error(err.error || err.message || 'Onaylama başarısız');
+}
+
         
         if (response.success) {
             showToast('Ürün onaylandı!', 'success');
@@ -475,21 +503,34 @@ async function rejectProduct(productId) {
     if (!reason) return;
     
     try {
-        const response = await apiCall(`merchant/products/${productId}/reject`, {
+        const token = localStorage.getItem('auth_token');
+        
+        // Yeni fetch isteği
+        const response = await fetch(`${API_BASE}/api/Products/merchant/${productId}/status`, {
             method: 'PUT',
-            body: JSON.stringify({ reason })
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${token}`
+            },
+            body: JSON.stringify({
+                status: 'Rejected',
+                reason: reason // Backend sebebi kaydetsin diye buraya ekledik
+            })
         });
         
-        if (response.success) {
+        // Standart fetch kullandığımız için response.success yerine response.ok kullanıyoruz
+        if (response.ok) {
             showToast('Ürün reddedildi', 'success');
             await loadProducts(); // Ürün listesini yeniden yükle
+        } else {
+            // Eğer sunucudan 200 OK dönmezse hata fırlatıyoruz
+            throw new Error('İşlem başarısız oldu.');
         }
         
     } catch (error) {
         showToast('Ürün reddedilirken hata oluştu: ' + error.message, 'error');
     }
 }
-
 // Ürün düzenleme fonksiyonu
 async function editProduct(productId) {
     console.log('Edit product called with ID:', productId);

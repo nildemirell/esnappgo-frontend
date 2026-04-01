@@ -1,6 +1,6 @@
 <?php
 // Esnaf kontrolü
-if (!$current_user || $current_user['role'] !== 'merchant') {
+if (($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf')) {
     header('Location: /dashboard');
     exit;
 }

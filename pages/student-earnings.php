@@ -1,7 +1,8 @@
 <?php
 // Öğrenci kontrolü
-if (!$current_user || $current_user['role'] !== 'student') {
-    header('Location: /dashboard');
+if (!$current_user || ($current_user['role'] !== 'student' && $current_user['role'] !== 'ogrenci')) {
+
+    echo '<script>window.location.href = "/dashboard";</script>';
     exit;
 }
 ?>
@@ -211,25 +212,32 @@ document.addEventListener('DOMContentLoaded', function() {
     loadEarningsChart();
 });
 
+
 async function loadStudentEarnings() {
     try {
-        // Mock data - API endpoint eklenecek
-        const stats = {
-            total_earnings: 450.75,
-            monthly_earnings: 125.50,
-            photos_count: 28,
-            avg_per_photo: 16.10
-        };
-        
-        document.getElementById('total-earnings').textContent = `₺${stats.total_earnings.toFixed(2)}`;
-        document.getElementById('monthly-earnings').textContent = `₺${stats.monthly_earnings.toFixed(2)}`;
-        document.getElementById('photos-count').textContent = stats.photos_count;
-        document.getElementById('avg-per-photo').textContent = `₺${stats.avg_per_photo.toFixed(2)}`;
-        
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE}/api/Products/student-dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (res.ok) {
+            const data = await res.json();
+            document.getElementById('total-earnings').textContent = `₺${data.totalEarnings.toFixed(2)}`;
+            document.getElementById('photos-count').textContent = data.totalProducts;
+            
+            const avg = data.totalProducts > 0 ? (data.totalEarnings / data.totalProducts) : 0;
+            document.getElementById('avg-per-photo').textContent = `₺${avg.toFixed(2)}`;
+        }
+
+        // monthly_earnings → backend'de yok, mock KALSIN
+        // Şimdilik değer güncellenmeyecek (HTML'deki ₺0.00 kalacak veya mock değer)
     } catch (error) {
         console.error('Error loading student earnings:', error);
     }
 }
+
 
 async function loadRecentEarnings() {
     try {

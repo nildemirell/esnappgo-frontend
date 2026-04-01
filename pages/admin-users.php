@@ -36,15 +36,13 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         Rol
                     </label>
                     <select id="role-filter" class="w-full" onchange="filterUsers()">
-                        <option value="">Tüm Roller</option>
-                        <option value="customer">Müşteri</option>
-                        <option value="musteri">Müşteri</option>
-                        <option value="student">Öğrenci</option>
-                        <option value="ogrenci">Öğrenci</option>
-                        <option value="merchant">Esnaf</option>
-                        <option value="esnaf">Esnaf</option>
-                        <option value="admin">Admin</option>
-                    </select>
+    <option value="">Tüm Roller</option>
+    <option value="musteri">Müşteri</option>
+    <option value="ogrenci">Öğrenci</option>
+    <option value="esnaf">Esnaf</option>
+    <option value="admin">Admin</option>
+</select>
+
                 </div>
 
                 <div>
@@ -247,7 +245,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         displayUsers();
     }
 
-    async function toggleUserStatus(userId) {
+   async function toggleUserStatus(userId) {
     const user = allUsers.find(u => u.id === userId);
     if (!user) return;
 
@@ -256,21 +254,20 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     try {
         const token = localStorage.getItem('auth_token');
-        // Backend'de DELETE endpoint var — pasifleştirme yerine silme kullanılabilir
-        // Ya da backend'e ToggleStatus endpoint'i eklenene kadar devre dışı bırak:
+        // Backend'de bu endpoint henüz yok, şimdilik uyarı göster
         showToast('Bu özellik yakında aktif olacak.', 'warning');
         return;
 
-        // Endpoint hazır olunca:
-        // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, { method: 'PUT', ... });
+        // Endpoint hazır olunca aşağıdaki satırları aç:
+        // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, {
+        //     method: 'PUT',
+        //     headers: { 'Authorization': `Bearer ${token}` }
+        // });
     } catch (error) {
         showToast('İşlem başarısız.', 'error');
     }
 }
- catch (error) {
-            showToast('Kullanıcı durumu güncellenirken hata oluştu', 'error');
-        }
-    }
+// ← BURADA FAZLADAN catch OLMAMALI
 
     function editUser(userId) {
         showToast('Kullanıcı düzenleme özelliği yakında eklenecek', 'info');
@@ -295,25 +292,27 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         showToast('Kullanıcı listesi indirildi', 'success');
     }
 
-    function getRoleName(role) {
-        const roleNames = {
-            customer: 'Müşteri', musteri: 'Müşteri',
-            student: 'Öğrenci', ogrenci: 'Öğrenci',
-            merchant: 'Esnaf', esnaf: 'Esnaf',
-            admin: 'Admin'
-        };
-        return roleNames[role] || role;
-    }
+   function getRoleName(role) {
+    const roleNames = {
+        musteri: 'Müşteri',
+        ogrenci: 'Öğrenci',
+        esnaf: 'Esnaf',
+        admin: 'Admin'
+    };
+    return roleNames[role] || role;
+}
+
 
     function getRoleBadgeClass(role) {
-        const badgeClasses = {
-            customer: 'primary', musteri: 'primary',
-            student: 'success', ogrenci: 'success',
-            merchant: 'warning', esnaf: 'warning',
-            admin: 'error'
-        };
-        return badgeClasses[role] || 'gray';
-    }
+    const badgeClasses = {
+        musteri: 'primary',
+        ogrenci: 'success',
+        esnaf: 'warning',
+        admin: 'error'
+    };
+    return badgeClasses[role] || 'gray';
+}
+
 
     function formatDate(dateString) {
         const date = new Date(dateString);

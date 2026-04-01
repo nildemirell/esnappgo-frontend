@@ -1,10 +1,12 @@
 <?php
-// Öğrenci kontrolü
-if (!$current_user || $current_user['role'] !== 'student') {
-    header('Location: /dashboard');
+// Kontrol Bloğu
+if (!$current_user || ($current_user['role'] !== 'student' && $current_user['role'] !== 'ogrenci')) {
+
+    echo '<script>window.location.href = "/dashboard";</script>';
     exit;
 }
 ?>
+
 
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -13,14 +15,15 @@ if (!$current_user || $current_user['role'] !== 'student') {
             <div class="flex items-center space-x-4 mb-4">
                 <a href="/student/products" class="text-gray-600 hover:text-gray-900">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
                     </svg>
                 </a>
                 <h1 class="text-3xl font-bold text-gray-900">Yeni Ürün Ekle</h1>
             </div>
             <p class="text-gray-600">Sahadan ürün fotoğrafı paylaşarak kazanç elde edin</p>
         </div>
-        
+
         <!-- Form -->
         <div class="bg-white rounded-lg shadow-sm p-8">
             <form id="create-product-form" class="space-y-6">
@@ -30,79 +33,77 @@ if (!$current_user || $current_user['role'] !== 'student') {
                         Ürün Fotoğrafları
                     </label>
                     <div class="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center">
-                        <input type="file" id="product-images" multiple accept="image/*" class="hidden" onchange="handleImageUpload(event)">
-                        <div id="upload-area" onclick="document.getElementById('product-images').click()" class="cursor-pointer">
-                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                        <input type="file" id="product-images" multiple accept="image/*" class="hidden"
+                            onchange="handleImageUpload(event)">
+                        <div id="upload-area" onclick="document.getElementById('product-images').click()"
+                            class="cursor-pointer">
+                            <svg class="w-12 h-12 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z">
+                                </path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             </svg>
                             <p class="text-gray-600 mb-2">Fotoğrafları buraya sürükleyin veya tıklayın</p>
                             <p class="text-xs text-gray-500">PNG, JPG, JPEG - Maksimum 5 fotoğraf</p>
                         </div>
-                        
+
                         <!-- Image Previews -->
-                        <div id="image-previews" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4" style="display: none;"></div>
+                        <div id="image-previews" class="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4"
+                            style="display: none;"></div>
                     </div>
                 </div>
-                
+
                 <!-- Product Info -->
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <label for="title" class="block text-sm font-medium text-gray-700 mb-2">
                             Ürün Adı
                         </label>
-                        <input
-                            type="text"
-                            id="title"
-                            name="title"
-                            class="w-full"
-                            placeholder="Örn: Taze Domates"
-                            required
-                        />
+                        <input type="text" id="title" name="title" class="w-full" placeholder="Örn: Taze Domates"
+                            required />
                     </div>
-                    
+
                     <div>
                         <label for="suggested_price" class="block text-sm font-medium text-gray-700 mb-2">
                             Önerilen Fiyat
                         </label>
-                        <input
-                            type="number"
-                            id="suggested_price"
-                            name="suggested_price"
-                            step="0.01"
-                            min="0"
-                            class="w-full"
-                            placeholder="₺0.00"
-                        />
+                        <input type="number" id="suggested_price" name="suggested_price" step="0.01" min="0"
+                            class="w-full" placeholder="₺0.00" />
                         <p class="text-xs text-gray-500 mt-1">Esnaf final fiyatı belirleyecek</p>
                     </div>
                 </div>
-                
+
                 <div>
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                         Ürün Açıklaması
                     </label>
-                    <textarea
-                        id="description"
-                        name="description"
-                        rows="4"
-                        class="w-full"
-                        placeholder="Ürün hakkında detaylı bilgi verin..."
-                        required
-                    ></textarea>
+                    <textarea id="description" name="description" rows="4" class="w-full"
+                        placeholder="Ürün hakkında detaylı bilgi verin..." required></textarea>
                 </div>
-                
+
                 <!-- Shop Selection -->
-                <div>
-                    <label for="shop_id" class="block text-sm font-medium text-gray-700 mb-2">
-                        Mağaza Seçin
-                    </label>
-                    <select id="shop_id" name="shop_id" class="w-full" required>
-                        <option value="">Mağaza seçin...</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Ürünün satılacağı mağazayı seçin</p>
-                </div>
-                
+               <div>
+    <label for="shop_id" class="block text-sm font-medium text-gray-700 mb-2">
+        Mağaza Seçin
+    </label>
+    <select id="shop_id" name="shop_id" class="w-full" required>
+        <option value="">Mağaza seçin...</option>
+    </select>
+    <p class="text-xs text-gray-500 mt-1">Ürünün satılacağı mağazayı seçin</p>
+</div>
+
+<div>
+    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+        Kategori Seçin
+    </label>
+    <select id="category_id" name="category_id" class="w-full" required>
+        <option value="">Kategori seçin...</option>
+    </select>
+    <p class="text-xs text-gray-500 mt-1">Ürünün ait olduğu kategoriyi seçin</p>
+</div>
+
                 <!-- Additional Info -->
                 <div class="bg-blue-50 p-4 rounded-lg">
                     <h4 class="text-sm font-medium text-blue-900 mb-2">Önemli Bilgiler</h4>
@@ -113,7 +114,7 @@ if (!$current_user || $current_user['role'] !== 'student') {
                         <li>• Her satıştan %10 kazanç elde edeceksiniz</li>
                     </ul>
                 </div>
-                
+
                 <!-- Submit -->
                 <div class="flex justify-end space-x-4">
                     <a href="/student/products" class="btn btn-outline">
@@ -121,7 +122,8 @@ if (!$current_user || $current_user['role'] !== 'student') {
                     </a>
                     <button type="submit" class="btn btn-primary">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
                         </svg>
                         Ürünü Paylaş
                     </button>
@@ -132,59 +134,81 @@ if (!$current_user || $current_user['role'] !== 'student') {
 </div>
 
 <script>
-let selectedImages = [];
+    let selectedImages = [];
 
-document.addEventListener('DOMContentLoaded', function() {
+   document.addEventListener('DOMContentLoaded', function () {
     loadShops();
-    
+    loadCategories(); // BUNU EKLEDİK
     document.getElementById('create-product-form').addEventListener('submit', handleCreateProduct);
 });
 
-async function loadShops() {
+   async function loadShops() {
     try {
-        const response = await apiCall('shops');
-        
-        if (response.success) {
-            const shops = response.data;
-            const select = document.getElementById('shop_id');
-            
-            select.innerHTML = '<option value="">Mağaza seçin...</option>' + 
-                shops.map(shop => `
-                    <option value="${shop.id}">${escapeHtml(shop.name)} - ${escapeHtml(shop.address || '')}</option>
-                `).join('');
-        }
-        
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(`${API_BASE}/api/Products/merchants`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Mağazalar yüklenemedi');
+        const merchants = await res.json();
+
+        const select = document.getElementById('shop_id');
+        select.innerHTML = '<option value="">Mağaza seçin...</option>' +
+            merchants.map(m => `
+                <option value="${m.id}">${escapeHtml(m.fullName)}</option>
+            `).join('');
     } catch (error) {
-        console.error('Error loading shops:', error);
+        console.error('Error loading merchants:', error);
+    }
+}
+async function loadCategories() {
+    try {
+        const token = localStorage.getItem('auth_token');
+        // Backend'deki Kategori endpoint'inin bu olduğunu varsayıyoruz. 
+        // Arkadaşın farklı bir isim verdiyse (örn: api/Category) burayı ona göre güncellersin.
+        const res = await fetch(`${API_BASE}/api/Categories`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        
+        if (!res.ok) throw new Error('Kategoriler yüklenemedi');
+        const categories = await res.json();
+
+        const select = document.getElementById('category_id');
+        select.innerHTML = '<option value="">Kategori seçin...</option>' +
+            categories.map(c => `
+                <option value="${c.id}">${escapeHtml(c.name)}</option>
+            `).join('');
+    } catch (error) {
+        console.error('Error loading categories:', error);
     }
 }
 
-function handleImageUpload(event) {
-    const files = Array.from(event.target.files);
-    
-    if (files.length > 5) {
-        showToast('Maksimum 5 fotoğraf yükleyebilirsiniz', 'error');
-        return;
-    }
-    
-    selectedImages = files;
-    displayImagePreviews();
-}
 
-function displayImagePreviews() {
-    const container = document.getElementById('image-previews');
-    const uploadArea = document.getElementById('upload-area');
-    
-    if (selectedImages.length === 0) {
-        container.style.display = 'none';
-        return;
+    function handleImageUpload(event) {
+        const files = Array.from(event.target.files);
+
+        if (files.length > 5) {
+            showToast('Maksimum 5 fotoğraf yükleyebilirsiniz', 'error');
+            return;
+        }
+
+        selectedImages = files;
+        displayImagePreviews();
     }
-    
-    container.style.display = 'grid';
-    
-    container.innerHTML = selectedImages.map((file, index) => {
-        const url = URL.createObjectURL(file);
-        return `
+
+    function displayImagePreviews() {
+        const container = document.getElementById('image-previews');
+        const uploadArea = document.getElementById('upload-area');
+
+        if (selectedImages.length === 0) {
+            container.style.display = 'none';
+            return;
+        }
+
+        container.style.display = 'grid';
+
+        container.innerHTML = selectedImages.map((file, index) => {
+            const url = URL.createObjectURL(file);
+            return `
             <div class="relative">
                 <img src="${url}" alt="Preview ${index + 1}" class="w-full h-24 object-cover rounded-lg">
                 <button 
@@ -196,88 +220,70 @@ function displayImagePreviews() {
                 </button>
             </div>
         `;
-    }).join('');
-}
+        }).join('');
+    }
 
-function removeImage(index) {
-    selectedImages.splice(index, 1);
-    displayImagePreviews();
-    
-    // Update file input
-    const fileInput = document.getElementById('product-images');
-    const dt = new DataTransfer();
-    selectedImages.forEach(file => dt.items.add(file));
-    fileInput.files = dt.files;
-}
+    function removeImage(index) {
+        selectedImages.splice(index, 1);
+        displayImagePreviews();
 
-async function handleCreateProduct(e) {
+        // Update file input
+        const fileInput = document.getElementById('product-images');
+        const dt = new DataTransfer();
+        selectedImages.forEach(file => dt.items.add(file));
+        fileInput.files = dt.files;
+    }
+
+   async function handleCreateProduct(e) {
     e.preventDefault();
-    
+
     if (selectedImages.length === 0) {
         showToast('En az bir fotoğraf yüklemelisiniz', 'error');
         return;
     }
-    
-    const formData = new FormData(e.target);
-    
+
     try {
-        showToast('Fotoğraflar yükleniyor...', 'info');
-        
-        // Upload images
-        const imageUrls = [];
-        for (const image of selectedImages) {
-            const uploadFormData = new FormData();
-            uploadFormData.append('file', image);
-            
-            const uploadResponse = await fetch('/api/upload', {
-                method: 'POST',
-                body: uploadFormData,
-                credentials: 'same-origin'
-            });
-            
-            const uploadResult = await uploadResponse.json();
-            
-            if (uploadResult.success) {
-                imageUrls.push(uploadResult.data.url);
-            } else {
-                throw new Error('Fotoğraf yüklenemedi: ' + uploadResult.message);
-            }
-        }
-        
         showToast('Ürün oluşturuluyor...', 'info');
-        
-        const productData = {
-            title: formData.get('title'),
-            description: formData.get('description'),
-            price: parseFloat(formData.get('suggested_price')) || 0,
-            shop_id: parseInt(formData.get('shop_id')),
-            images: imageUrls,
-            metadata: {
-                suggested_price: parseFloat(formData.get('suggested_price')) || 0
-            }
-        };
-        
-        const response = await apiCall('products', {
+
+        const token = localStorage.getItem('auth_token');
+       const formData = new FormData();
+formData.append('name', document.getElementById('title').value);
+formData.append('description', document.getElementById('description').value);
+formData.append('suggestedPrice', document.getElementById('suggested_price').value || '0');
+formData.append('merchantId', document.getElementById('shop_id').value);
+// YENİ EKLENEN KOD:
+const categoryId = document.getElementById('category_id').value;
+if(categoryId) formData.append('categoryId', categoryId);
+
+
+        // Fotoğrafları FormData'ya ekle — backend Supabase'e yükler
+        selectedImages.forEach(img => formData.append('photos', img));
+
+        const res = await fetch(`${API_BASE}/api/Products`, {
             method: 'POST',
-            body: JSON.stringify(productData)
+            headers: {
+                'Authorization': `Bearer ${token}`
+                // Content-Type EKLEME — FormData otomatik boundary ekler
+            },
+            body: formData
         });
-        
-        if (response.success) {
-            showToast('Ürün başarıyla paylaşıldı! Esnaf onayını bekliyor.', 'success');
-            
-            setTimeout(() => {
-                window.location.href = '/student/products';
-            }, 2000);
+
+        if (!res.ok) {
+            const data = await res.json();
+            throw new Error(data.error || data.message || 'Ürün eklenemedi');
         }
-        
+
+        showToast('Ürün başarıyla paylaşıldı! Esnaf onayını bekliyor.', 'success');
+        setTimeout(() => { window.location.href = '/student/products'; }, 2000);
     } catch (error) {
         showToast(error.message, 'error');
     }
 }
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>

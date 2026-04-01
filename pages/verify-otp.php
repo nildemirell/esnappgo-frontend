@@ -61,6 +61,19 @@ $email = isset($_GET['email']) ? htmlspecialchars($_GET['email']) : '';
             const inputs = document.querySelectorAll('.otp-input');
             const form = document.getElementById('otp-form');
             const errorMessage = document.getElementById('error-message');
+             
+            // Bu bloğu inputs.forEach'den ÖNCE ekle:
+inputs[0].addEventListener('paste', function(e) {
+    const pasteData = (e.clipboardData || window.clipboardData)
+        .getData('text').trim();
+    if (/^\d{6}$/.test(pasteData)) {
+        e.preventDefault();
+        pasteData.split('').forEach((char, i) => {
+            if (inputs[i]) inputs[i].value = char;
+        });
+        inputs[5].focus();
+    }
+});
 
             // Kutucuklar arası otomatik geçiş mantığı
             inputs.forEach((input, index) => {

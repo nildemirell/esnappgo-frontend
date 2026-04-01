@@ -307,11 +307,13 @@ function getStatusBadgeClass(status) {
 
 async function approveProduct(productId) {
     try {
-        const response = await apiCall(`admin/products/${productId}/approve`, {
-            method: 'PUT'
+        const response = await apiCall(`Admin/products/${productId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ Status: 'Approved' })
         });
         
-        if (response.success) {
+        // Response format might be different now, check for .message or .success
+        if (response.message || response.success) {
             // Ürün listesini yeniden yükle
             await loadProducts();
             showToast('Ürün onaylandı', 'success');
@@ -326,11 +328,12 @@ async function rejectProduct(productId) {
     if (!reason) return;
     
     try {
-        const response = await apiCall(`admin/products/${productId}/reject`, {
-            method: 'PUT'
+        const response = await apiCall(`Admin/products/${productId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ Status: 'Rejected' })
         });
         
-        if (response.success) {
+        if (response.message || response.success) {
             await loadProducts();
             showToast('Ürün reddedildi', 'success');
         }
@@ -345,11 +348,12 @@ async function suspendProduct(productId) {
     }
     
     try {
-        const response = await apiCall(`admin/products/${productId}/suspend`, {
-            method: 'PUT'
+        const response = await apiCall(`Admin/products/${productId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ Status: 'Suspended' })
         });
         
-        if (response.success) {
+        if (response.message || response.success) {
             await loadProducts();
             showToast('Ürün askıya alındı', 'success');
         }
@@ -360,11 +364,12 @@ async function suspendProduct(productId) {
 
 async function activateProduct(productId) {
     try {
-        const response = await apiCall(`admin/products/${productId}/activate`, {
-            method: 'PUT'
+        const response = await apiCall(`Admin/products/${productId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ Status: 'Approved' })
         });
         
-        if (response.success) {
+        if (response.message || response.success) {
             await loadProducts();
             showToast('Ürün aktifleştirildi', 'success');
         }

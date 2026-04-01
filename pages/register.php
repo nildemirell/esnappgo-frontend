@@ -38,7 +38,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="Customer"
+                                value="musteri"
 
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'customer' ? 'checked' : ''; ?>
@@ -53,7 +53,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="Student"
+                                value="ogrenci"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'student' ? 'checked' : ''; ?>
                             />
@@ -67,7 +67,7 @@ if ($current_user) {
                             <input
                                 type="radio"
                                 name="role"
-                                value="Merchant"
+                                value="esnaf"
                                 class="h-4 w-4 text-blue-600 focus:ring-blue-500"
                                 <?php echo $selected_role === 'merchant' ? 'checked' : ''; ?>
                             />

@@ -821,12 +821,30 @@ if (!$current_user) {
 
             if (response.ok) {
                 const data = await response.json();
-                const phoneInput = document.getElementById('phone');
 
+                // Ad Soyad — backend verisi PHP session'ın üzerine yazar
+                const fullNameInput = document.getElementById('full_name');
+                if (fullNameInput && data.fullName) {
+                    fullNameInput.value = data.fullName;
+                }
+
+                // Cinsiyet
+                const genderSelect = document.getElementById('gender');
+                if (genderSelect && data.gender) {
+                    genderSelect.value = data.gender; // "male", "female", "other"
+                }
+
+                // Doğum Tarihi (backend ISO formatında döner: "2000-05-15T00:00:00")
+                const birthInput = document.getElementById('birth_date');
+                if (birthInput && data.birthDate) {
+                    birthInput.value = data.birthDate.split('T')[0]; // "2000-05-15" formatına çevir
+                }
+
+                // Telefon
+                const phoneInput = document.getElementById('phone');
                 if (phoneInput && data.phoneNumber && data.phoneNumber.trim() !== '') {
                     let digits = data.phoneNumber.replace(/\D/g, '');
                     if (digits.length > 11) digits = digits.substring(0, 11);
-
                     let formatted = '';
                     for (var i = 0; i < digits.length; i++) {
                         if (i === 4 || i === 7 || i === 9) formatted += ' ';
@@ -840,6 +858,7 @@ if (!$current_user) {
         }
     }
 
+
     async function handlePersonalInfoSubmit(e) {
         e.preventDefault();
         const submitBtn = e.target.querySelector('button[type="submit"]');
@@ -850,12 +869,12 @@ if (!$current_user) {
         let rawPhone = formData.get('phone') || '';
         let cleanPhone = rawPhone.replace(/\s/g, '');
 
-      const data = {
-    FullName: formData.get('full_name'),
-    PhoneNumber: cleanPhone,
-    Gender: formData.get('gender') || null,
-    BirthDate: formData.get('birth_date') || null
-};
+        const data = {
+            FullName: formData.get('full_name'),
+            PhoneNumber: cleanPhone,
+            Gender: formData.get('gender') || null,
+            BirthDate: formData.get('birth_date') || null
+        };
 
 
 
@@ -929,10 +948,12 @@ if (!$current_user) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    email: userEmail,
-                    currentPassword: currentPassword,
-                    newPassword: newPassword
+                    Email: userEmail,
+                    CurrentPassword: currentPassword,
+                    NewPassword: newPassword
                 })
+
+
             });
 
 
@@ -941,7 +962,7 @@ if (!$current_user) {
             if (contentType && contentType.includes("application/json")) data = await response.json();
 
             if (response.status === 403 || response.status === 401) {
-                
+
 
                 showToast('Hesabınız onaylanmamış! Sistemden çıkarılıyorsunuz...', 'error');
                 setTimeout(() => window.location.href = '/verify-otp', 1500);
@@ -980,6 +1001,8 @@ if (!$current_user) {
     async function loadNotificationSettings() {
         try {
             const token = localStorage.getItem('auth_token');
+            if (!token) return; // ← token yoksa çalışma
+
             const response = await fetch(`${API_BASE}/api/Notifications/settings`, {
                 method: 'GET',
                 headers: {
@@ -987,6 +1010,20 @@ if (!$current_user) {
                     'Authorization': `Bearer ${token}`
                 }
             });
+
+            // 401 = süresi dolmuş token → login'e yönlendir
+            if (response.status === 401) {
+                localStorage.removeItem('auth_token');
+                window.location.href = '/login?redirect=/account';
+                return;
+            }
+
+            // 403 = hesap doğrulanmamış → kullanıcıyı bilgilendir
+            if (response.status === 403) {
+                showToast('Hesabınız henüz doğrulanmamış. Bildirim ayarlarına erişilemedi.', 'warning');
+                return;
+            }
+
             if (response.ok) {
                 const data = await response.json();
                 document.getElementById('email_notif').checked = data.emailNotificationsEnabled || false;
@@ -997,6 +1034,7 @@ if (!$current_user) {
             console.error("Bildirim ayarları yüklenemedi:", error);
         }
     }
+
 
     async function handleNotificationsSubmit(e) {
         e.preventDefault();
