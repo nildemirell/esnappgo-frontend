@@ -1,11 +1,9 @@
 <?php
 require_once 'php-backend/config/config.php';
-require_once 'php-backend/config/database.php';
 require_once 'php-backend/includes/auth.php';
 
 // Database bağlantısı
-$database = new Database();
-$auth = new Auth($database);
+$auth = new Auth();
 
 // Mevcut kullanıcıyı al
 $current_user = $auth->getCurrentUser();
@@ -240,9 +238,7 @@ switch ($page) {
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"
         rel="stylesheet">
 
-    <!-- Heroicons -->
-    <script src="https://unpkg.com/heroicons@2.0.18/24/outline/index.js" type="module"></script>
-    <script src="https://unpkg.com/heroicons@2.0.18/24/solid/index.js" type="module"></script>
+    <!-- Heroicons removed to prevent CORS and 404 errors (SVGs used inline) -->
 
 
 

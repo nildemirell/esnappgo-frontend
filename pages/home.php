@@ -46,39 +46,21 @@
                 </div>
 
                 <!-- Trust Indicators -->
-                <?php
-                // Gerçek istatistikleri veritabanından çek
-                $db = $database->getConnection();
-                $heroStudentCount = $db->query("SELECT COUNT(*) FROM users WHERE role = 'student'")->fetchColumn();
-                $heroMerchantCount = $db->query("SELECT COUNT(*) FROM users WHERE role = 'merchant'")->fetchColumn();
-                $heroProductCount = $db->query("SELECT COUNT(*) FROM products WHERE status = 'active'")->fetchColumn();
-                $heroCustomerCount = $db->query("SELECT COUNT(*) FROM users WHERE role = 'customer'")->fetchColumn();
-                
-                function formatHeroCount($count) {
-                    if ($count >= 10000) {
-                        return number_format($count / 1000, 1, '.', '') . 'K+';
-                    } elseif ($count >= 1000) {
-                        return number_format($count / 1000, 1, '.', '') . 'K+';
-                    } else {
-                        return $count . '+';
-                    }
-                }
-                ?>
                 <div class="grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
                     <div>
-                        <div class="text-3xl font-bold text-gray-900 mb-2"><?php echo formatHeroCount($heroStudentCount); ?></div>
+                        <div class="text-3xl font-bold text-gray-900 mb-2" id="home-students">1.2K+</div>
                         <div class="text-gray-600">Aktif Öğrenci</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold text-gray-900 mb-2"><?php echo formatHeroCount($heroMerchantCount); ?></div>
+                        <div class="text-3xl font-bold text-gray-900 mb-2" id="home-merchants">150+</div>
                         <div class="text-gray-600">Yerel Esnaf</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold text-gray-900 mb-2"><?php echo formatHeroCount($heroProductCount); ?></div>
+                        <div class="text-3xl font-bold text-gray-900 mb-2" id="home-products">3.5K+</div>
                         <div class="text-gray-600">Ürün</div>
                     </div>
                     <div>
-                        <div class="text-3xl font-bold text-gray-900 mb-2"><?php echo formatHeroCount($heroCustomerCount); ?></div>
+                        <div class="text-3xl font-bold text-gray-900 mb-2" id="home-customers">10K+</div>
                         <div class="text-gray-600">Mutlu Müşteri</div>
                     </div>
                 </div>

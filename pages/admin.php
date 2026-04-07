@@ -445,57 +445,57 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        loadAdminStats();
-        loadUserBreakdown();
-        loadRecentUsers();
-        loadRecentOrders();
-        loadActivityTimeline();
+        initDashboard();
     });
 
-    async function loadAdminStats() {
+    async function initDashboard() {
         try {
+            // Bütün kullanıcıları bir kez alıyoruz (3x apiCall sorununu çözer)
             const response = await apiCall('admin/users');
             const users = Array.isArray(response) ? response : (response.data || []);
+            window._cachedUsers = users;
 
+            loadAdminStats(users);
+            loadRecentUsers(users); // users değişkenini yolladık
+            loadRecentOrders();
+            loadActivityTimeline();
+        } catch (error) {
+            console.error('Erişim hatası veya kullanıcılar çekilemedi', error);
+        }
+    }
+
+    async function loadAdminStats(users = []) {
+        try {
+            // Kullanıcı sayıları
             const total = users.length;
             const students = users.filter(u => u.role === 'ogrenci').length;
             const merchants = users.filter(u => u.role === 'esnaf').length;
             const customers = users.filter(u => u.role === 'musteri').length;
 
             document.getElementById('total-users').textContent = total.toLocaleString();
-            document.getElementById('total-products').textContent = '—';
-            document.getElementById('total-orders').textContent = '—';
-            document.getElementById('total-revenue').textContent = '—';
-
-            if (document.getElementById('pending-products')) document.getElementById('pending-products').textContent = '—';
-            if (document.getElementById('today-orders')) document.getElementById('today-orders').textContent = '—';
-            if (document.getElementById('month-revenue')) document.getElementById('month-revenue').textContent = '—';
-
-            window._cachedUsers = users;
             updateUserBreakdownFromCache(students, merchants, customers);
+
+            // .NET Backend'den eksik olan rakamları (ürün, sipariş, gelir) çekiyoruz
+            const statsResponse = await apiCall('Admin/stats');
+            const stats = statsResponse.data || statsResponse || {};
+
+            document.getElementById('total-products').textContent = stats.total_products !== undefined ? stats.total_products.toLocaleString() : '—';
+            document.getElementById('total-orders').textContent = stats.total_orders !== undefined ? stats.total_orders.toLocaleString() : '—';
+            document.getElementById('total-revenue').textContent = stats.total_revenue !== undefined ? `₺${parseFloat(stats.total_revenue).toFixed(2)}` : '—';
+
+            if (document.getElementById('pending-products')) document.getElementById('pending-products').textContent = stats.pending_products !== undefined ? stats.pending_products : '—';
+            if (document.getElementById('today-orders')) document.getElementById('today-orders').textContent = stats.today_orders !== undefined ? stats.today_orders : '—';
+            if (document.getElementById('month-revenue')) document.getElementById('month-revenue').textContent = stats.month_revenue !== undefined ? `₺${parseFloat(stats.month_revenue).toFixed(2)}` : '—';
 
         } catch (error) {
             console.error('Admin stats yüklenemedi:', error);
-            document.getElementById('total-users').textContent = '0';
+            // İstatistikler fail olsa bile elimizdeki kullanıcı sayısını basalım
+            document.getElementById('total-users').textContent = users.length > 0 ? users.length : '0';
         }
     }
 
-    async function loadUserBreakdown() {
-        if (!window._cachedUsers) {
-            try {
-                const response = await apiCall('admin/users');
-                window._cachedUsers = Array.isArray(response) ? response : (response.data || []);
-            } catch (error) {
-                console.error('User breakdown yüklenemedi:', error);
-                return;
-            }
-        }
-        const users = window._cachedUsers;
-        const students = users.filter(u => u.role === 'ogrenci').length;
-        const merchants = users.filter(u => u.role === 'esnaf').length;
-        const customers = users.filter(u => u.role === 'musteri').length;
-        updateUserBreakdownFromCache(students, merchants, customers);
-    }
+    // loadUserBreakdown() fonksiyonuna artık ihtiyacımız kalmadı, initDashboard tek seferde hallediyor.
+    function loadUserBreakdown() { }
 
     function updateUserBreakdownFromCache(students, merchants, customers) {
         if (document.getElementById('student-count')) document.getElementById('student-count').textContent = students;
@@ -510,10 +510,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     }
 
 
-    async function loadRecentUsers() {
+    function loadRecentUsers(allUsers = []) {
         try {
-            const response = await apiCall('admin/users');
-            const allUsers = Array.isArray(response) ? response : (response.data || []);
             const users = allUsers.slice(0, 5);
 
             const container = document.getElementById('recent-users');
@@ -552,13 +550,13 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     async function loadRecentOrders() {
         try {
-            // Mock data for now - gerçek API endpoint eklenecek
-            const orders = [
-                { id: 1, order_number: 'ORD-001', customer_name: 'Test Müşteri', total_amount: 125.50, status: 'pending', created_at: new Date().toISOString() }
-            ];
+            const response = await apiCall('Admin/orders');
+            // Gelen veri direkt dizi mi yoksa data içinde mi kontrol ediyoruz:
+            const orders = Array.isArray(response) ? response : (response.data || []);
 
             const container = document.getElementById('recent-orders');
             container.innerHTML = orders.map(order => `
+
             <div class="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
                 <div class="w-12 h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                     <svg class="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -585,15 +583,16 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     async function loadActivityTimeline() {
         try {
-            // Mock activity data
-            const activities = [
-                { type: 'user_register', user: 'Yeni Öğrenci', action: 'kayıt oldu', time: '5 dakika önce', icon: 'user-plus', color: 'blue' },
-                { type: 'product_add', user: 'Test Öğrenci', action: 'yeni ürün ekledi', time: '15 dakika önce', icon: 'plus', color: 'green' },
-                { type: 'order_complete', user: 'Test Müşteri', action: 'sipariş tamamladı', time: '1 saat önce', icon: 'check', color: 'purple' },
-                { type: 'product_approve', user: 'Test Esnaf', action: 'ürün onayladı', time: '2 saat önce', icon: 'shield-check', color: 'yellow' }
-            ];
+            // .NET API üzerinden verileri çekiyoruz
+            const response = await apiCall('Admin/activities');
+            const activities = Array.isArray(response) ? response : (response.data || []);
 
             const container = document.getElementById('activity-timeline');
+
+            if (activities.length === 0) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Henüz aktivite yok</p>';
+                return;
+            }
             container.innerHTML = activities.map(activity => `
             <div class="flex items-start space-x-4">
                 <div class="w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center">
@@ -611,7 +610,12 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
         } catch (error) {
             console.error('Error loading activity timeline:', error);
+            const container = document.getElementById('activity-timeline');
+            if (container) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Aktiviteler şu an yüklenemiyor (Backend hazır değil)</p>';
+            }
         }
+
     }
 
     // Helper functions

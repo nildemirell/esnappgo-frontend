@@ -266,14 +266,14 @@ if (!$current_user) {
         e.preventDefault();
 
         const formData = new FormData(e.target);
-       const data = {
-    FullName: formData.get('full_name'),
-    PhoneNumber: formData.get('phone') || '',
-    // opsiyonel alanlar — form'da bu input'lar varsa, yoksa null gönder
-    Address: formData.get('address') || null,
-    BirthDate: formData.get('birth_date') || null,
-    Gender: formData.get('gender') || null
-};
+        const data = {
+            FullName: formData.get('full_name'),
+            PhoneNumber: formData.get('phone') || '',
+            // opsiyonel alanlar — form'da bu input'lar varsa, yoksa null gönder
+            Address: formData.get('address') || null,
+            BirthDate: formData.get('birth_date') || null,
+            Gender: formData.get('gender') || null
+        };
 
 
         try {

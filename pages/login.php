@@ -194,7 +194,8 @@ if ($current_user) {
                     document.cookie = "ui_name=" + encodeURIComponent(response.fullName) + "; path=/; max-age=2592000;";
 
 
-                    await fetch('/api/auth/bridge', {
+                    // .NET bilgilerini PHP Session ile senkronize ediyoruz
+                    await fetch('/api/auth/update_session', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         credentials: 'include',

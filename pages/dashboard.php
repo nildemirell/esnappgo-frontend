@@ -33,30 +33,7 @@ if (!$current_user) {
 
         <!-- Quick Stats -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <?php if ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): 
-                // Müşteri için gerçek istatistikleri çek
-                $db = $database->getConnection();
-                $customer_id = $current_user['id'];
-                
-                // Toplam sipariş sayısı
-                $total_orders = $db->query("SELECT COUNT(*) FROM orders WHERE customer_id = {$customer_id}")->fetchColumn();
-                
-                // Toplam harcama
-                $total_spent_query = $db->query("SELECT SUM(total_amount) FROM orders WHERE customer_id = {$customer_id}");
-                $total_spent = $total_spent_query->fetchColumn() ?: 0;
-                
-                // Favori ürün sayısı
-                $total_favorites = $db->query("SELECT COUNT(*) FROM favorites WHERE user_id = {$customer_id}")->fetchColumn();
-                
-                // Öğrenci desteği (donations toplamı)
-                $student_support_query = $db->query("
-                    SELECT SUM(sd.donation_amount) 
-                    FROM student_donations sd 
-                    INNER JOIN orders o ON sd.order_id = o.id 
-                    WHERE o.customer_id = {$customer_id}
-                ");
-                $student_support = $student_support_query->fetchColumn() ?: 0;
-            ?>
+            <?php if ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri'): ?>
                 <div class="bg-white p-6 rounded-lg shadow-sm">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -66,7 +43,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Toplam Sipariş</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $total_orders; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-customer-orders">0</p>
                         </div>
                     </div>
                 </div>
@@ -80,7 +57,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Toplam Harcama</p>
-                            <p class="text-2xl font-bold text-gray-900">₺<?php echo number_format($total_spent, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-customer-spent">₺0.00</p>
                         </div>
                     </div>
                 </div>
@@ -94,7 +71,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Favoriler</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $total_favorites; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-customer-favorites">0</p>
                         </div>
                     </div>
                 </div>
@@ -108,33 +85,13 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Öğrenci Desteği</p>
-                            <p class="text-2xl font-bold text-gray-900">₺<?php echo number_format($student_support, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-customer-support">₺0.00</p>
                         </div>
                     </div>
                 </div>
             <?php endif; ?>
 
-            <?php if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci'): 
-                // Öğrenci için gerçek istatistikleri çek
-                $db = $database->getConnection();
-                $student_id = $current_user['id'];
-                
-                // Wallet bilgilerini al
-                $wallet_query = $db->prepare("SELECT total_earned, balance FROM wallets WHERE user_id = ?");
-                $wallet_query->execute([$student_id]);
-                $wallet = $wallet_query->fetch();
-                $total_earnings = $wallet ? $wallet['total_earned'] : 0;
-                $current_balance = $wallet ? $wallet['balance'] : 0;
-                
-                // Toplam ürün sayısı
-                $total_products = $db->query("SELECT COUNT(*) FROM products WHERE student_id = {$student_id}")->fetchColumn();
-                
-                // Onaylanan ürünler (active)
-                $approved_products = $db->query("SELECT COUNT(*) FROM products WHERE student_id = {$student_id} AND status = 'active'")->fetchColumn();
-                
-                // Bekleyen ürünler (pending)
-                $pending_products = $db->query("SELECT COUNT(*) FROM products WHERE student_id = {$student_id} AND status = 'pending'")->fetchColumn();
-            ?>
+            <?php if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci'): ?>
                 <div class="bg-white p-6 rounded-lg shadow-sm">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -144,7 +101,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Toplam Kazanç</p>
-                            <p class="text-2xl font-bold text-gray-900">₺<?php echo number_format($total_earnings, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-student-earnings">₺0.00</p>
                         </div>
                     </div>
                 </div>
@@ -158,7 +115,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Ürün Sayısı</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $total_products; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-student-products">0</p>
                         </div>
                     </div>
                 </div>
@@ -172,7 +129,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Onaylanan</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $approved_products; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-student-approved">0</p>
                         </div>
                     </div>
                 </div>
@@ -186,55 +143,12 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Beklemede</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $pending_products; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-student-pending">0</p>
                         </div>
                     </div>
                 </div>
             <?php endif; ?>
-                        <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): 
-                $db = $database->getConnection();
-                $merchant_id = $current_user['id'];
-                
-                // Esnafın mağazasını bul
-                $shop_query = $db->prepare("SELECT id FROM shops WHERE owner_id = ?");
-                $shop_query->execute([$merchant_id]);
-                $shop = $shop_query->fetch();
-                
-                $total_shop_orders = 0;
-                $total_shop_revenue = 0;
-                $pending_shop_orders = 0;
-                
-                if ($shop) {
-                    $shop_id = $shop['id'];
-                    
-                    // Mağazanın toplam sipariş sayısı (Benzersiz siparişler)
-                    $total_shop_orders = $db->query("
-                        SELECT COUNT(DISTINCT o.id) 
-                        FROM orders o 
-                        INNER JOIN order_items oi ON o.id = oi.order_id 
-                        INNER JOIN products p ON oi.product_id = p.id 
-                        WHERE p.shop_id = {$shop_id}
-                    ")->fetchColumn() ?: 0;
-                    
-                    // Mağazanın bekleyen siparişleri
-                    $pending_shop_orders = $db->query("
-                        SELECT COUNT(DISTINCT o.id) 
-                        FROM orders o 
-                        INNER JOIN order_items oi ON o.id = oi.order_id 
-                        INNER JOIN products p ON oi.product_id = p.id 
-                        WHERE p.shop_id = {$shop_id} AND o.status = 'pending'
-                    ")->fetchColumn() ?: 0;
-                    
-                    // Mağazanın toplam kazancı (Sadece bu mağazaya ait satılan ürünlerin tutarı)
-                    $total_shop_revenue = $db->query("
-                        SELECT SUM(oi.quantity * oi.unit_price) 
-                        FROM order_items oi 
-                        INNER JOIN products p ON oi.product_id = p.id 
-                        INNER JOIN orders o ON oi.order_id = o.id
-                        WHERE p.shop_id = {$shop_id} AND o.status IN ('paid', 'shipped', 'delivered')
-                    ")->fetchColumn() ?: 0;
-                }
-            ?>
+                            <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
                 <div class="bg-white p-6 rounded-lg shadow-sm">
                     <div class="flex items-center">
                         <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -244,7 +158,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Toplam Sipariş</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $total_shop_orders; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-merchant-orders">0</p>
                         </div>
                     </div>
                 </div>
@@ -258,7 +172,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Toplam Ciro</p>
-                            <p class="text-2xl font-bold text-gray-900">₺<?php echo number_format($total_shop_revenue, 2); ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-merchant-revenue">₺0.00</p>
                         </div>
                     </div>
                 </div>
@@ -272,7 +186,7 @@ if (!$current_user) {
                         </div>
                         <div class="ml-4">
                             <p class="text-sm font-medium text-gray-500">Bekleyen Sipariş</p>
-                            <p class="text-2xl font-bold text-gray-900"><?php echo $pending_shop_orders; ?></p>
+                            <p class="text-2xl font-bold text-gray-900" id="stat-merchant-pending">0</p>
                         </div>
                     </div>
                 </div>
@@ -285,190 +199,14 @@ if (!$current_user) {
             <!-- Recent Activity -->
             <div class="bg-white rounded-lg shadow-sm p-6">
                 <h3 class="text-lg font-medium text-gray-900 mb-4">Son Aktiviteler</h3>
-                <div class="space-y-4">
-                    <?php
-                    // Gerçek son aktiviteleri çek
-                    $activities = [];
-                    $user_id = $current_user['id'];
-                    
-                    if ($current_user['role'] === 'student' || $current_user['role'] === 'ogrenci') {
-                        // Öğrenci aktiviteleri: Son eklenen ürünler
-                        $stmt = $db->prepare("
-                            SELECT 'product' as type, title as message, created_at, status
-                            FROM products 
-                            WHERE student_id = ? 
-                            ORDER BY created_at DESC 
-                            LIMIT 5
-                        ");
-                        $stmt->execute([$user_id]);
-                        $products = $stmt->fetchAll();
-                        
-                        foreach ($products as $product) {
-                            $status_text = $product['status'] === 'active' ? 'onaylandı' : 'bekleniyor';
-                            $activities[] = [
-                                'type' => 'product',
-                                'message' => $product['message'] . ' ürünü ' . $status_text,
-                                'time' => $product['created_at'],
-                                'icon' => 'camera'
-                            ];
-                        }
-                        
-                    } elseif ($current_user['role'] === 'customer' || $current_user['role'] === 'musteri') {
-                        // Müşteri aktiviteleri: Son siparişler ve favoriler
-                        $stmt = $db->prepare("
-                            SELECT 'order' as type, order_number as message, created_at, status
-                            FROM orders 
-                            WHERE customer_id = ? 
-                            ORDER BY created_at DESC 
-                            LIMIT 3
-                        ");
-                        $stmt->execute([$user_id]);
-                        $orders = $stmt->fetchAll();
-                        
-                        foreach ($orders as $order) {
-                            $activities[] = [
-                                'type' => 'order',
-                                'message' => $order['message'] . ' sipariş oluşturuldu',
-                                'time' => $order['created_at'],
-                                'icon' => 'shopping-bag'
-                            ];
-                        }
-                        
-                        // Favoriler
-                        $stmt = $db->prepare("
-                            SELECT f.created_at, p.title
-                            FROM favorites f
-                            INNER JOIN products p ON f.product_id = p.id
-                            WHERE f.user_id = ?
-                            ORDER BY f.created_at DESC
-                            LIMIT 2
-                        ");
-                        $stmt->execute([$user_id]);
-                        $favorites = $stmt->fetchAll();
-                        
-                        foreach ($favorites as $fav) {
-                            $activities[] = [
-                                'type' => 'favorite',
-                                'message' => $fav['title'] . ' favorilere eklendi',
-                                'time' => $fav['created_at'],
-                                'icon' => 'heart'
-                            ];
-                        }
-                    }
-                                        elseif ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf') {
-                        // 1. Önce esnafın mağazasını (shop_id) buluyoruz (Doğrudan bağlantı yerine ilişki kuruyoruz)
-                        $shop_stmt = $db->prepare("SELECT id, name FROM shops WHERE owner_id = ?");
-                        $shop_stmt->execute([$user_id]);
-                        $shop = $shop_stmt->fetch();
-                        
-                        if ($shop) {
-                            $shop_id = $shop['id'];
-                            
-                            // 2. Bu mağazaya (shop_id) ait olan son 5 siparişi çekiyoruz
-                            // order_items tablosu üzerinden sipariş -> ürün -> mağaza ilişkisi kuruluyor
-                            $stmt = $db->prepare("
-                                SELECT DISTINCT o.id, o.order_number, o.created_at, o.status, u.full_name as customer_name
-                                FROM orders o
-                                INNER JOIN order_items oi ON o.id = oi.order_id
-                                INNER JOIN products p ON oi.product_id = p.id
-                                INNER JOIN users u ON o.customer_id = u.id
-                                WHERE p.shop_id = ?
-                                ORDER BY o.created_at DESC
-                                LIMIT 5
-                            ");
-                            $stmt->execute([$shop_id]);
-                            $orders = $stmt->fetchAll();
-                            
-                            foreach ($orders as $order) {
-                                // Sipariş durumunu Türkçeleştir
-                                $status_text = 'yeni sipariş';
-                                if ($order['status'] === 'paid') $status_text = 'hazırlanıyor';
-                                if ($order['status'] === 'shipped') $status_text = 'kargoya verildi';
-                                if ($order['status'] === 'delivered') $status_text = 'teslim edildi';
-                                
-                                $activities[] = [
-                                    'type' => 'order',
-                                    'message' => $order['customer_name'] . ' adlı müşteriden ' . $status_text . ' (#' . $order['order_number'] . ')',
-                                    'time' => $order['created_at'],
-                                    'icon' => 'shopping-bag'
-                                ];
-                            }
-                        }
-                    }
-
-                    // Profil güncellemesi (tüm kullanıcılar için)
-                    if ($current_user['updated_at']) {
-                        $activities[] = [
-                            'type' => 'profile',
-                            'message' => 'Profil bilgileri güncellendi',
-                            'time' => $current_user['updated_at'],
-                            'icon' => 'user'
-                        ];
-                    }
-                    
-                    // Zamana göre sırala
-                    usort($activities, function($a, $b) {
-                        return strtotime($b['time']) - strtotime($a['time']);
-                    });
-                    
-                    // En son 5 aktiviteyi göster
-                    $activities = array_slice($activities, 0, 5);
-                    
-                    // Zaman farkını hesaplayan fonksiyon
-                    function timeAgo($datetime) {
-                        $time = strtotime($datetime);
-                        $diff = time() - $time;
-                        
-                        if ($diff < 60) return 'Az önce';
-                        if ($diff < 3600) return floor($diff / 60) . ' dakika önce';
-                        if ($diff < 86400) return floor($diff / 3600) . ' saat önce';
-                        if ($diff < 604800) return floor($diff / 86400) . ' gün önce';
-                        return date('d M Y', $time);
-                    }
-                    
-                    if (empty($activities)): ?>
-                        <div class="text-center py-8 text-gray-500">
-                            <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                            </svg>
-                            <p>Henüz aktivite bulunmuyor</p>
-                        </div>
-                    <?php else: 
-                        foreach ($activities as $activity): 
-                            $icon_class = 'text-blue-600';
-                            $bg_class = 'bg-blue-100';
-                            
-                            if ($activity['type'] === 'favorite') {
-                                $icon_class = 'text-pink-600';
-                                $bg_class = 'bg-pink-100';
-                            } elseif ($activity['type'] === 'profile') {
-                                $icon_class = 'text-purple-600';
-                                $bg_class = 'bg-purple-100';
-                            } elseif ($activity['type'] === 'product') {
-                                $icon_class = 'text-green-600';
-                                $bg_class = 'bg-green-100';
-                            }
-                    ?>
-                        <div class="flex items-center space-x-3">
-                            <div class="w-8 h-8 <?php echo $bg_class; ?> rounded-full flex items-center justify-center flex-shrink-0">
-                                <svg class="w-4 h-4 <?php echo $icon_class; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <?php if ($activity['icon'] === 'shopping-bag'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
-                                    <?php elseif ($activity['icon'] === 'heart'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
-                                    <?php elseif ($activity['icon'] === 'camera'): ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"></path>
-                                    <?php else: ?>
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
-                                    <?php endif; ?>
-                                </svg>
-                            </div>
-                            <div class="flex-1 min-w-0">
-                                <p class="text-sm font-medium text-gray-900 truncate"><?php echo htmlspecialchars($activity['message']); ?></p>
-                                <p class="text-xs text-gray-500"><?php echo timeAgo($activity['time']); ?></p>
-                            </div>
-                        </div>
-                    <?php endforeach; endif; ?>
+                <div class="space-y-4" id="recent_activities_container">
+                    <div class="text-center py-8 text-gray-500" id="activities_loading">
+                        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-500 mx-auto mb-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                        </svg>
+                        <p>Yükleniyor...</p>
+                    </div>
                 </div>
             </div>
 
@@ -576,18 +314,149 @@ document.addEventListener('DOMContentLoaded', function() {
     loadDashboardData();
 });
 
+function getCookie(name) {
+    const value = `; ${document.cookie}`;
+    const parts = value.split(`; ${name}=`);
+    if (parts.length === 2) return parts.pop().split(';').shift();
+    return null;
+}
+
 async function loadDashboardData() {
-    // Tüm veriler PHP'den geliyor, sadece console log
-    console.log('Dashboard data loaded from PHP');
+    const role = getCookie('ui_role') || localStorage.getItem('user_role');
+    const token = localStorage.getItem('auth_token');
+
+    if (!token) {
+        console.error("No auth token found. Cannot load dashboard data.");
+        showEmptyActivities();
+        return;
+    }
+
+    if (role === 'student' || role === 'ogrenci') {
+        await loadStudentStats(token);
+    } else if (role === 'merchant' || role === 'esnaf') {
+        await loadMerchantStats(token);
+    } else {
+        await loadCustomerStats(token);
+    }
 }
 
-async function loadCustomerStats() {
-    // Müşteri istatistikleri PHP'den geliyor, JavaScript'e gerek yok
-    console.log('Customer stats loaded from PHP');
+async function loadStudentStats(token) {
+    try {
+        // Öğrenci istatistikleri için hazırlanan endpoint - Eğer backendde yoksa veya güncellenecekse backendci ile konuşun
+        const data = await apiCall('User/dashboard/student');
+        
+        if (data) {
+            // Eğer backend farklı isimlerle dönüyorsa burada maplemeyi ayarlayabilirsiniz
+            const earnings = data.totalEarnings || data.wallet?.total_earned || 0;
+            const tProducts = data.totalProducts || 0;
+            const aProducts = data.approvedProducts || 0;
+            const pProducts = data.pendingProducts || 0;
+
+            document.getElementById('stat-student-earnings').textContent = '₺' + Number(earnings).toFixed(2);
+            document.getElementById('stat-student-products').textContent = tProducts;
+            document.getElementById('stat-student-approved').textContent = aProducts;
+            document.getElementById('stat-student-pending').textContent = pProducts;
+
+            // Son Aktiviteler eğer backendden geliyorsa göster, gelmiyorsa yedek senaryo:
+            if (data.recentActivities && data.recentActivities.length > 0) {
+                renderActivities(data.recentActivities);
+            } else {
+                showEmptyActivities();
+            }
+        } else {
+            console.warn('Backend endpoint henüz bu veriyi döndürmüyor veya hata verdi.');
+            showEmptyActivities();
+        }
+    } catch (e) {
+        console.error('API Bağlantı Hatası:', e);
+        showEmptyActivities();
+    }
 }
 
-function loadStudentStats() {
-    // Öğrenci istatistikleri PHP'den geliyor, JavaScript'e gerek yok
-    console.log('Student stats loaded from PHP');
+async function loadCustomerStats(token) {
+    // Müşteri için şimdilik Mock, backendcinin GET /api/User/dashboard/customer endpoint'i yazması gerekiyor.
+    console.log('Fetching customer stats...');
+    setTimeout(() => showEmptyActivities(), 500);
+}
+
+async function loadMerchantStats(token) {
+    // Esnaf için şimdilik Mock, backendcinin GET /api/User/dashboard/merchant endpoint'i yazması gerekiyor.
+    console.log('Fetching merchant stats...');
+    setTimeout(() => showEmptyActivities(), 500);
+}
+
+function showEmptyActivities() {
+    const container = document.getElementById('recent_activities_container');
+    if(!container) return;
+    container.innerHTML = `
+        <div class="text-center py-8 text-gray-500">
+            <svg class="w-12 h-12 mx-auto mb-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+            </svg>
+            <p>Henüz yeni aktivite bulunmuyor</p>
+        </div>
+    `;
+}
+
+function renderActivities(activities) {
+    const container = document.getElementById('recent_activities_container');
+    if(!container) return;
+    
+    container.innerHTML = '';
+    
+    activities.forEach(activity => {
+        // Backend'den ImageUrl gelmiyorsa UI Avatars ile güzel bir harf avatarı oluşturuyoruz
+        // Backendciye Not: RecentActivityDto'ya string ImageUrl ekleyip yollarsa otomatik bu resim çıkar.
+        const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.productName || 'Urun')}&background=f3f4f6&color=374151&bold=true&rounded=true`;
+        const imageUrl = activity.imageUrl || defaultImage;
+        
+        const activityDateStr = activity.date || activity.createdAt;
+        const activityDate = new Date(activityDateStr);
+        const formattedDate = isNaN(activityDate) ? 'Tarih Bilinmiyor' : activityDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
+
+        // Duruma göre rozet (Badge) rengi seçimi
+        let badgeColor = "bg-gray-100 text-gray-700 border-gray-200";
+        let iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        
+        const status = (activity.statusMessage || "").toLowerCase();
+        if (status.includes("onayland")) {
+            badgeColor = "bg-green-50 text-green-700 border-green-200";
+            iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        } else if (status.includes("reddedil")) {
+            badgeColor = "bg-red-50 text-red-700 border-red-200";
+            iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        } else if (status.includes("beklemede") || status.includes("inceleniyor")) {
+            badgeColor = "bg-yellow-50 text-yellow-700 border-yellow-200";
+            iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+        }
+
+        container.innerHTML += `
+            <a href="/student/products" class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
+                <div class="flex items-center space-x-4">
+                    <!-- Ürün Fotoğrafı / Avatar -->
+                    <div class="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
+                        <img src="${imageUrl}" alt="${activity.productName}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                    </div>
+                    
+                    <!-- Ürün Bilgisi -->
+                    <div class="flex flex-col">
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">${activity.productName}</h4>
+                        <div class="flex items-center text-xs text-gray-500 mt-1 font-medium">
+                            <svg class="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                            </svg>
+                            ${formattedDate}
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Durum Rozeti -->
+                <div class="flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeColor}">
+                    ${iconHtml}
+                    ${activity.statusMessage}
+                </div>
+            </a>
+        `;
+    });
 }
 </script>
