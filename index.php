@@ -496,6 +496,117 @@ switch ($page) {
             -webkit-line-clamp: 3;
             line-clamp: 3;
         }
+
+        /* Custom Modal CSS */
+        .custom-modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: rgba(17, 24, 39, 0.6);
+            backdrop-filter: blur(5px);
+            z-index: 99999;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s ease, visibility 0.3s ease;
+        }
+
+        .custom-modal-box {
+            background: #ffffff;
+            width: 90%;
+            max-width: 400px;
+            border-radius: 16px;
+            padding: 28px 24px;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            transform: scale(0.95) translateY(10px);
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        .custom-modal-overlay.show {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .custom-modal-overlay.show .custom-modal-box {
+            transform: scale(1) translateY(0);
+        }
+
+        .custom-modal-icon {
+            width: 50px;
+            height: 50px;
+            background-color: #EFF6FF;
+            color: #3B82F6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 16px auto;
+        }
+
+        .custom-modal-icon svg {
+            width: 26px;
+            height: 26px;
+        }
+
+        .custom-modal-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: #111827;
+            margin: 0 0 12px 0;
+        }
+
+        .custom-modal-message {
+            font-size: 0.95rem;
+            color: #4B5563;
+            margin: 0 0 24px 0;
+            line-height: 1.6;
+        }
+
+        .custom-modal-actions {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .custom-modal-actions button {
+            flex: 1;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            padding: 12px 20px;
+            font-size: 0.95rem;
+            font-weight: 500;
+            border-radius: 10px;
+            cursor: pointer;
+            border: none;
+            transition: all 0.2s ease;
+        }
+
+        .btn-cancel {
+            background-color: #F3F4F6;
+            color: #374151;
+        }
+
+        .btn-cancel:hover {
+            background-color: #E5E7EB;
+        }
+
+        .btn-confirm {
+            background-color: #3B82F6;
+            color: #ffffff;
+            box-shadow: 0 4px 6px -1px rgba(59, 130, 246, 0.4);
+        }
+
+        .btn-confirm:hover {
+            background-color: #2563EB;
+            box-shadow: 0 6px 10px -1px rgba(59, 130, 246, 0.5);
+            transform: translateY(-1px);
+        }
     </style>
 
     <!-- Tailwind Config -->
@@ -525,11 +636,65 @@ switch ($page) {
         <?php include $page_file; ?>
     </main>
 
+    <!-- Modern Custom Modal -->
+    <div id="customModal" class="custom-modal-overlay">
+        <div class="custom-modal-box">
+            <div class="custom-modal-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+            </div>
+            <h3 id="customModalTitle" class="custom-modal-title">Uyarı</h3>
+            <p id="customModalMessage" class="custom-modal-message">İşlemi onaylıyor musunuz?</p>
+            <div class="custom-modal-actions">
+                <button id="customModalCancel" class="btn-cancel">İptal</button>
+                <button id="customModalConfirm" class="btn-confirm">Onayla</button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast notifications container -->
     <div id="toast-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
 
     <!-- JavaScript -->
     <script>
+        function openCustomModal(message, type = 'confirm') {
+            return new Promise((resolve) => {
+                const overlay = document.getElementById('customModal');
+                if (!overlay) return resolve(false);
+                document.getElementById('customModalMessage').textContent = message;
+                const titleEl = document.getElementById('customModalTitle');
+                const confirmBtn = document.getElementById('customModalConfirm');
+                const cancelBtn = document.getElementById('customModalCancel');
+
+                if (type === 'alert') {
+                    titleEl.textContent = 'Bilgilendirme';
+                    cancelBtn.style.display = 'none';
+                    confirmBtn.textContent = 'Tamam';
+                } else {
+                    titleEl.textContent = 'Emin misiniz?';
+                    cancelBtn.style.display = 'inline-flex';
+                    confirmBtn.textContent = 'Onayla';
+                    cancelBtn.textContent = 'İptal';
+                }
+
+                overlay.classList.add('show');
+                const newConfirmBtn = confirmBtn.cloneNode(true);
+                const newCancelBtn = cancelBtn.cloneNode(true);
+                confirmBtn.parentNode.replaceChild(newConfirmBtn, confirmBtn);
+                cancelBtn.parentNode.replaceChild(newCancelBtn, cancelBtn);
+
+                const closeModal = (result) => {
+                    overlay.classList.remove('show');
+                    setTimeout(() => resolve(result), 300);
+                };
+                newConfirmBtn.addEventListener('click', () => closeModal(true));
+                newCancelBtn.addEventListener('click', () => closeModal(false));
+            });
+        }
+
+
         // -------- API CONFIG --------
         const API_BASE = window.location.hostname === 'localhost'
             ? 'http://localhost:5086'
@@ -590,11 +755,25 @@ switch ($page) {
                 }
             });
 
-            const data = await response.json();
+            // .NET 204 NoContent (Boş İçerik) döndüğünde sistemin çökmemesi için hazırlık yapıldı
+            let data = {};
+            if (response.status !== 204) {
+                const text = await response.text();
+                // Eğer dönecek bir metin/veri varsa json'a çevir, yoksa boşluk bekle
+                data = text ? JSON.parse(text) : {};
+            }
 
             if (!response.ok) {
-                throw new Error(data.message || 'Bir hata oluştu');
+                // .NET ProblemDetails formatını destekle
+                const errorMessage =
+                    data.message ||
+                    data.error ||
+                    data.title ||
+                    (data.errors ? Object.values(data.errors).flat().join(', ') : null) ||
+                    'Bir hata oluştu';
+                throw new Error(errorMessage);
             }
+
 
             return data;
         }
@@ -604,13 +783,14 @@ switch ($page) {
             try {
                 console.log('Adding to cart:', { product_id: productId, quantity: quantity });
 
-                const response = await apiCall('cart', {
+                const response = await apiCall('cart/items', {
                     method: 'POST',
                     body: JSON.stringify({
-                        product_id: productId,
+                        productId: productId, // Alt tireli yerine camelCase yazdık
                         quantity: quantity
                     })
                 });
+
 
                 console.log('Cart response:', response);
 
@@ -624,9 +804,10 @@ switch ($page) {
 
         async function removeFromCart(itemId) {
             try {
-                await apiCall(`cart/${itemId}`, {
+                await apiCall(`cart/items/${itemId}`, {
                     method: 'DELETE'
                 });
+
 
                 showToast('Ürün sepetten kaldırıldı!', 'success');
                 updateCartCount();

@@ -580,7 +580,7 @@ document.addEventListener('keydown', function(e) {
 });
 
 async function cancelOrder(orderId) {
-    if (!confirm('Bu siparişi iptal etmek istediğinizden emin misiniz?\n\nİptal edilen siparişler geri alınamaz.')) {
+    if (!(await openCustomModal('Bu siparişi iptal etmek istediğinizden emin misiniz?<br><br>İptal edilen siparişler geri alınamaz.'))) {
         return;
     }
     

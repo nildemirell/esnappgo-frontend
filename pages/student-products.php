@@ -250,10 +250,12 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
         window.location.href = `/student/products/${productId}/edit`;
     }
 
-    async function deleteProduct(productId) {
-        if (!confirm('Bu ürünü silmek istediğinizden emin misiniz?')) {
+    async function deleteProduct(id) {
+        if (!await openCustomModal('Bu ürünü silmek istediğinizden emin misiniz?')) {
             return;
         }
+        // ...
+
 
         try {
             // API endpoint eklenecek

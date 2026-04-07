@@ -153,11 +153,12 @@
                                 class="flex items-center space-x-2 py-2 px-3 text-slate-700 hover:bg-slate-100 rounded-lg transition-colors">
                                 <div
                                     class="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-semibold text-base">
-                                    <?php echo strtoupper(substr($current_user['full_name'], 0, 1)); ?>
+                                    <?php echo mb_strtoupper(mb_substr($current_user['full_name'], 0, 1, 'UTF-8'), 'UTF-8'); ?>
                                 </div>
                                 <div class="hidden md:block text-left">
                                     <div class="text-base font-medium text-slate-800">
-                                        <?php echo htmlspecialchars(explode(' ', $current_user['full_name'])[0]); ?></div>
+                                        <?php echo htmlspecialchars(explode(' ', $current_user['full_name'])[0]); ?>
+                                    </div>
                                     <div class="text-sm text-slate-500">
                                         <?php echo htmlspecialchars($current_user['role'] === 'esnaf' || $current_user['role'] === 'merchant' ? 'Esnaf' : ($current_user['role'] === 'ogrenci' || $current_user['role'] === 'student' ? 'Öğrenci' : ($current_user['role'] === 'admin' ? 'Admin' : 'Müşteri'))); ?>
                                     </div>
@@ -177,13 +178,15 @@
                                     <div class="flex items-center space-x-3">
                                         <div
                                             class="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg">
-                                            <?php echo strtoupper(substr($current_user['full_name'], 0, 1)); ?>
+                                            <?php echo mb_strtoupper(mb_substr($current_user['full_name'], 0, 1, 'UTF-8'), 'UTF-8'); ?>
                                         </div>
                                         <div>
                                             <div class="font-semibold text-base text-slate-800">
-                                                <?php echo htmlspecialchars($current_user['full_name']); ?></div>
+                                                <?php echo htmlspecialchars($current_user['full_name']); ?>
+                                            </div>
                                             <div class="text-sm text-slate-500">
-                                                <?php echo htmlspecialchars($current_user['email']); ?></div>
+                                                <?php echo htmlspecialchars($current_user['email']); ?>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -217,7 +220,7 @@
                                     <?php endif; ?>
 
                                     <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
-                                        <a href="/merchant-orders"
+                                        <a href="/merchant/orders"
                                             class="flex items-center px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50">
                                             <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">
@@ -227,7 +230,7 @@
                                             </svg>
                                             Mağaza Siparişleri
                                         </a>
-                                        <a href="/merchant-products"
+                                        <a href="/merchant/products"
                                             class="flex items-center px-4 py-2.5 text-base text-slate-700 hover:bg-slate-50">
                                             <svg class="w-5 h-5 mr-3 text-slate-400" fill="none" stroke="currentColor"
                                                 viewBox="0 0 24 24">

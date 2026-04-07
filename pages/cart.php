@@ -13,22 +13,34 @@ if (!$current_user) {
             <div class="flex items-center mb-4">
                 <a href="/products" class="text-blue-600 hover:text-blue-700 mr-4">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7">
+                        </path>
                     </svg>
                 </a>
                 <h1 class="text-3xl font-bold text-gray-900">Sepetim</h1>
             </div>
             <p class="text-gray-600">Alışveriş sepetinizdeki ürünler ve öğrenci desteği ayarları</p>
         </div>
-        
+
         <div class="lg:grid lg:grid-cols-12 lg:gap-x-8 lg:items-start">
             <!-- Cart Items -->
             <div class="lg:col-span-8">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-100">
-                    <div class="p-6 border-b border-gray-100">
+                    <div class="p-6 border-b border-gray-100 flex justify-between items-center">
                         <h2 class="text-xl font-semibold text-gray-900">Sepetinizdeki Ürünler</h2>
+                        <button id="clear-cart-btn" style="display: none;" onclick="clearCart()"
+                            class="text-red-500 hover:text-red-700 text-sm font-medium flex items-center">
+
+                            <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                            Sepeti Boşalt
+                        </button>
                     </div>
-                    
+
+
                     <div id="cart-items-container" class="divide-y divide-gray-100">
                         <!-- Loading skeleton -->
                         <div id="loading-skeleton" class="animate-pulse p-6">
@@ -42,33 +54,39 @@ if (!$current_user) {
                         </div>
                     </div>
                 </div>
-                
+
                 <!-- Empty Cart -->
                 <div id="empty-cart" class="text-center py-16" style="display: none;">
                     <div class="bg-white rounded-2xl shadow-sm p-12">
-                        <svg class="w-20 h-20 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                        <svg class="w-20 h-20 text-gray-300 mx-auto mb-6" fill="none" stroke="currentColor"
+                            viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"
+                                d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                         </svg>
                         <h3 class="text-2xl font-semibold text-gray-900 mb-3">Sepetiniz Boş</h3>
-                        <p class="text-gray-500 mb-8 text-lg">Harika ürünlerle sepetinizi doldurun ve öğrencileri destekleyin!</p>
-                        <a href="/products" class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg">
+                        <p class="text-gray-500 mb-8 text-lg">Harika ürünlerle sepetinizi doldurun ve öğrencileri
+                            destekleyin!</p>
+                        <a href="/products"
+                            class="inline-flex items-center px-8 py-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white font-semibold rounded-full hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                             </svg>
                             Ürünleri İncele
                         </a>
                     </div>
                 </div>
             </div>
-            
+
             <!-- Order Summary -->
             <div class="lg:col-span-4 mt-8 lg:mt-0">
-                <div id="order-summary" class="bg-white rounded-2xl shadow-sm border border-gray-100 sticky top-8" style="display: none;">
+                <div id="order-summary" class="bg-white rounded-2xl shadow-sm border border-gray-100 sticky top-8"
+                    style="display: none;">
                     <!-- Summary Header -->
                     <div class="p-6 border-b border-gray-100">
                         <h2 class="text-xl font-semibold text-gray-900">Sipariş Özeti</h2>
                     </div>
-                    
+
                     <div class="p-6 space-y-6">
                         <!-- Price Breakdown -->
                         <div class="space-y-3">
@@ -76,22 +94,25 @@ if (!$current_user) {
                                 <span>Ara Toplam</span>
                                 <span id="subtotal" class="font-medium">₺0.00</span>
                             </div>
-                            
+
                             <div class="flex justify-between text-gray-600">
                                 <span>Kargo</span>
                                 <span class="text-green-600 font-medium">Ücretsiz</span>
                             </div>
                         </div>
-                        
+
                         <!-- Student Support Details -->
                         <div class="bg-gradient-to-r from-blue-50 to-purple-50 rounded-xl p-4 border border-blue-100">
                             <h3 class="font-semibold text-gray-900 mb-3 flex items-center">
-                                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253"></path>
+                                <svg class="w-5 h-5 mr-2 text-blue-600" fill="none" stroke="currentColor"
+                                    viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M12 6.253v13m0-13C10.832 5.477 9.246 5 7.5 5S4.168 5.477 3 6.253v13C4.168 18.477 5.754 18 7.5 18s3.332.477 4.5 1.253m0-13C13.168 5.477 14.754 5 16.5 5c1.747 0 3.332.477 4.5 1.253v13C19.832 18.477 18.246 18 16.5 18c-1.746 0-3.332.477-4.5 1.253">
+                                    </path>
                                 </svg>
                                 Öğrenci Desteği Detayları
                             </h3>
-                            
+
                             <div class="space-y-2 text-sm">
                                 <div class="flex justify-between">
                                     <span class="text-gray-600">Doğal Kazanç (%10)</span>
@@ -109,7 +130,7 @@ if (!$current_user) {
                                 </div>
                             </div>
                         </div>
-                        
+
                         <!-- Final Total -->
                         <div class="border-t border-gray-200 pt-4">
                             <div class="flex justify-between text-xl font-bold">
@@ -117,19 +138,18 @@ if (!$current_user) {
                                 <span id="final-total" class="text-blue-600">₺0.00</span>
                             </div>
                         </div>
-                        
+
                         <!-- Checkout Button -->
-                        <button
-                            onclick="proceedToCheckout()"
-                            id="checkout-btn"
-                            class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105"
-                        >
+                        <button onclick="proceedToCheckout()" id="checkout-btn"
+                            class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-4 rounded-xl font-bold text-lg hover:from-blue-700 hover:to-purple-700 transition-all shadow-lg hover:shadow-xl transform hover:scale-105">
                             <svg class="w-5 h-5 inline mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m0 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V9a2 2 0 00-2-2H9a2 2 0 00-2 2v10m8-12V7a4 4 0 00-8 0v2m8 6V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h8a2 2 0 002-2z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m0 4h10a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V9a2 2 0 00-2-2H9a2 2 0 00-2 2v10m8-12V7a4 4 0 00-8 0v2m8 6V9a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2h8a2 2 0 002-2z">
+                                </path>
                             </svg>
                             Ödemeye Geç
                         </button>
-                        
+
                         <div class="text-center">
                             <a href="/products" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
                                 ← Alışverişe devam et
@@ -143,85 +163,118 @@ if (!$current_user) {
 </div>
 
 <script>
-let cartItems = [];
-let subtotalAmount = 0;
+    let cartItems = [];
+    let subtotalAmount = 0;
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadCartItems();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadCartItems();
+    });
 
-async function loadCartItems() {
-    try {
-        // Loading skeleton'ı göster
-        document.getElementById('loading-skeleton').style.display = 'block';
-        document.getElementById('empty-cart').style.display = 'none';
-        document.getElementById('order-summary').style.display = 'none';
-        
-        const response = await apiCall('cart');
-        cartItems = response.data || [];
-        
-        console.log('Cart items loaded:', cartItems);
-        
-        // Loading skeleton'ı gizle
-        document.getElementById('loading-skeleton').style.display = 'none';
-        
-        if (cartItems.length === 0) {
+    async function loadCartItems() {
+        try {
+            // Loading skeleton'ı göster
+            document.getElementById('loading-skeleton').style.display = 'block';
+            document.getElementById('empty-cart').style.display = 'none';
+            document.getElementById('order-summary').style.display = 'none';
+
+            const response = await apiCall('cart');
+            const rawItems = response.items || [];
+
+            // BÜYÜK YAMA: Backend şu an sepetin içinde orijinal ürün resimlerini BİZE GÖNDERMİYOR!
+            // Çözüm olarak biz de ana ürün listesini arkada 1 kez çekip, sepetteki ürünlerin ID'sine bakıp resimlerini eşleştireceğiz.
+            try {
+                const allProductsResp = await apiCall('products');
+                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.data || []);
+
+                rawItems.forEach(cartItem => {
+                    // Sepetteki ürünün ID'si ile, gerçek listedeki ürünün ID'sini buluştur (Id .NET'ten büyük de küçük de gelebilir)
+                    const matchedProduct = allProductsList.find(p => p.id == cartItem.productId || p.Id == cartItem.productId);
+                    if (matchedProduct) {
+                        // Eğer eşleşirse, orijinal resimleri sepet öğesine kopyala!
+                        cartItem.imageUrls = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
+                    }
+                });
+            } catch (e) {
+                console.error("Resim eşleştirmesi için ana ürün dosyası çekilemedi:", e);
+            }
+
+            // Backendden gelen isimleri (.NET), sizin frontend izinlerinize (PHP) otomatik çeviriyoruz
+            cartItems = rawItems.map(item => ({
+                ...item,
+                id: item.id || item.Id,             // .NET büyük/küçük 'Id' koruması
+                price: item.unitPrice,
+                title: item.productName,
+                // Eşleştirdiğimiz orijinal resmi (imageUrls) buraya basıyoruz, eğer bulamadıysa boş bırakıp varsayılan resme düşürüyoruz:
+                images: item.imageUrls ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : []),
+                student_donation_percentage: Math.round((item.extraSupportRate || 0) * 100)
+            }));
+
+
+
+            console.log('Cart items loaded:', cartItems);
+
+            // Loading skeleton'ı gizle
+            document.getElementById('loading-skeleton').style.display = 'none';
+
+            if (cartItems.length === 0) {
+                document.getElementById('empty-cart').style.display = 'block';
+                document.getElementById('order-summary').style.display = 'none';
+                document.getElementById('clear-cart-btn').style.display = 'none'; // SEPET BOŞSA GİZLE
+                document.getElementById('cart-items-container').innerHTML = '';
+            } else {
+                document.getElementById('empty-cart').style.display = 'none';
+                document.getElementById('order-summary').style.display = 'block';
+                document.getElementById('clear-cart-btn').style.display = 'flex'; // SEPET DOLUYSA GÖSTER
+                displayCartItems();
+                updateOrderSummary();
+            }
+
+
+        } catch (error) {
+            console.error('Error loading cart:', error);
+            // Loading skeleton'ı gizle
+            document.getElementById('loading-skeleton').style.display = 'none';
+            // Boş sepet mesajını göster
             document.getElementById('empty-cart').style.display = 'block';
             document.getElementById('order-summary').style.display = 'none';
-            // Cart items container'ı temizle
             document.getElementById('cart-items-container').innerHTML = '';
+            showToast('Sepet yüklenirken hata oluştu', 'error');
+        }
+    }
+
+    function displayCartItems() {
+        const container = document.getElementById('cart-items-container');
+
+        if (!cartItems || cartItems.length === 0) {
+            container.innerHTML = '';
+            document.getElementById('empty-cart').style.display = 'block';
+            document.getElementById('order-summary').style.display = 'none';
+            return;
+        }
+
+        container.innerHTML = cartItems.map(item => createCartItemHTML(item)).join('');
+        document.getElementById('empty-cart').style.display = 'none';
+        document.getElementById('order-summary').style.display = 'block';
+    }
+
+    function createCartItemHTML(item) {
+        const itemTotal = item.price * item.quantity;
+        const naturalSupport = itemTotal * 0.10; // %10 doğal kazanç
+        const extraSupport = itemTotal * (item.student_donation_percentage || 0) / 100;
+        const totalItemSupport = naturalSupport + extraSupport;
+
+        // Resim yolunu düzelt
+        let imageUrl = '';
+        if (item.images && item.images.length > 0) {
+            imageUrl = item.images[0];
+            if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+                imageUrl = '/' + imageUrl;
+            }
         } else {
-            document.getElementById('empty-cart').style.display = 'none';
-            document.getElementById('order-summary').style.display = 'block';
-            displayCartItems();
-            updateOrderSummary();
+            imageUrl = '/media/68a658361732a_1755732022.jpg';
         }
-        
-    } catch (error) {
-        console.error('Error loading cart:', error);
-        // Loading skeleton'ı gizle
-        document.getElementById('loading-skeleton').style.display = 'none';
-        // Boş sepet mesajını göster
-        document.getElementById('empty-cart').style.display = 'block';
-        document.getElementById('order-summary').style.display = 'none';
-        document.getElementById('cart-items-container').innerHTML = '';
-        showToast('Sepet yüklenirken hata oluştu', 'error');
-    }
-}
 
-function displayCartItems() {
-    const container = document.getElementById('cart-items-container');
-    
-    if (!cartItems || cartItems.length === 0) {
-        container.innerHTML = '';
-        document.getElementById('empty-cart').style.display = 'block';
-        document.getElementById('order-summary').style.display = 'none';
-        return;
-    }
-    
-    container.innerHTML = cartItems.map(item => createCartItemHTML(item)).join('');
-    document.getElementById('empty-cart').style.display = 'none';
-    document.getElementById('order-summary').style.display = 'block';
-}
-
-function createCartItemHTML(item) {
-    const itemTotal = item.price * item.quantity;
-    const naturalSupport = itemTotal * 0.10; // %10 doğal kazanç
-    const extraSupport = itemTotal * (item.student_donation_percentage || 0) / 100;
-    const totalItemSupport = naturalSupport + extraSupport;
-    
-    // Resim yolunu düzelt
-    let imageUrl = '';
-    if (item.images && item.images.length > 0) {
-        imageUrl = item.images[0];
-        if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-            imageUrl = '/' + imageUrl;
-        }
-    } else {
-        imageUrl = '/media/68a658361732a_1755732022.jpg';
-    }
-    
-    return `
+        return `
         <div class="p-6" data-item-id="${item.id}">
             <div class="flex items-start space-x-4">
                 <!-- Product Image -->
@@ -388,226 +441,261 @@ function createCartItemHTML(item) {
             </div>
         </div>
     `;
-}
+    }
 
-// Slider artık her zaman açık, toggle fonksiyonuna gerek yok
+    // Slider artık her zaman açık, toggle fonksiyonuna gerek yok
 
-// Sadece slider görünümünü güncelle, uygulamaz
-function updateSliderDisplay(itemId, percentage) {
-    percentage = Math.max(0, Math.min(50, parseInt(percentage) || 0));
-    
-    // Sadece preview'ı güncelle
-    document.getElementById(`slider-preview-${itemId}`).textContent = percentage;
-    
-    // Manuel input'u da güncelle
-    document.getElementById(`manual-${itemId}`).value = percentage;
-}
+    // Sadece slider görünümünü güncelle, uygulamaz
+    function updateSliderDisplay(itemId, percentage) {
+        percentage = Math.max(0, Math.min(50, parseInt(percentage) || 0));
 
-// Slider değerini uygula
-function applySliderSupport(itemId) {
-    const sliderValue = document.getElementById(`slider-${itemId}`).value;
-    updateItemSupport(itemId, sliderValue);
-}
+        // Sadece preview'ı güncelle
+        document.getElementById(`slider-preview-${itemId}`).textContent = percentage;
 
-// Manuel input'u uygula  
-function applyManualSupport(itemId) {
-    const manualValue = document.getElementById(`manual-${itemId}`).value;
-    updateItemSupport(itemId, manualValue);
-}
-
-// Gerçek güncelleme fonksiyonu
-async function updateItemSupport(itemId, percentage) {
-    const item = cartItems.find(i => i.id === itemId);
-    if (!item) return;
-    
-    percentage = Math.max(0, Math.min(100, parseInt(percentage) || 0));
-    
-    try {
-        // Sunucuya kaydet
-        await apiCall(`cart/${itemId}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                student_donation_percentage: percentage
-            })
-        });
-        
-        // Yerel state'i güncelle
-        item.student_donation_percentage = percentage;
-        
-        // Tüm UI elementlerini güncelle
-        document.getElementById(`percentage-${itemId}`).textContent = percentage;
-        document.getElementById(`slider-${itemId}`).value = Math.min(percentage, 50);
+        // Manuel input'u da güncelle
         document.getElementById(`manual-${itemId}`).value = percentage;
-        document.getElementById(`slider-preview-${itemId}`).textContent = Math.min(percentage, 50);
-        
-        // Refresh display
-        displayCartItems();
-        updateOrderSummary();
-        
-        showToast(`Öğrenci desteği %${percentage} olarak güncellendi`, 'success');
-    } catch (error) {
-        console.error('Error updating support:', error);
-        showToast('Öğrenci desteği güncellenirken hata oluştu', 'error');
     }
-}
 
-
-
-function updateOrderSummary() {
-    // Calculate subtotal
-    subtotalAmount = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
-    
-    // Calculate student support
-    let totalNaturalSupport = 0;
-    let totalExtraSupport = 0;
-    
-    cartItems.forEach(item => {
-        const itemTotal = item.price * item.quantity;
-        totalNaturalSupport += itemTotal * 0.10; // %10 doğal
-        totalExtraSupport += itemTotal * (item.student_donation_percentage || 0) / 100;
-    });
-    
-    const totalStudentSupport = totalNaturalSupport + totalExtraSupport;
-    const finalTotal = subtotalAmount + totalStudentSupport;
-    
-    // Update UI
-    document.getElementById('subtotal').textContent = `₺${subtotalAmount.toFixed(2)}`;
-    document.getElementById('natural-support').textContent = `₺${totalNaturalSupport.toFixed(2)}`;
-    document.getElementById('extra-support').textContent = `₺${totalExtraSupport.toFixed(2)}`;
-    document.getElementById('total-student-support').textContent = `₺${totalStudentSupport.toFixed(2)}`;
-    document.getElementById('final-total').textContent = `₺${finalTotal.toFixed(2)}`;
-}
-
-async function updateQuantity(itemId, newQuantity) {
-    if (newQuantity <= 0) {
-        await removeFromCart(itemId);
-        return;
+    // Slider değerini uygula
+    function applySliderSupport(itemId) {
+        const sliderValue = document.getElementById(`slider-${itemId}`).value;
+        updateItemSupport(itemId, sliderValue);
     }
-    
-    try {
-        // Sunucuya kaydet
-        await apiCall(`cart/${itemId}`, {
-            method: 'PUT',
-            body: JSON.stringify({
-                quantity: newQuantity
-            })
-        });
-        
-        // Update local state
+
+    // Manuel input'u uygula  
+    function applyManualSupport(itemId) {
+        const manualValue = document.getElementById(`manual-${itemId}`).value;
+        updateItemSupport(itemId, manualValue);
+    }
+
+    // Gerçek güncelleme fonksiyonu
+    async function updateItemSupport(itemId, percentage) {
         const item = cartItems.find(i => i.id === itemId);
-        if (item) {
-            item.quantity = newQuantity;
+        if (!item) return;
+
+        percentage = Math.max(0, Math.min(100, parseInt(percentage) || 0));
+
+        try {
+            // Sunucuya kaydet (.NET backend formatına tamamen uygun)
+            await apiCall(`cart/items/${itemId}`, {
+                method: 'PUT',
+
+                body: JSON.stringify({
+                    quantity: item.quantity,
+                    extraSupportRate: (percentage / 100) // Yüzdeyi 0.25 gibi ondalığı çeviriyoruz
+                })
+            });
+
+
+            // Yerel state'i güncelle
+            item.student_donation_percentage = percentage;
+
+            // Tüm UI elementlerini güncelle
+            document.getElementById(`percentage-${itemId}`).textContent = percentage;
+            document.getElementById(`slider-${itemId}`).value = Math.min(percentage, 50);
+            document.getElementById(`manual-${itemId}`).value = percentage;
+            document.getElementById(`slider-preview-${itemId}`).textContent = Math.min(percentage, 50);
+
+            // Refresh display
             displayCartItems();
             updateOrderSummary();
-        }
-        
-        showToast('Miktar güncellendi', 'success');
-        updateCartCount();
-        
-    } catch (error) {
-        showToast('Miktar güncellenirken hata oluştu', 'error');
-        loadCartItems(); // Reload to get correct state
-    }
-}
 
-async function removeFromCart(itemId) {
-    try {
-        await apiCall(`cart/${itemId}`, { method: 'DELETE' });
-        
-        // Remove from local state
-        cartItems = cartItems.filter(item => item.id !== itemId);
-        
-        if (cartItems.length === 0) {
+            showToast(`Öğrenci desteği %${percentage} olarak güncellendi`, 'success');
+        } catch (error) {
+            console.error('Error updating support:', error);
+            showToast('Öğrenci desteği güncellenirken hata oluştu', 'error');
+        }
+    }
+
+
+
+    function updateOrderSummary() {
+        // Calculate subtotal
+        subtotalAmount = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+
+        // Calculate student support
+        let totalNaturalSupport = 0;
+        let totalExtraSupport = 0;
+
+        cartItems.forEach(item => {
+            const itemTotal = item.price * item.quantity;
+            totalNaturalSupport += itemTotal * 0.10; // %10 doğal
+            totalExtraSupport += itemTotal * (item.student_donation_percentage || 0) / 100;
+        });
+
+        const totalStudentSupport = totalNaturalSupport + totalExtraSupport;
+        const finalTotal = subtotalAmount + totalStudentSupport;
+
+        // Update UI
+        document.getElementById('subtotal').textContent = `₺${subtotalAmount.toFixed(2)}`;
+        document.getElementById('natural-support').textContent = `₺${totalNaturalSupport.toFixed(2)}`;
+        document.getElementById('extra-support').textContent = `₺${totalExtraSupport.toFixed(2)}`;
+        document.getElementById('total-student-support').textContent = `₺${totalStudentSupport.toFixed(2)}`;
+        document.getElementById('final-total').textContent = `₺${finalTotal.toFixed(2)}`;
+    }
+
+    async function updateQuantity(itemId, newQuantity) {
+        if (newQuantity <= 0) {
+            await removeFromCart(itemId);
+            return;
+        }
+
+        try {
+            const itemToUpdate = cartItems.find(i => i.id === itemId);
+
+            // Sunucuya kaydet (.NET backend formatına tamamen uygun)
+            await apiCall(`cart/items/${itemId}`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    quantity: newQuantity,
+                    extraSupportRate: (itemToUpdate.student_donation_percentage || 0) / 100
+                })
+            });
+
+
+
+            // Update local state
+            const item = cartItems.find(i => i.id === itemId);
+            if (item) {
+                item.quantity = newQuantity;
+                displayCartItems();
+                updateOrderSummary();
+            }
+
+            showToast('Miktar güncellendi', 'success');
+            updateCartCount();
+
+        } catch (error) {
+            showToast('Miktar güncellenirken hata oluştu', 'error');
+            loadCartItems(); // Reload to get correct state
+        }
+    }
+
+    async function removeFromCart(itemId) {
+        try {
+            await apiCall(`cart/items/${itemId}`, { method: 'DELETE' });
+
+            // Remove from local state
+
+            cartItems = cartItems.filter(item => item.id !== itemId);
+
+            if (cartItems.length === 0) {
+                document.getElementById('empty-cart').style.display = 'block';
+                document.getElementById('order-summary').style.display = 'none';
+                document.getElementById('clear-cart-btn').style.display = 'none'; // BUTONU GİZLE
+                document.getElementById('cart-items-container').innerHTML = '';
+            } else {
+
+                displayCartItems();
+                updateOrderSummary();
+            }
+
+            updateCartCount();
+            showToast('Ürün sepetten kaldırıldı', 'success');
+
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+    async function clearCart() {
+        if (!await openCustomModal('Sepetinizdeki tüm ürünleri silmek istediğinize emin misiniz?')) return;
+
+        try {
+            // .NET Backend'in sepeti temizleme adresine ana DELETE isteğini atıyoruz
+            await apiCall('cart', { method: 'DELETE' });
+
+            // Arayüzü başarılı bir şekilde boş gösteriyoruz
+            cartItems = [];
             document.getElementById('empty-cart').style.display = 'block';
             document.getElementById('order-summary').style.display = 'none';
+            document.getElementById('clear-cart-btn').style.display = 'none'; // BUTONU GİZLE
             document.getElementById('cart-items-container').innerHTML = '';
-        } else {
-            displayCartItems();
-            updateOrderSummary();
+
+
+            updateCartCount(); // Üst menüdeki sayacı "0" yapar
+            showToast('Sepet başarıyla boşaltıldı', 'success');
+        } catch (error) {
+            showToast('Sepet boşaltılırken hata oluştu', 'error');
         }
-        
-        updateCartCount();
-        showToast('Ürün sepetten kaldırıldı', 'success');
-        
-    } catch (error) {
-        showToast(error.message, 'error');
     }
-}
 
-async function proceedToCheckout() {
-    if (cartItems.length === 0) {
-        showToast('Sepetiniz boş', 'error');
-        return;
+
+    async function proceedToCheckout() {
+        if (cartItems.length === 0) {
+            showToast('Sepetiniz boş', 'error');
+            return;
+        }
+
+        // Redirect to checkout with support data
+        const checkoutData = {
+            items: cartItems.map(item => ({
+                id: item.id,
+                product_id: item.productId,   // backend camelCase ile geliyor
+                quantity: item.quantity,
+                student_donation_percentage: item.student_donation_percentage || 0
+            }))
+        };
+
+        // Store checkout data in sessionStorage
+        sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
+
+        window.location.href = '/checkout';
     }
-    
-    // Redirect to checkout with support data
-    const checkoutData = {
-        items: cartItems.map(item => ({
-            id: item.id,
-            product_id: item.product_id,
-            quantity: item.quantity,
-            student_donation_percentage: item.student_donation_percentage || 0
-        }))
-    };
-    
-    // Store checkout data in sessionStorage
-    sessionStorage.setItem('checkoutData', JSON.stringify(checkoutData));
-    
-    window.location.href = '/checkout';
-}
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text || '';
-    return div.innerHTML;
-}
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text || '';
+        return div.innerHTML;
+    }
+
+
 </script>
 
 <style>
-/* Custom range slider styles */
-.slider::-webkit-slider-thumb {
-    appearance: none;
-    height: 24px;
-    width: 24px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    cursor: pointer;
-    border: 3px solid #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: all 0.2s ease;
-}
+    /* Custom range slider styles */
+    .slider::-webkit-slider-thumb {
+        appearance: none;
+        height: 24px;
+        width: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        cursor: pointer;
+        border: 3px solid #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+    }
 
-.slider::-webkit-slider-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
+    .slider::-webkit-slider-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
 
-.slider::-moz-range-thumb {
-    height: 24px;
-    width: 24px;
-    border-radius: 50%;
-    background: linear-gradient(135deg, #8b5cf6, #ec4899);
-    cursor: pointer;
-    border: 3px solid #ffffff;
-    box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-    transition: all 0.2s ease;
-}
+    .slider::-moz-range-thumb {
+        height: 24px;
+        width: 24px;
+        border-radius: 50%;
+        background: linear-gradient(135deg, #8b5cf6, #ec4899);
+        cursor: pointer;
+        border: 3px solid #ffffff;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.15);
+        transition: all 0.2s ease;
+    }
 
-.slider::-moz-range-thumb:hover {
-    transform: scale(1.1);
-    box-shadow: 0 6px 12px rgba(0,0,0,0.2);
-}
+    .slider::-moz-range-thumb:hover {
+        transform: scale(1.1);
+        box-shadow: 0 6px 12px rgba(0, 0, 0, 0.2);
+    }
 
-/* Slider track styles */
-.slider::-webkit-slider-track {
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #e0e7ff 0%, #c7d2fe 50%, #ddd6fe 100%);
-}
+    /* Slider track styles */
+    .slider::-webkit-slider-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #e0e7ff 0%, #c7d2fe 50%, #ddd6fe 100%);
+    }
 
-.slider::-moz-range-track {
-    height: 8px;
-    border-radius: 4px;
-    background: linear-gradient(90deg, #e0e7ff 0%, #c7d2fe 50%, #ddd6fe 100%);
-}
+    .slider::-moz-range-track {
+        height: 8px;
+        border-radius: 4px;
+        background: linear-gradient(90deg, #e0e7ff 0%, #c7d2fe 50%, #ddd6fe 100%);
+    }
 </style>

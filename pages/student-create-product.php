@@ -84,25 +84,25 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
                 </div>
 
                 <!-- Shop Selection -->
-               <div>
-    <label for="shop_id" class="block text-sm font-medium text-gray-700 mb-2">
-        Mağaza Seçin
-    </label>
-    <select id="shop_id" name="shop_id" class="w-full" required>
-        <option value="">Mağaza seçin...</option>
-    </select>
-    <p class="text-xs text-gray-500 mt-1">Ürünün satılacağı mağazayı seçin</p>
-</div>
+                <div>
+                    <label for="shop_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Mağaza Seçin
+                    </label>
+                    <select id="shop_id" name="shop_id" class="w-full" required>
+                        <option value="">Mağaza seçin...</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Ürünün satılacağı mağazayı seçin</p>
+                </div>
 
-<div>
-    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
-        Kategori Seçin
-    </label>
-    <select id="category_id" name="category_id" class="w-full" required>
-        <option value="">Kategori seçin...</option>
-    </select>
-    <p class="text-xs text-gray-500 mt-1">Ürünün ait olduğu kategoriyi seçin</p>
-</div>
+                <div>
+                    <label for="category_id" class="block text-sm font-medium text-gray-700 mb-2">
+                        Kategori Seçin
+                    </label>
+                    <select id="category_id" name="category_id" class="w-full" required>
+                        <option value="">Kategori seçin...</option>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Ürünün ait olduğu kategoriyi seçin</p>
+                </div>
 
                 <!-- Additional Info -->
                 <div class="bg-blue-50 p-4 rounded-lg">
@@ -136,64 +136,76 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
 <script>
     let selectedImages = [];
 
-   document.addEventListener('DOMContentLoaded', function () {
-    loadShops();
-    loadCategories(); // BUNU EKLEDİK
-    document.getElementById('create-product-form').addEventListener('submit', handleCreateProduct);
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadShops();
+        loadCategories(); // BUNU EKLEDİK
+        document.getElementById('create-product-form').addEventListener('submit', handleCreateProduct);
+    });
 
-   async function loadShops() {
-    try {
-        const token = localStorage.getItem('auth_token');
-        const res = await fetch(`${API_BASE}/api/Products/merchants`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (!res.ok) throw new Error('Mağazalar yüklenemedi');
-        const merchants = await res.json();
+    async function loadShops() {
+        try {
+            // Merkezi apiCall() kullanıyoruz — token, base URL ve hata yönetimi otomatik
+            const merchants = await apiCall('Products/merchants');
+            const list = Array.isArray(merchants) ? merchants : (merchants.data || []);
 
-        const select = document.getElementById('shop_id');
-        select.innerHTML = '<option value="">Mağaza seçin...</option>' +
-            merchants.map(m => `
-                <option value="${m.id}">${escapeHtml(m.fullName)}</option>
-            `).join('');
-    } catch (error) {
-        console.error('Error loading merchants:', error);
+            const select = document.getElementById('shop_id');
+            if (list.length === 0) {
+                select.innerHTML = '<option value="">Aktif mağaza bulunamadı</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Mağaza seçin...</option>' +
+                list.map(m =>
+                    `<option value="${m.id}">${escapeHtml(m.fullName)}</option>`
+                ).join('');
+        } catch (error) {
+            console.error('Error loading merchants:', error);
+            showToast('Mağaza listesi yüklenemedi. Lütfen sayfayı yenileyin.', 'error');
+        }
     }
-}
-async function loadCategories() {
-    try {
-        const token = localStorage.getItem('auth_token');
-        // Backend'deki Kategori endpoint'inin bu olduğunu varsayıyoruz. 
-        // Arkadaşın farklı bir isim verdiyse (örn: api/Category) burayı ona göre güncellersin.
-        const res = await fetch(`${API_BASE}/api/Categories`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-        
-        if (!res.ok) throw new Error('Kategoriler yüklenemedi');
-        const categories = await res.json();
+    async function loadCategories() {
+        try {
+            // Merkezi apiCall() kullanıyoruz
+            const categories = await apiCall('Categories');
+            const list = Array.isArray(categories) ? categories : (categories.data || []);
 
-        const select = document.getElementById('category_id');
-        select.innerHTML = '<option value="">Kategori seçin...</option>' +
-            categories.map(c => `
-                <option value="${c.id}">${escapeHtml(c.name)}</option>
-            `).join('');
-    } catch (error) {
-        console.error('Error loading categories:', error);
+            const select = document.getElementById('category_id');
+            if (list.length === 0) {
+                select.innerHTML = '<option value="">Kategori bulunamadı</option>';
+                return;
+            }
+            select.innerHTML = '<option value="">Kategori seçin...</option>' +
+                list.map(c =>
+                    `<option value="${c.id}">${escapeHtml(c.name)}</option>`
+                ).join('');
+        } catch (error) {
+            console.error('Error loading categories:', error);
+            showToast('Kategori listesi yüklenemedi.', 'error');
+        }
     }
-}
-
 
     function handleImageUpload(event) {
         const files = Array.from(event.target.files);
 
-        if (files.length > 5) {
-            showToast('Maksimum 5 fotoğraf yükleyebilirsiniz', 'error');
+        // 1. Kullanıcı pencerede 'İptal'e basarsa eski fotoğrafların kaybolmasını engelle
+        if (files.length === 0) return;
+
+        // 2. Yeni seçilenleri eskilerin üzerine ekle (Append mantığı)
+        const totalImages = selectedImages.length + files.length;
+
+        if (totalImages > 5) {
+            showToast('Toplam maksimum 5 fotoğraf yükleyebilirsiniz', 'error');
+            event.target.value = ''; // İptal olduysa bile input'u temizle
             return;
         }
 
-        selectedImages = files;
+        selectedImages = [...selectedImages, ...files];
+
+        // 3. Input seçim geçmişini sıfırla ki, kullanıcı sildiği bir fotoğrafı tekrar seçebilsin
+        event.target.value = '';
+
         displayImagePreviews();
     }
+
 
     function displayImagePreviews() {
         const container = document.getElementById('image-previews');
@@ -234,51 +246,64 @@ async function loadCategories() {
         fileInput.files = dt.files;
     }
 
-   async function handleCreateProduct(e) {
-    e.preventDefault();
+    async function handleCreateProduct(e) {
+        e.preventDefault();
 
-    if (selectedImages.length === 0) {
-        showToast('En az bir fotoğraf yüklemelisiniz', 'error');
-        return;
-    }
-
-    try {
-        showToast('Ürün oluşturuluyor...', 'info');
-
-        const token = localStorage.getItem('auth_token');
-       const formData = new FormData();
-formData.append('name', document.getElementById('title').value);
-formData.append('description', document.getElementById('description').value);
-formData.append('suggestedPrice', document.getElementById('suggested_price').value || '0');
-formData.append('merchantId', document.getElementById('shop_id').value);
-// YENİ EKLENEN KOD:
-const categoryId = document.getElementById('category_id').value;
-if(categoryId) formData.append('categoryId', categoryId);
-
-
-        // Fotoğrafları FormData'ya ekle — backend Supabase'e yükler
-        selectedImages.forEach(img => formData.append('photos', img));
-
-        const res = await fetch(`${API_BASE}/api/Products`, {
-            method: 'POST',
-            headers: {
-                'Authorization': `Bearer ${token}`
-                // Content-Type EKLEME — FormData otomatik boundary ekler
-            },
-            body: formData
-        });
-
-        if (!res.ok) {
-            const data = await res.json();
-            throw new Error(data.error || data.message || 'Ürün eklenemedi');
+        if (selectedImages.length === 0) {
+            showToast('En az bir fotoğraf yüklemelisiniz', 'error');
+            return;
         }
 
-        showToast('Ürün başarıyla paylaşıldı! Esnaf onayını bekliyor.', 'success');
-        setTimeout(() => { window.location.href = '/student/products'; }, 2000);
-    } catch (error) {
-        showToast(error.message, 'error');
+        // Butonu bul, yedekle ve deaktif et (Çift gönderme engeli)
+        const submitBtn = e.target.querySelector('button[type="submit"]');
+        const originalBtnText = submitBtn.innerHTML;
+        submitBtn.disabled = true;
+        submitBtn.innerHTML = 'Yükleniyor...';
+
+        try {
+            // showToast('Ürün oluşturuluyor...', 'info'); // UI'da buton yazısı değiştiği için bu kalabalık kaldırılabilir (opsiyonel)
+
+            const token = localStorage.getItem('auth_token');
+            const formData = new FormData();
+            formData.append('name', document.getElementById('title').value);
+            formData.append('description', document.getElementById('description').value);
+            formData.append('suggestedPrice', document.getElementById('suggested_price').value || '0');
+            formData.append('merchantId', document.getElementById('shop_id').value);
+
+            const categoryId = document.getElementById('category_id').value;
+            if (categoryId) formData.append('categoryId', categoryId);
+
+            selectedImages.forEach(img => formData.append('photos', img));
+
+            const res = await fetch(`${API_BASE}/api/Products`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            if (!res.ok) {
+                let errorMsg = 'Ürün eklenirken bir ağ hatası oluştu.';
+                try {
+                    // Eğer server HTML fırlatırsa patlamasını engeller
+                    const data = await res.json();
+                    errorMsg = data.error || data.message || errorMsg;
+                } catch (jsonError) {
+                    errorMsg = `Sunucu Hatası (${res.status})`;
+                }
+                throw new Error(errorMsg);
+            }
+
+            showToast('Ürün başarıyla paylaşıldı! Esnaf onayını bekliyor.', 'success');
+            setTimeout(() => { window.location.href = '/student/products'; }, 2000);
+        } catch (error) {
+            showToast(error.message, 'error');
+            // Hata alınırsa butonu eski haline getir, tekrar denemeye izin ver
+            submitBtn.disabled = false;
+            submitBtn.innerHTML = originalBtnText;
+        }
     }
-}
 
 
     function escapeHtml(text) {

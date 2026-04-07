@@ -213,30 +213,51 @@ if (!isset($product_id) || !is_numeric($product_id)) {
     });
 
     async function loadProduct(productId) {
-        console.log('Loading product with ID:', productId);
+        console.log('Fetching real product data for ID:', productId);
 
         try {
-            const response = await apiCall(`products/${productId}`);
-            console.log('API Response:', response);
+            // BACKEND'DE ŞU AN TEKİL ÜRÜN ÇAĞIRMA (GET api/products/{id}) OLMADIĞI İÇİN:
+            // Mobil uygulamanın yaptığı gibi API'den tüm ürünleri çekip içinden bizimkini cımbızlıyoruz
+            const response = await apiCall('products');
 
-            if (!response || !response.id) {
-                console.error('Product not found in response');
-                showToast('Ürün bulunamadı', 'error');
-                window.location.href = '/products';
+            // Tüm ürünler içinden URL'deki ID ile eşleşen ürünü buluyoruz (.NET'ten 'Id' veya 'id' gelebilir)
+            const allProducts = Array.isArray(response) ? response : (response.data || []);
+            const foundProduct = allProducts.find(p => p.id == productId || p.Id == productId);
+
+            if (!foundProduct) {
+                console.error('Product not found in full list');
+                showToast('Ürün bulunamadı veya onaylanmamış.', 'error');
+                // Backend gelene kadar sayfadan atmasın diye redirect kapalı
+                // window.location.href = '/products';
                 return;
             }
 
-            currentProduct = response;
-            console.log('Current product set to:', currentProduct);
+            // Gelen gerçek datayı Frontend'in beklediği yapıya tam oturması için uyarlıyoruz
+            currentProduct = {
+                ...foundProduct,
+                id: foundProduct.id || foundProduct.Id,
+                title: foundProduct.name || foundProduct.title || foundProduct.Name,
+                price: foundProduct.finalPrice || foundProduct.suggestedPrice || foundProduct.SuggestedPrice,
+                // Resimler varsa al, yoksa boş dizi yap (kodun kırılmasını önler)
+                images: foundProduct.imageUrls || foundProduct.ImageUrls || ['/media/68a658361732a_1755732022.jpg'],
+                description: foundProduct.description || "Bu ürünün detaylı açıklaması bulunmamaktadır.",
+                shop_name: foundProduct.merchantName || foundProduct.MerchantName || "Kampüs Esnafı"
+            };
 
-            displayProduct(currentProduct);
+            console.log('Real product set to:', currentProduct);
+
+            // Gerçekçi yüklenme süresi efekti
+            setTimeout(() => {
+                displayProduct(currentProduct);
+            }, 300);
 
         } catch (error) {
             console.error('Error loading product:', error);
             showToast('Ürün yüklenirken hata oluştu', 'error');
-            window.location.href = '/products';
         }
     }
+
+
 
     function displayProduct(product) {
         // Hide loading, show content
@@ -257,9 +278,17 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         // Set shop info
         if (product.shop_name) {
             document.getElementById('shop-name').textContent = product.shop_name;
-            document.getElementById('shop-address').textContent = product.shop_address || '';
-            document.getElementById('shop-link').href = `/shops/${product.shop_id || 1}`;
+            // Address ve Link gelmediği için koruma altına aldık
+            document.getElementById('shop-address').textContent = product.shop_address || 'Sistemde kayıtlı adres yok';
+
+            const shopLinkBtn = document.getElementById('shop-link');
+            shopLinkBtn.href = "#";
+            shopLinkBtn.onclick = function (e) {
+                e.preventDefault();
+                showToast('Mağaza profili özelliği yakında aktif edilecektir.', 'info');
+            };
         } else if (product.shop) {
+
             document.getElementById('shop-name').textContent = product.shop.name;
             document.getElementById('shop-address').textContent = product.shop.address || '';
             document.getElementById('shop-link').href = `/shops/${product.shop.id}`;
@@ -315,8 +344,11 @@ if (!isset($product_id) || !is_numeric($product_id)) {
 
         console.log('Setting up images:', images);
 
-        // Resim yolunu düzelt (/ ile başlaması için)
-        const imagePath = images[0].startsWith('/') ? images[0] : '/' + images[0];
+        // Resim yolunu düzelt (Gelen link "http" ile başlıyorsa başa / KOYMA!)
+        let imagePath = images[0];
+        if (!imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+            imagePath = '/' + imagePath;
+        }
 
         // Set main image
         mainImage.src = imagePath;
@@ -331,8 +363,12 @@ if (!isset($product_id) || !is_numeric($product_id)) {
 
             // Create thumbnails
             thumbnailsContainer.innerHTML = images.map((img, index) => {
-                const thumbPath = img.startsWith('/') ? img : '/' + img;
+                let thumbPath = img;
+                if (!thumbPath.startsWith('/') && !thumbPath.startsWith('http')) {
+                    thumbPath = '/' + thumbPath;
+                }
                 return `
+
                 <button 
                     onclick="setCurrentImage(${index})" 
                     class="w-16 h-16 rounded-lg overflow-hidden border-2 ${index === 0 ? 'border-blue-500' : 'border-gray-200'} hover:border-blue-300 transition-colors"
@@ -361,12 +397,14 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         currentImageIndex = index;
         const mainImage = document.getElementById('main-image');
 
-        // Resim yolunu düzelt
-        const imagePath = currentProduct.images[index].startsWith('/') ?
-            currentProduct.images[index] :
-            '/' + currentProduct.images[index];
+        // Resim yolunu düzelt (http korumalı)
+        let imagePath = currentProduct.images[index];
+        if (!imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+            imagePath = '/' + imagePath;
+        }
 
         mainImage.src = imagePath;
+
         console.log('Image changed to:', imagePath);
 
         // Update thumbnail borders
@@ -464,30 +502,23 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         console.log('Adding to cart:', { product_id: productId, quantity: qty });
 
         try {
-            // Doğrudan API çağrısı yap
-            const response = await fetch('/api/cart', {
+            // Sistemin kendi güvenli API çağrısını kullanıyoruz
+            const data = await apiCall('cart/items', {
                 method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                credentials: 'include',
                 body: JSON.stringify({
-                    product_id: productId,
+                    productId: productId,
                     quantity: qty
                 })
             });
 
-            const data = await response.json();
             console.log('Cart API response:', data);
 
-            if (response.ok && data.success) {
-                showToast('Ürün sepete eklendi!', 'success');
-                updateCartCount();
-            } else {
-                throw new Error(data.message || 'Sepete ekleme başarısız');
-            }
+            // API çağrısı başarılıysa buraya düşer
+            showToast('Ürün sepete eklendi!', 'success');
+            updateCartCount();
 
-        } catch (error) {
+        }
+        catch (error) {
             console.error('Cart error:', error);
             showToast(error.message || 'Sepete eklenirken hata oluştu', 'error');
         }

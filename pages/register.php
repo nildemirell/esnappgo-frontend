@@ -327,22 +327,13 @@ if (!res.ok) {
 
     throw new Error(userMessage);
 }
-                        if (res.ok) {
-    showToast('Hesabınız oluşturuldu! E-postanıza gönderilen kodu girin.', 'success');
 
-    form.dataset.success = 'true';
-
-    // Backend kuralı: kayıt sonrası OTP doğrulama ekranına yönlendir
-    setTimeout(() => {
-        window.location.href = '/verify-otp?email=' + encodeURIComponent(formData.get('email'));
-    }, 1500);
-
-    return;
-
-            } else {
-
-                showToast(response.message || 'Kayıt başarısız', 'error');
-            }
+// Başarılı kayıt
+showToast('Hesabınız oluşturuldu! E-postanıza gönderilen kodu girin.', 'success');
+form.dataset.success = 'true';
+setTimeout(() => {
+    window.location.href = '/verify-otp?email=' + encodeURIComponent(formData.get('email'));
+}, 1500);
             
         } catch (error) {
             // GÖREV 6: Network hatası ayrımı

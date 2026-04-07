@@ -547,7 +547,7 @@ async function editProduct(productId) {
 
 // Ürün askıya alma fonksiyonu
 async function suspendProduct(productId) {
-    if (!confirm('Bu ürünü askıya almak istediğinizden emin misiniz?')) {
+    if (!(await openCustomModal('Bu ürünü askıya almak istediğinizden emin misiniz?'))) {
         return;
     }
     
@@ -573,7 +573,7 @@ function viewProduct(productId) {
 
 // Ürünü yeniden aktifleştirme
 async function reactivateProduct(productId) {
-    if (!confirm('Bu ürünü tekrar aktifleştirmek istediğinizden emin misiniz?')) {
+    if (!(await openCustomModal('Bu ürünü tekrar aktifleştirmek istediğinizden emin misiniz?'))) {
         return;
     }
     

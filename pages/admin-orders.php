@@ -274,7 +274,7 @@ function viewOrderDetails(orderId) {
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-    if (!confirm('Sipariş durumunu değiştirmek istediğinizden emin misiniz?')) {
+    if (!(await openCustomModal('Sipariş durumunu değiştirmek istediğinizden emin misiniz?'))) {
         return;
     }
     

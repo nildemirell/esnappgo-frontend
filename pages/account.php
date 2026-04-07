@@ -891,7 +891,7 @@ if (!$current_user) {
 
             if (response.ok) {
                 if (typeof showToast === 'function') showToast('Kişisel bilgiler başarıyla güncellendi', 'success');
-                else alert('Kişisel bilgiler güncellendi');
+                else await openCustomModal('Kişisel bilgiler güncellendi', 'alert');
 
                 const phoneInput = document.getElementById('phone');
                 const editBtn = document.getElementById('edit-phone-btn');
@@ -909,7 +909,7 @@ if (!$current_user) {
             }
         } catch (error) {
             if (typeof showToast === 'function') showToast(error.message, 'error');
-            else alert(error.message);
+            else await openCustomModal(error.message, 'alert');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Değişiklikleri Kaydet';
@@ -927,7 +927,7 @@ if (!$current_user) {
 
         if (newPassword !== confirmPassword) {
             if (typeof showToast === 'function') showToast('Yeni şifreler eşleşmiyor', 'error');
-            else alert('Yeni şifreler eşleşmiyor');
+            else await openCustomModal('Yeni şifreler eşleşmiyor', 'alert');
             return;
         }
 
@@ -972,12 +972,12 @@ if (!$current_user) {
             if (!response.ok) throw new Error(data.message || data.error || 'Mevcut şifreniz yanlış veya bir hata oluştu.');
 
             if (typeof showToast === 'function') showToast('Şifreniz başarıyla değiştirildi!', 'success');
-            else alert('Şifreniz başarıyla değiştirildi!');
+            else await openCustomModal('Şifreniz başarıyla değiştirildi!', 'alert');
             e.target.reset();
 
         } catch (error) {
             if (typeof showToast === 'function') showToast(error.message, 'error');
-            else alert(error.message);
+            else await openCustomModal(error.message, 'alert');
         } finally {
             submitBtn.disabled = false;
             submitBtn.textContent = 'Şifreyi Değiştir';
@@ -989,13 +989,13 @@ if (!$current_user) {
         const formData = new FormData(e.target);
         if (formData.get('delete_confirmation') !== 'HESABI SİL') {
             if (typeof showToast === 'function') showToast('Onay metni hatalı', 'error');
-            else alert('Onay metni hatalı');
+            else await openCustomModal('Onay metni hatalı', 'alert');
             return;
         }
-        if (!confirm('Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!')) return;
+        if (!(await openCustomModal('Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!'))) return;
 
         if (typeof showToast === 'function') showToast('Hesap silme işlemi yakında eklenecek', 'info');
-        else alert('Hesap silme işlemi yakında eklenecek');
+        else await openCustomModal('Hesap silme işlemi yakında eklenecek', 'alert');
     }
 
     async function loadNotificationSettings() {
@@ -1060,10 +1060,10 @@ if (!$current_user) {
             });
             if (!response.ok) throw new Error('Ayarlar kaydedilirken bir hata oluştu.');
             if (typeof showToast === 'function') showToast('Bildirim ayarları güncellendi', 'success');
-            else alert('Bildirim ayarları güncellendi');
+            else await openCustomModal('Bildirim ayarları güncellendi', 'alert');
         } catch (error) {
             if (typeof showToast === 'function') showToast(error.message, 'error');
-            else alert(error.message);
+            else await openCustomModal(error.message, 'alert');
         } finally {
             btn.disabled = false;
             btn.textContent = 'Ayarları Kaydet';
@@ -1183,9 +1183,8 @@ if (!$current_user) {
         closeModal('card-modal');
         if (typeof showToast === 'function') showToast('Yeni kart eklendi (Önizleme)', 'success');
     });
-    // --- KART VE ADRES SİLME / DÜZENLEME FONKSİYONLARI ---
-    function deleteMockAddress(btn) {
-        if (confirm('Bu adresi silmek istediğinize emin misiniz?')) {
+    async function deleteMockAddress(btn) {
+        if (await openCustomModal('Bu adresi silmek istediğinize emin misiniz?')) {
             // Butonun bulunduğu en dıştaki adresi bul ve sil
             const addressCard = btn.closest('.group');
             if (addressCard) {
@@ -1195,9 +1194,9 @@ if (!$current_user) {
         }
     }
 
-    function editMockAddress(btn) {
+    async function editMockAddress(btn) {
         if (typeof showToast === 'function') showToast('Düzenleme özelliği backend bağlanınca aktif olacak', 'info');
-        else alert('Düzenleme özelliği backend bağlanınca aktif olacak');
+        else await openCustomModal('Düzenleme özelliği backend bağlanınca aktif olacak', 'alert');
     }
 </script>
 

@@ -356,18 +356,19 @@
     `;
 
         categories.forEach(category => {
-            const isSelected = currentFilters.category.includes(String(category.id));
+            const catId = category.id ?? category.categoryId;
+            const catName = category.name ?? category.categoryName ?? 'Kategori';
+            const isSelected = currentFilters.category.includes(String(catId));
             html += `
             <div class="category-group">
                 <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${isSelected ? 'bg-blue-50 text-blue-700' : ''}">
-                    <input type="checkbox" value="${category.id}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('${category.id}')">
+                    <input type="checkbox" value="${catId}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('${catId}')">
                     <span class="text-sm flex-1">
-                        ${category.icon ? category.icon + ' ' : ''}${escapeHtml(category.name)}
+                        ${category.icon ? category.icon + ' ' : ''}${escapeHtml(catName)}
                     </span>
-                    <span class="text-xs text-gray-400 ml-2">${category.product_count || 0}</span>
+                    <span class="text-xs text-gray-400 ml-2">${category.productCount ?? category.product_count ?? 0}</span>
                 </label>
         `;
-
             // Alt kategoriler
             if (category.children && category.children.length > 0) {
                 html += '<div class="ml-6 mt-1 space-y-1">';
@@ -377,7 +378,8 @@
                     <label class="flex items-center p-1.5 rounded cursor-pointer hover:bg-gray-50 transition text-sm ${isChildSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-600'}">
                         <input type="checkbox" value="${child.id}" ${isChildSelected ? 'checked' : ''} class="mr-2 text-blue-600 h-3 w-3 rounded" onchange="toggleCategory('${child.id}')">
                         <span class="flex-1">${child.icon ? child.icon + ' ' : ''}${escapeHtml(child.name)}</span>
-                        <span class="text-xs text-gray-400">${child.product_count || 0}</span>
+                      <span class="text-xs text-gray-400">${child.productCount ?? child.product_count ?? 0}</span>
+
                     </label>
                 `;
                 });
@@ -502,9 +504,10 @@
                 document.getElementById('search-input').value = '';
                 break;
             case 'category':
-                currentFilters.category = '';
+                currentFilters.category = [];
                 renderCategories();
                 break;
+
             case 'price':
                 currentFilters.minPrice = '';
                 currentFilters.maxPrice = '';
@@ -575,23 +578,25 @@
             const limit = 9;
             const offset = currentPage * limit;
 
-            let endpoint = `products?limit=${limit}&offset=${offset}`;
+            // Backend parametre isimleri: minPrice, maxPrice, search, categoryId
+            let params = new URLSearchParams();
 
             if (currentFilters.search) {
-                endpoint += `&search=${encodeURIComponent(currentFilters.search)}`;
+                params.set('search', currentFilters.search);
             }
             if (currentFilters.category && currentFilters.category.length > 0) {
-                endpoint += `&category=${currentFilters.category.join(',')}`;
+                // Backend tek bir categoryId (int?) kabul ediyor
+                params.set('categoryId', currentFilters.category[0]);
             }
-            if (currentFilters.minPrice) {
-                endpoint += `&min_price=${currentFilters.minPrice}`;
+            if (currentFilters.minPrice !== '' && currentFilters.minPrice !== null && currentFilters.minPrice !== undefined) {
+                params.set('minPrice', Number(currentFilters.minPrice));
             }
-            if (currentFilters.maxPrice) {
-                endpoint += `&max_price=${currentFilters.maxPrice}`;
+            if (currentFilters.maxPrice !== '' && currentFilters.maxPrice !== null && currentFilters.maxPrice !== undefined) {
+                params.set('maxPrice', Number(currentFilters.maxPrice));
             }
-            if (currentFilters.sort) {
-                endpoint += `&sort=${currentFilters.sort}`;
-            }
+
+            const queryString = params.toString();
+            let endpoint = queryString ? `products?${queryString}` : 'products';
 
             const response = await apiCall(endpoint);
             // .NET backend düz array dönerse onu al, dönmezse obje içindeki data'yı dene

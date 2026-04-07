@@ -13,7 +13,7 @@ if (!$current_user) {
             <h1 class="text-3xl font-bold text-gray-900 mb-2">Siparişlerim</h1>
             <p class="text-gray-600">Verdiğiniz siparişlerin durumunu takip edin</p>
         </div>
-        
+
         <!-- Orders List -->
         <div id="orders-container" class="space-y-6">
             <!-- Loading skeleton -->
@@ -35,11 +35,13 @@ if (!$current_user) {
                 </div>
             </div>
         </div>
-        
+
         <!-- Empty Orders -->
         <div id="empty-orders" class="text-center py-12" style="display: none;">
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2">
+                </path>
             </svg>
             <h3 class="text-lg font-medium text-gray-900 mb-2">Henüz siparişiniz yok</h3>
             <p class="text-gray-500 mb-6">İlk siparişinizi vermek için ürünleri incelemeye başlayın.</p>
@@ -55,9 +57,10 @@ if (!$current_user) {
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
         <!-- Backdrop -->
         <div class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75" onclick="closeOrderModal()"></div>
-        
+
         <!-- Modal Content -->
-        <div class="inline-block w-full max-w-3xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-2xl shadow-xl">
+        <div
+            class="inline-block w-full max-w-3xl my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-2xl shadow-xl">
             <!-- Modal Header -->
             <div class="bg-gradient-to-r from-purple-600 to-indigo-600 px-6 py-4">
                 <div class="flex items-center justify-between">
@@ -67,12 +70,13 @@ if (!$current_user) {
                     </div>
                     <button onclick="closeOrderModal()" class="text-white hover:text-gray-200 transition-colors">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </button>
                 </div>
             </div>
-            
+
             <!-- Modal Body -->
             <div id="modal-body" class="p-6 max-h-[70vh] overflow-y-auto">
                 <!-- Loading -->
@@ -80,7 +84,7 @@ if (!$current_user) {
                     <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mx-auto"></div>
                     <p class="mt-4 text-gray-500">Yükleniyor...</p>
                 </div>
-                
+
                 <!-- Content -->
                 <div id="modal-content" style="display: none;">
                     <!-- Status Badge -->
@@ -88,23 +92,29 @@ if (!$current_user) {
                         <span id="modal-status-badge" class="badge"></span>
                         <span id="modal-tracking" class="text-sm text-gray-500"></span>
                     </div>
-                    
+
                     <!-- Order Items -->
                     <div class="mb-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
+                            <svg class="w-5 h-5 mr-2 text-purple-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path>
                             </svg>
                             Sipariş Edilen Ürünler
                         </h4>
                         <div id="modal-items" class="space-y-4"></div>
                     </div>
-                    
+
                     <!-- Student Support Section -->
-                    <div id="modal-student-support" class="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200" style="display: none;">
+                    <div id="modal-student-support"
+                        class="mb-6 bg-gradient-to-r from-purple-50 to-indigo-50 rounded-xl p-5 border border-purple-200"
+                        style="display: none;">
                         <h4 class="text-lg font-semibold text-purple-800 mb-3 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z">
+                                </path>
                             </svg>
                             Öğrenci Desteği
                         </h4>
@@ -115,12 +125,15 @@ if (!$current_user) {
                             <span id="modal-total-donation" class="text-xl font-bold text-purple-600"></span>
                         </div>
                     </div>
-                    
+
                     <!-- Order Summary -->
                     <div class="bg-gray-50 rounded-xl p-5 mb-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path>
+                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z">
+                                </path>
                             </svg>
                             Sipariş Özeti
                         </h4>
@@ -129,7 +142,8 @@ if (!$current_user) {
                                 <span>Ara Toplam</span>
                                 <span id="modal-subtotal"></span>
                             </div>
-                            <div id="modal-support-row" class="flex justify-between text-purple-600" style="display: none;">
+                            <div id="modal-support-row" class="flex justify-between text-purple-600"
+                                style="display: none;">
                                 <span>Öğrenci Desteği</span>
                                 <span id="modal-support-amount"></span>
                             </div>
@@ -143,12 +157,14 @@ if (!$current_user) {
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Payment Info -->
                     <div class="bg-blue-50 rounded-xl p-5">
                         <h4 class="text-lg font-semibold text-blue-800 mb-3 flex items-center">
                             <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"></path>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z">
+                                </path>
                             </svg>
                             Ödeme Bilgileri
                         </h4>
@@ -159,16 +175,19 @@ if (!$current_user) {
                             </div>
                             <div id="modal-payment-proof-row" class="flex justify-between" style="display: none;">
                                 <span class="text-blue-600">Dekont</span>
-                                <a id="modal-payment-proof" href="#" target="_blank" class="font-medium text-blue-800 hover:underline">Görüntüle</a>
+                                <a id="modal-payment-proof" href="#" target="_blank"
+                                    class="font-medium text-blue-800 hover:underline">Görüntüle</a>
                             </div>
                         </div>
                     </div>
-                    
+
                     <!-- Timeline -->
                     <div id="modal-timeline" class="mt-6">
                         <h4 class="text-lg font-semibold text-gray-900 mb-4 flex items-center">
-                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <svg class="w-5 h-5 mr-2 text-gray-600" fill="none" stroke="currentColor"
+                                viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                             </svg>
                             Sipariş Durumu
                         </h4>
@@ -181,24 +200,24 @@ if (!$current_user) {
 </div>
 
 <script>
-document.addEventListener('DOMContentLoaded', function() {
-    loadOrders();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadOrders();
+    });
 
-async function loadOrders() {
-    try {
-        const response = await apiCall('orders');
-        const orders = response.data;
-        
-        const container = document.getElementById('orders-container');
-        
-        if (orders.length === 0) {
-            container.innerHTML = '';
-            document.getElementById('empty-orders').style.display = 'block';
-            return;
-        }
-        
-        container.innerHTML = orders.map(order => `
+    async function loadOrders() {
+        try {
+            const response = await apiCall('orders');
+            const orders = response.data;
+
+            const container = document.getElementById('orders-container');
+
+            if (orders.length === 0) {
+                container.innerHTML = '';
+                document.getElementById('empty-orders').style.display = 'block';
+                return;
+            }
+
+            container.innerHTML = orders.map(order => `
             <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
                 <!-- Order Header -->
                 <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100">
@@ -324,121 +343,121 @@ async function loadOrders() {
                 </div>
             </div>
         `).join('');
-        
-    } catch (error) {
-        console.error('Error loading orders:', error);
-        const container = document.getElementById('orders-container');
-        container.innerHTML = '<div class="text-center text-red-500 py-8">Siparişler yüklenirken hata oluştu.</div>';
-    }
-}
 
-function getStatusBadgeClass(status) {
-    switch (status) {
-        case 'pending':
-            return 'badge-warning';
-        case 'paid':
-            return 'badge-primary';
-        case 'shipped':
-            return 'badge-primary';
-        case 'delivered':
-            return 'badge-success';
-        case 'cancelled':
-        case 'refunded':
-            return 'badge-error';
-        default:
-            return 'badge-gray';
-    }
-}
-
-function getStatusText(status) {
-    switch (status) {
-        case 'pending':
-            return 'Beklemede';
-        case 'paid':
-            return 'Ödendi';
-        case 'shipped':
-            return 'Kargoya Verildi';
-        case 'delivered':
-            return 'Teslim Edildi';
-        case 'cancelled':
-            return 'İptal Edildi';
-        case 'refunded':
-            return 'İade Edildi';
-        default:
-            return 'Bilinmiyor';
-    }
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-function formatShortDate(dateString) {
-    if (!dateString) return '';
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-        day: 'numeric',
-        month: 'short',
-        hour: '2-digit',
-        minute: '2-digit'
-    });
-}
-
-async function cancelOrder(orderId) {
-    if (!confirm('Bu siparişi iptal etmek istediğinizden emin misiniz?')) {
-        return;
-    }
-    
-    try {
-        await apiCall(`orders/${orderId}/cancel`, { method: 'PUT' });
-        showToast('Sipariş iptal edildi', 'success');
-        loadOrders(); // Refresh the list
-    } catch (error) {
-        showToast(error.message, 'error');
-    }
-}
-
-async function viewOrderDetails(orderId) {
-    // Modal'ı aç
-    const modal = document.getElementById('order-detail-modal');
-    modal.style.display = 'block';
-    document.body.style.overflow = 'hidden';
-    
-    // Loading göster
-    document.getElementById('modal-loading').style.display = 'block';
-    document.getElementById('modal-content').style.display = 'none';
-    
-    try {
-        const response = await apiCall(`orders/${orderId}`);
-        const order = response.data;
-        
-        // Header bilgileri
-        document.getElementById('modal-order-number').textContent = `Sipariş #${order.order_number || order.id}`;
-        document.getElementById('modal-order-date').textContent = formatDate(order.created_at);
-        
-        // Status badge
-        const statusBadge = document.getElementById('modal-status-badge');
-        statusBadge.className = `badge ${getStatusBadgeClass(order.status)}`;
-        statusBadge.textContent = getStatusText(order.status);
-        
-        // Tracking number
-        const trackingEl = document.getElementById('modal-tracking');
-        if (order.tracking_number) {
-            trackingEl.innerHTML = `<span class="font-medium">Takip No:</span> ${order.tracking_number}`;
-        } else {
-            trackingEl.textContent = '';
+        } catch (error) {
+            console.error('Error loading orders:', error);
+            const container = document.getElementById('orders-container');
+            container.innerHTML = '<div class="text-center text-red-500 py-8">Siparişler yüklenirken hata oluştu.</div>';
         }
-        
-        // Order items
-        const itemsContainer = document.getElementById('modal-items');
-        itemsContainer.innerHTML = order.items.map(item => `
+    }
+
+    function getStatusBadgeClass(status) {
+        switch (status) {
+            case 'pending':
+                return 'badge-warning';
+            case 'paid':
+                return 'badge-primary';
+            case 'shipped':
+                return 'badge-primary';
+            case 'delivered':
+                return 'badge-success';
+            case 'cancelled':
+            case 'refunded':
+                return 'badge-error';
+            default:
+                return 'badge-gray';
+        }
+    }
+
+    function getStatusText(status) {
+        switch (status) {
+            case 'pending':
+                return 'Beklemede';
+            case 'paid':
+                return 'Ödendi';
+            case 'shipped':
+                return 'Kargoya Verildi';
+            case 'delivered':
+                return 'Teslim Edildi';
+            case 'cancelled':
+                return 'İptal Edildi';
+            case 'refunded':
+                return 'İade Edildi';
+            default:
+                return 'Bilinmiyor';
+        }
+    }
+
+    function formatDate(dateString) {
+        const date = new Date(dateString);
+        return date.toLocaleDateString('tr-TR', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    function formatShortDate(dateString) {
+        if (!dateString) return '';
+        const date = new Date(dateString);
+        return date.toLocaleDateString('tr-TR', {
+            day: 'numeric',
+            month: 'short',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    async function cancelOrder(orderId) {
+        if (!await openCustomModal('Bu siparişi iptal etmek istediğinizden emin misiniz?')) {
+            return;
+        }
+
+        try {
+            await apiCall(`orders/${orderId}/cancel`, { method: 'PUT' });
+            showToast('Sipariş iptal edildi', 'success');
+            loadOrders(); // Refresh the list
+        } catch (error) {
+            showToast(error.message, 'error');
+        }
+    }
+
+    async function viewOrderDetails(orderId) {
+        // Modal'ı aç
+        const modal = document.getElementById('order-detail-modal');
+        modal.style.display = 'block';
+        document.body.style.overflow = 'hidden';
+
+        // Loading göster
+        document.getElementById('modal-loading').style.display = 'block';
+        document.getElementById('modal-content').style.display = 'none';
+
+        try {
+            const response = await apiCall(`orders/${orderId}`);
+            const order = response.data;
+
+            // Header bilgileri
+            document.getElementById('modal-order-number').textContent = `Sipariş #${order.order_number || order.id}`;
+            document.getElementById('modal-order-date').textContent = formatDate(order.created_at);
+
+            // Status badge
+            const statusBadge = document.getElementById('modal-status-badge');
+            statusBadge.className = `badge ${getStatusBadgeClass(order.status)}`;
+            statusBadge.textContent = getStatusText(order.status);
+
+            // Tracking number
+            const trackingEl = document.getElementById('modal-tracking');
+            if (order.tracking_number) {
+                trackingEl.innerHTML = `<span class="font-medium">Takip No:</span> ${order.tracking_number}`;
+            } else {
+                trackingEl.textContent = '';
+            }
+
+            // Order items
+            const itemsContainer = document.getElementById('modal-items');
+            itemsContainer.innerHTML = order.items.map(item => `
             <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <div class="flex-shrink-0">
                     ${item.images && item.images.length > 0 ? `
@@ -468,26 +487,26 @@ async function viewOrderDetails(orderId) {
                 </div>
             </div>
         `).join('');
-        
-        // Student Support Section
-        const studentSupportSection = document.getElementById('modal-student-support');
-        if (order.student_support_total > 0) {
-            studentSupportSection.style.display = 'block';
-            
-            const donationDetails = document.getElementById('modal-donation-details');
-            if (order.donations && order.donations.length > 0) {
-                donationDetails.innerHTML = order.donations.map(donation => {
-                    const totalPercentage = parseFloat(donation.donation_percentage) || 10;
-                    const extraPercentage = Math.max(0, totalPercentage - 10);
-                    const donationAmount = parseFloat(donation.donation_amount) || 0;
-                    
-                    // Doğal ve ekstra katkıyı hesapla
-                    const naturalRatio = 10 / totalPercentage;
-                    const extraRatio = extraPercentage / totalPercentage;
-                    const naturalAmount = donationAmount * naturalRatio;
-                    const extraAmount = donationAmount * extraRatio;
-                    
-                    return `
+
+            // Student Support Section
+            const studentSupportSection = document.getElementById('modal-student-support');
+            if (order.student_support_total > 0) {
+                studentSupportSection.style.display = 'block';
+
+                const donationDetails = document.getElementById('modal-donation-details');
+                if (order.donations && order.donations.length > 0) {
+                    donationDetails.innerHTML = order.donations.map(donation => {
+                        const totalPercentage = parseFloat(donation.donation_percentage) || 10;
+                        const extraPercentage = Math.max(0, totalPercentage - 10);
+                        const donationAmount = parseFloat(donation.donation_amount) || 0;
+
+                        // Doğal ve ekstra katkıyı hesapla
+                        const naturalRatio = 10 / totalPercentage;
+                        const extraRatio = extraPercentage / totalPercentage;
+                        const naturalAmount = donationAmount * naturalRatio;
+                        const extraAmount = donationAmount * extraRatio;
+
+                        return `
                         <div class="bg-white rounded-lg p-3 border border-purple-100 mb-2">
                             <div class="font-medium text-purple-800 mb-2">${escapeHtml(donation.product_title || 'Ürün')}</div>
                             <div class="space-y-1 text-sm">
@@ -508,14 +527,14 @@ async function viewOrderDetails(orderId) {
                             </div>
                         </div>
                     `;
-                }).join('');
-            } else {
-                // Donations boşsa ama student_support_total varsa, genel bilgi göster
-                const subtotal = order.subtotal || (order.total_amount - order.student_support_total);
-                const naturalSupport = subtotal * 0.10;
-                const extraSupport = order.student_support_total - naturalSupport;
-                
-                donationDetails.innerHTML = `
+                    }).join('');
+                } else {
+                    // Donations boşsa ama student_support_total varsa, genel bilgi göster
+                    const subtotal = order.subtotal || (order.total_amount - order.student_support_total);
+                    const naturalSupport = subtotal * 0.10;
+                    const extraSupport = order.student_support_total - naturalSupport;
+
+                    donationDetails.innerHTML = `
                     <div class="space-y-2 text-sm">
                         <div class="flex justify-between text-blue-600">
                             <span>Doğal Kazanç (%10)</span>
@@ -529,57 +548,57 @@ async function viewOrderDetails(orderId) {
                         ` : ''}
                     </div>
                 `;
+                }
+
+                document.getElementById('modal-total-donation').textContent = `₺${parseFloat(order.student_support_total).toFixed(2)}`;
+
+                // Support row in summary
+                document.getElementById('modal-support-row').style.display = 'flex';
+                document.getElementById('modal-support-amount').textContent = `+₺${parseFloat(order.student_support_total).toFixed(2)}`;
+            } else {
+                studentSupportSection.style.display = 'none';
+                document.getElementById('modal-support-row').style.display = 'none';
             }
-            
-            document.getElementById('modal-total-donation').textContent = `₺${parseFloat(order.student_support_total).toFixed(2)}`;
-            
-            // Support row in summary
-            document.getElementById('modal-support-row').style.display = 'flex';
-            document.getElementById('modal-support-amount').textContent = `+₺${parseFloat(order.student_support_total).toFixed(2)}`;
-        } else {
-            studentSupportSection.style.display = 'none';
-            document.getElementById('modal-support-row').style.display = 'none';
-        }
-        
-        // Order Summary
-        const subtotal = order.subtotal || (order.total_amount - (order.student_support_total || 0));
-        document.getElementById('modal-subtotal').textContent = `₺${parseFloat(subtotal).toFixed(2)}`;
-        document.getElementById('modal-total').textContent = `₺${parseFloat(order.total_amount).toFixed(2)}`;
-        
-        // Payment Info
-        const paymentMethods = {
-            'bank_transfer': 'Havale/EFT',
-            'credit_card': 'Kredi Kartı',
-            'cash': 'Kapıda Ödeme'
-        };
-        document.getElementById('modal-payment-method').textContent = paymentMethods[order.payment_method] || order.payment_method || 'Havale/EFT';
-        
-        // Payment proof
-        const proofRow = document.getElementById('modal-payment-proof-row');
-        if (order.payment_id) {
-            proofRow.style.display = 'flex';
-            document.getElementById('modal-payment-proof').href = order.payment_id;
-        } else {
-            proofRow.style.display = 'none';
-        }
-        
-        // Timeline
-        const timelineContent = document.getElementById('modal-timeline-content');
-        const timelineSteps = [
-            { status: 'pending', label: 'Sipariş Alındı', date: order.created_at, icon: 'clipboard-list' },
-            { status: 'paid', label: 'Ödeme Onaylandı', date: order.status !== 'pending' && order.status !== 'cancelled' ? order.created_at : null, icon: 'check-circle' },
-            { status: 'shipped', label: 'Kargoya Verildi', date: order.shipped_at, icon: 'truck' },
-            { status: 'delivered', label: 'Teslim Edildi', date: order.delivered_at, icon: 'home' }
-        ];
-        
-        const statusOrder = ['pending', 'paid', 'shipped', 'delivered'];
-        const currentStatusIndex = statusOrder.indexOf(order.status);
-        
-        timelineContent.innerHTML = timelineSteps.map((step, index) => {
-            const isCompleted = index <= currentStatusIndex && order.status !== 'cancelled';
-            const isCurrent = statusOrder[index] === order.status;
-            
-            return `
+
+            // Order Summary
+            const subtotal = order.subtotal || (order.total_amount - (order.student_support_total || 0));
+            document.getElementById('modal-subtotal').textContent = `₺${parseFloat(subtotal).toFixed(2)}`;
+            document.getElementById('modal-total').textContent = `₺${parseFloat(order.total_amount).toFixed(2)}`;
+
+            // Payment Info
+            const paymentMethods = {
+                'bank_transfer': 'Havale/EFT',
+                'credit_card': 'Kredi Kartı',
+                'cash': 'Kapıda Ödeme'
+            };
+            document.getElementById('modal-payment-method').textContent = paymentMethods[order.payment_method] || order.payment_method || 'Havale/EFT';
+
+            // Payment proof
+            const proofRow = document.getElementById('modal-payment-proof-row');
+            if (order.payment_id) {
+                proofRow.style.display = 'flex';
+                document.getElementById('modal-payment-proof').href = order.payment_id;
+            } else {
+                proofRow.style.display = 'none';
+            }
+
+            // Timeline
+            const timelineContent = document.getElementById('modal-timeline-content');
+            const timelineSteps = [
+                { status: 'pending', label: 'Sipariş Alındı', date: order.created_at, icon: 'clipboard-list' },
+                { status: 'paid', label: 'Ödeme Onaylandı', date: order.status !== 'pending' && order.status !== 'cancelled' ? order.created_at : null, icon: 'check-circle' },
+                { status: 'shipped', label: 'Kargoya Verildi', date: order.shipped_at, icon: 'truck' },
+                { status: 'delivered', label: 'Teslim Edildi', date: order.delivered_at, icon: 'home' }
+            ];
+
+            const statusOrder = ['pending', 'paid', 'shipped', 'delivered'];
+            const currentStatusIndex = statusOrder.indexOf(order.status);
+
+            timelineContent.innerHTML = timelineSteps.map((step, index) => {
+                const isCompleted = index <= currentStatusIndex && order.status !== 'cancelled';
+                const isCurrent = statusOrder[index] === order.status;
+
+                return `
                 <div class="flex items-center space-x-3 ${isCompleted ? 'text-green-600' : 'text-gray-400'}">
                     <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-gray-100'}">
                         ${isCompleted ? `
@@ -598,11 +617,11 @@ async function viewOrderDetails(orderId) {
                     </div>
                 </div>
             `;
-        }).join('');
-        
-        // İptal durumu
-        if (order.status === 'cancelled') {
-            timelineContent.innerHTML += `
+            }).join('');
+
+            // İptal durumu
+            if (order.status === 'cancelled') {
+                timelineContent.innerHTML += `
                 <div class="flex items-center space-x-3 text-red-600 mt-3 pt-3 border-t border-gray-100">
                     <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center bg-red-100">
                         <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
@@ -614,64 +633,64 @@ async function viewOrderDetails(orderId) {
                     </div>
                 </div>
             `;
+            }
+
+            // Loading gizle, content göster
+            document.getElementById('modal-loading').style.display = 'none';
+            document.getElementById('modal-content').style.display = 'block';
+
+        } catch (error) {
+            console.error('Error loading order details:', error);
+            showToast('Sipariş detayları yüklenirken hata oluştu', 'error');
+            closeOrderModal();
         }
-        
-        // Loading gizle, content göster
-        document.getElementById('modal-loading').style.display = 'none';
-        document.getElementById('modal-content').style.display = 'block';
-        
-    } catch (error) {
-        console.error('Error loading order details:', error);
-        showToast('Sipariş detayları yüklenirken hata oluştu', 'error');
-        closeOrderModal();
     }
-}
 
-function closeOrderModal() {
-    const modal = document.getElementById('order-detail-modal');
-    modal.style.display = 'none';
-    document.body.style.overflow = '';
-}
-
-// ESC tuşu ile modal'ı kapat
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') {
-        closeOrderModal();
+    function closeOrderModal() {
+        const modal = document.getElementById('order-detail-modal');
+        modal.style.display = 'none';
+        document.body.style.overflow = '';
     }
-});
 
-async function reorderItems(orderId) {
-    try {
-        showToast('Ürünler sepete ekleniyor...', 'info');
-        
-        // Sipariş detaylarını al
-        const response = await apiCall(`orders/${orderId}`);
-        const order = response.data;
-        
-        // Her ürünü sepete ekle
-        for (const item of order.items) {
-            await apiCall('cart', {
-                method: 'POST',
-                body: JSON.stringify({
-                    product_id: item.product_id,
-                    quantity: item.quantity
-                })
-            });
+    // ESC tuşu ile modal'ı kapat
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') {
+            closeOrderModal();
         }
-        
-        showToast('Ürünler sepete eklendi!', 'success');
-        setTimeout(() => {
-            window.location.href = '/cart';
-        }, 1000);
-        
-    } catch (error) {
-        showToast(error.message || 'Bir hata oluştu', 'error');
-    }
-}
+    });
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+    async function reorderItems(orderId) {
+        try {
+            showToast('Ürünler sepete ekleniyor...', 'info');
+
+            // Sipariş detaylarını al
+            const response = await apiCall(`orders/${orderId}`);
+            const order = response.data;
+
+            // Her ürünü sepete ekle
+            for (const item of order.items) {
+                await apiCall('cart', {
+                    method: 'POST',
+                    body: JSON.stringify({
+                        product_id: item.product_id,
+                        quantity: item.quantity
+                    })
+                });
+            }
+
+            showToast('Ürünler sepete eklendi!', 'success');
+            setTimeout(() => {
+                window.location.href = '/cart';
+            }, 1000);
+
+        } catch (error) {
+            showToast(error.message || 'Bir hata oluştu', 'error');
+        }
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>

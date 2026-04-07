@@ -302,7 +302,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     }
 
     async function deleteCategory(id) {
-        if (!confirm('Bu kategoriyi silmek istediğinizden emin misiniz? (Soft Delete)')) return;
+        if (!(await openCustomModal('Bu kategoriyi silmek istediğinizden emin misiniz? (Soft Delete)'))) return;
 
         try {
             const token = localStorage.getItem('auth_token');

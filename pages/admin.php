@@ -19,7 +19,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <div class="text-right">
                         <p class="text-sm text-gray-500">Hoş geldiniz</p>
                         <p class="font-semibold text-gray-900">
-                            <?php echo htmlspecialchars($current_user['full_name']); ?></p>
+                            <?php echo htmlspecialchars($current_user['full_name']); ?>
+                        </p>
                     </div>
                     <div
                         class="w-12 h-12 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center">
@@ -125,7 +126,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                             <p class="text-sm text-gray-500">Fotoğraf çeken öğrenciler</p>
                         </div>
                     </div>
-                    <a href="/admin/users?role=student" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
+                    <a href="/admin/users?role=ogrenci" class="text-blue-600 hover:text-blue-700 text-sm font-medium">
                         Detay →
                     </a>
                 </div>
@@ -161,8 +162,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                             <p class="text-sm text-gray-500">Ürün onaylayan esnaflar</p>
                         </div>
                     </div>
-                    <a href="/admin/users?role=merchant"
-                        class="text-green-600 hover:text-green-700 text-sm font-medium">
+                    <a href="/admin/users?role=esnaf" class="text-green-600 hover:text-green-700 text-sm font-medium">
                         Detay →
                     </a>
                 </div>
@@ -197,8 +197,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                             <p class="text-sm text-gray-500">Alışveriş yapan müşteriler</p>
                         </div>
                     </div>
-                    <a href="/admin/users?role=customer"
+                    <a href="/admin/users?role=musteri"
                         class="text-purple-600 hover:text-purple-700 text-sm font-medium">
+
                         Detay →
                     </a>
                 </div>

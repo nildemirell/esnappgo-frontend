@@ -208,7 +208,11 @@ if ($current_user) {
                     showToast('Giriş başarılı! Yönlendiriliyorsunuz...', 'success');
                     setTimeout(() => {
                         const urlParams = new URLSearchParams(window.location.search);
-                        const redirect = urlParams.get('redirect') || '/dashboard';
+
+                        // API'den dönen role göre varsayılan sayfayı belirliyoruz
+                        let defaultRedirect = (response.role === 'admin') ? '/admin' : '/dashboard';
+
+                        const redirect = urlParams.get('redirect') || defaultRedirect;
                         window.location.href = redirect;
                     }, 1500);
                 } else {

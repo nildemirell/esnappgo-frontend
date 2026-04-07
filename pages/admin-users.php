@@ -36,12 +36,12 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         Rol
                     </label>
                     <select id="role-filter" class="w-full" onchange="filterUsers()">
-    <option value="">Tüm Roller</option>
-    <option value="musteri">Müşteri</option>
-    <option value="ogrenci">Öğrenci</option>
-    <option value="esnaf">Esnaf</option>
-    <option value="admin">Admin</option>
-</select>
+                        <option value="">Tüm Roller</option>
+                        <option value="musteri">Müşteri</option>
+                        <option value="ogrenci">Öğrenci</option>
+                        <option value="esnaf">Esnaf</option>
+                        <option value="admin">Admin</option>
+                    </select>
 
                 </div>
 
@@ -131,8 +131,22 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     let filteredUsers = [];
 
     document.addEventListener('DOMContentLoaded', function () {
+        // Linkteki (URL) parametreyi yakala (?role=ogrenci vb.)
+        const urlParams = new URLSearchParams(window.location.search);
+        let roleParam = urlParams.get('role');
+
+        if (roleParam) {
+            // Eğer eski "student/merchant" gibi linkler hala varsa hatasız çevir
+            const roleMap = { 'student': 'ogrenci', 'merchant': 'esnaf', 'customer': 'musteri' };
+            roleParam = roleMap[roleParam] || roleParam;
+
+            // Seçim kutusunu (Dropdown) gelen parametreye ayarla
+            document.getElementById('role-filter').value = roleParam;
+        }
+
         loadUsers();
     });
+
 
     async function loadUsers() {
         try {
@@ -160,8 +174,11 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 // .NET API doğrudan bir liste (array) dönüyor, response.data falan yok
                 const data = await response.json();
                 allUsers = data;
-                filteredUsers = [...allUsers];
-                displayUsers();
+
+                // BURASI DEĞİŞTİ: Tümünü basmak (displayUsers) yerine 
+                // linkten gelen Dropdown menü değerini uygulatarak (filterUsers) ekrana yansıtıyoruz
+                filterUsers();
+
             } else {
                 // Hata durumunu yönet (örn: 401 Unauthorized veya 403 Forbidden)
                 const errorData = await response.json();
@@ -233,7 +250,11 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 user.fullName.toLowerCase().includes(search) ||
                 user.email.toLowerCase().includes(search);
 
-            const matchesRole = !roleFilter || user.role === roleFilter;
+            // Backend'den Ogrenci/ogrenci ya da integer geldiğini varsayarak garantili check:
+            const roleMap = { "0": "ogrenci", "1": "esnaf", "2": "musteri", "3": "admin" };
+            const safeRole = roleMap[String(user.role)] || String(user.role).toLowerCase();
+            const matchesRole = !roleFilter || safeRole === roleFilter.toLowerCase();
+
 
             const matchesStatus = !statusFilter ||
                 (statusFilter === 'active' && user.isActive) ||
@@ -245,29 +266,29 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         displayUsers();
     }
 
-   async function toggleUserStatus(userId) {
-    const user = allUsers.find(u => u.id === userId);
-    if (!user) return;
+    async function toggleUserStatus(userId) {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return;
 
-    const action = user.isActive ? 'pasifleştirmek' : 'aktifleştirmek';
-    if (!confirm(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`)) return;
+        const action = user.isActive ? 'pasifleştirmek' : 'aktifleştirmek';
+        if (!(await openCustomModal(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`))) return;
 
-    try {
-        const token = localStorage.getItem('auth_token');
-        // Backend'de bu endpoint henüz yok, şimdilik uyarı göster
-        showToast('Bu özellik yakında aktif olacak.', 'warning');
-        return;
+        try {
+            const token = localStorage.getItem('auth_token');
+            // Backend'de bu endpoint henüz yok, şimdilik uyarı göster
+            showToast('Bu özellik yakında aktif olacak.', 'warning');
+            return;
 
-        // Endpoint hazır olunca aşağıdaki satırları aç:
-        // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, {
-        //     method: 'PUT',
-        //     headers: { 'Authorization': `Bearer ${token}` }
-        // });
-    } catch (error) {
-        showToast('İşlem başarısız.', 'error');
+            // Endpoint hazır olunca aşağıdaki satırları aç:
+            // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, {
+            //     method: 'PUT',
+            //     headers: { 'Authorization': `Bearer ${token}` }
+            // });
+        } catch (error) {
+            showToast('İşlem başarısız.', 'error');
+        }
     }
-}
-// ← BURADA FAZLADAN catch OLMAMALI
+    // ← BURADA FAZLADAN catch OLMAMALI
 
     function editUser(userId) {
         showToast('Kullanıcı düzenleme özelliği yakında eklenecek', 'info');
@@ -292,26 +313,26 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         showToast('Kullanıcı listesi indirildi', 'success');
     }
 
-   function getRoleName(role) {
-    const roleNames = {
-        musteri: 'Müşteri',
-        ogrenci: 'Öğrenci',
-        esnaf: 'Esnaf',
-        admin: 'Admin'
-    };
-    return roleNames[role] || role;
-}
+    function getRoleName(role) {
+        const roleNames = {
+            musteri: 'Müşteri',
+            ogrenci: 'Öğrenci',
+            esnaf: 'Esnaf',
+            admin: 'Admin'
+        };
+        return roleNames[role] || role;
+    }
 
 
     function getRoleBadgeClass(role) {
-    const badgeClasses = {
-        musteri: 'primary',
-        ogrenci: 'success',
-        esnaf: 'warning',
-        admin: 'error'
-    };
-    return badgeClasses[role] || 'gray';
-}
+        const badgeClasses = {
+            musteri: 'primary',
+            ogrenci: 'success',
+            esnaf: 'warning',
+            admin: 'error'
+        };
+        return badgeClasses[role] || 'gray';
+    }
 
 
     function formatDate(dateString) {

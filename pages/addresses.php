@@ -376,7 +376,7 @@ async function handleAddressSubmit(e) {
 }
 
 async function deleteAddress(addressId) {
-    if (!confirm('Bu adresi silmek istediğinizden emin misiniz?')) {
+    if (!(await openCustomModal('Bu adresi silmek istediğinizden emin misiniz?'))) {
         return;
     }
     

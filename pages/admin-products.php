@@ -17,14 +17,15 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             </nav>
             <h1 class="text-3xl font-bold text-gray-900">Ürün Yönetimi</h1>
         </div>
-        
+
         <!-- Stats Cards -->
         <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
             <div class="bg-white p-6 rounded-lg shadow-sm">
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -38,7 +39,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -52,7 +54,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M6 18L18 6M6 6l12 12"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -66,7 +69,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 <div class="flex items-center">
                     <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
                         <svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
@@ -76,7 +80,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 </div>
             </div>
         </div>
-        
+
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow-sm p-6 mb-6">
             <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -84,15 +88,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <label for="search" class="block text-sm font-medium text-gray-700 mb-2">
                         Ara
                     </label>
-                    <input
-                        type="text"
-                        id="search"
-                        placeholder="Ürün adı ara..."
-                        class="w-full"
-                        onkeyup="filterProducts()"
-                    />
+                    <input type="text" id="search" placeholder="Ürün adı ara..." class="w-full"
+                        onkeyup="filterProducts()" />
                 </div>
-                
+
                 <div>
                     <label for="status-filter" class="block text-sm font-medium text-gray-700 mb-2">
                         Durum
@@ -105,7 +104,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         <option value="suspended">Askıya Alındı</option>
                     </select>
                 </div>
-                
+
                 <div>
                     <label for="student-filter" class="block text-sm font-medium text-gray-700 mb-2">
                         Öğrenci
@@ -114,82 +113,88 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         <option value="">Tüm Öğrenciler</option>
                     </select>
                 </div>
-                
+
                 <div class="flex items-end">
                     <button onclick="exportProducts()" class="btn btn-outline w-full">
                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z">
+                            </path>
                         </svg>
                         Dışa Aktar
                     </button>
                 </div>
             </div>
         </div>
-        
+
         <!-- Products Grid -->
         <div id="products-container" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             <!-- Loading skeleton -->
             <?php for ($i = 0; $i < 8; $i++): ?>
-            <div class="animate-pulse">
-                <div class="bg-white rounded-lg shadow-sm p-6">
-                    <div class="bg-gray-200 h-48 rounded-lg mb-4"></div>
-                    <div class="h-4 bg-gray-200 rounded mb-2"></div>
-                    <div class="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
-                    <div class="h-8 bg-gray-200 rounded"></div>
+                <div class="animate-pulse">
+                    <div class="bg-white rounded-lg shadow-sm p-6">
+                        <div class="bg-gray-200 h-48 rounded-lg mb-4"></div>
+                        <div class="h-4 bg-gray-200 rounded mb-2"></div>
+                        <div class="h-4 bg-gray-200 rounded w-3/4 mb-4"></div>
+                        <div class="h-8 bg-gray-200 rounded"></div>
+                    </div>
                 </div>
-            </div>
             <?php endfor; ?>
         </div>
     </div>
 </div>
 
 <script>
-let allProducts = [];
-let filteredProducts = [];
+    let allProducts = [];
+    let filteredProducts = [];
 
-document.addEventListener('DOMContentLoaded', function() {
-    loadProducts();
-    loadProductStats();
-});
+    document.addEventListener('DOMContentLoaded', function () {
+        loadProducts();
+        loadProductStats();
+    });
 
-async function loadProducts() {
-    try {
-        const response = await apiCall('admin/products');
-        if (response.success) {
-            allProducts = response.data;
-            filteredProducts = [...allProducts];
-            displayProducts();
-            loadProductStats();
-        } else {
-            throw new Error(response.message || 'Ürünler yüklenemedi');
+    async function loadProducts() {
+        try {
+            const response = await apiCall('Admin/products'); // Baş harf büyük güvenli
+
+            // .NET backend dizi döner (success sarmalayıcısı yoktur)
+            if (Array.isArray(response)) {
+                allProducts = response;
+
+                filteredProducts = [...allProducts];
+                displayProducts();
+                loadProductStats();
+            } else {
+                throw new Error(response.message || 'Ürünler yüklenemedi');
+            }
+
+        } catch (error) {
+            console.error('Error loading products:', error);
+            showToast('Ürünler yüklenirken hata oluştu: ' + error.message, 'error');
         }
-        
-    } catch (error) {
-        console.error('Error loading products:', error);
-        showToast('Ürünler yüklenirken hata oluştu: ' + error.message, 'error');
     }
-}
 
-function displayProducts() {
-    const container = document.getElementById('products-container');
-    
-    container.innerHTML = filteredProducts.map(product => `
+    function displayProducts() {
+        const container = document.getElementById('products-container');
+
+        container.innerHTML = filteredProducts.map(product => `
         <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="relative h-48 bg-gray-100">
-                ${product.images && product.images.length > 0 ? (() => {
-                    let imageUrl = product.images[0];
-                    if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-                        imageUrl = '/' + imageUrl;
-                    }
-                    return `
+                               ${product.imageUrls && product.imageUrls.length > 0 ? (() => {
+                let imageUrl = product.imageUrls[0];
+                if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+                    imageUrl = '/' + imageUrl;
+                }
+                return `
                         <img 
                             src="${imageUrl}" 
-                            alt="${escapeHtml(product.title)}"
+                            alt="${escapeHtml(product.name)}"
+
                             class="w-full h-full object-cover"
                             onerror="this.src='/media/68a658361732a_1755732022.jpg'"
                         />
                     `;
-                })() : `
+            })() : `
                     <div class="w-full h-full flex items-center justify-center bg-gray-200">
                         <span class="text-gray-400">📷</span>
                     </div>
@@ -203,27 +208,28 @@ function displayProducts() {
                 </div>
             </div>
             
-            <div class="p-4">
+                       <div class="p-4">
                 <h3 class="font-semibold text-gray-900 mb-2 line-clamp-1">
-                    ${escapeHtml(product.title)}
+                    ${escapeHtml(product.name)}
                 </h3>
                 
                 <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                    ${escapeHtml(product.description || '')}
+                    ${escapeHtml(product.categoryName || 'Kategori Yok')}
                 </p>
                 
                 <div class="flex items-center justify-between mb-3">
                     <span class="text-lg font-bold text-blue-600">
-                        ₺${parseFloat(product.price).toFixed(2)}
+                        ₺${parseFloat(product.finalPrice || product.suggestedPrice).toFixed(2)}
                     </span>
                     <span class="text-sm text-gray-500">
-                        Stok: ${product.stock}
+                        Satıcı: ${product.merchantName || '-'}
                     </span>
                 </div>
                 
                 <div class="text-xs text-gray-500 mb-4">
-                    Öğrenci: ${product.student_name || 'Bilinmiyor'}
+                    Öğrenci: ${product.studentName || 'Bilinmiyor'}
                 </div>
+
                 
                 <!-- Actions -->
                 <div class="flex space-x-2">
@@ -231,174 +237,191 @@ function displayProducts() {
                         Görüntüle
                     </a>
                     
-                    ${product.status === 'pending' ? `
-                        <button onclick="approveProduct(${product.id})" class="btn btn-success btn-sm">
-                            Onayla
-                        </button>
-                        <button onclick="rejectProduct(${product.id})" class="btn btn-error btn-sm">
-                            Reddet
-                        </button>
-                    ` : product.status === 'active' ? `
-                        <button onclick="suspendProduct(${product.id})" class="btn btn-warning btn-sm">
-                            Askıya Al
-                        </button>
-                    ` : `
-                        <button onclick="activateProduct(${product.id})" class="btn btn-success btn-sm">
-                            Aktifleştir
-                        </button>
-                    `}
+                               ${String(product.status).toLowerCase() === 'pending' || product.status === 0 ? `
+                <button onclick="approveProduct(${product.id})" class="btn btn-success btn-sm">Onayla</button>
+                <button onclick="rejectProduct(${product.id})" class="btn btn-error btn-sm">Reddet</button>
+            ` : String(product.status).toLowerCase() === 'approved' || String(product.status).toLowerCase() === 'active' || product.status === 1 ? `
+                <button onclick="suspendProduct(${product.id})" class="btn btn-warning btn-sm">Askıya Al</button>
+            ` : `
+                <button onclick="activateProduct(${product.id})" class="btn btn-success btn-sm">Aktifleştir</button>
+            `}
+
                 </div>
             </div>
         </div>
     `).join('');
-}
+    }
 
-function loadProductStats() {
-    // Calculate stats from products
-    const stats = {
-        active: allProducts.filter(p => p.status === 'active').length,
-        pending: allProducts.filter(p => p.status === 'pending').length,
-        rejected: allProducts.filter(p => p.status === 'rejected').length,
-        total_sales: 15678.90 // Mock data
-    };
-    
-    document.getElementById('active-products').textContent = stats.active;
-    document.getElementById('pending-products').textContent = stats.pending;
-    document.getElementById('rejected-products').textContent = stats.rejected;
-    document.getElementById('total-sales').textContent = `₺${stats.total_sales.toLocaleString()}`;
-}
+    function loadProductStats() {
+        // Calculate stats from products
+        const stats = {
+            active: allProducts.filter(p => p.status === 'active').length,
+            pending: allProducts.filter(p => p.status === 'pending').length,
+            rejected: allProducts.filter(p => p.status === 'rejected').length,
+            total_sales: 15678.90 // Mock data
+        };
 
-function filterProducts() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const statusFilter = document.getElementById('status-filter').value;
-    
-    filteredProducts = allProducts.filter(product => {
-        const matchesSearch = !search || 
-            product.title.toLowerCase().includes(search) || 
-            product.description?.toLowerCase().includes(search);
-        
-        const matchesStatus = !statusFilter || product.status === statusFilter;
-        
-        return matchesSearch && matchesStatus;
-    });
-    
-    displayProducts();
-}
+        document.getElementById('active-products').textContent = stats.active;
+        document.getElementById('pending-products').textContent = stats.pending;
+        document.getElementById('rejected-products').textContent = stats.rejected;
+        document.getElementById('total-sales').textContent = `₺${stats.total_sales.toLocaleString()}`;
+    }
 
-function getStatusText(status) {
-    const statusTexts = {
-        pending: 'Beklemede',
-        active: 'Aktif',
-        rejected: 'Reddedildi',
-        suspended: 'Askıya Alındı'
-    };
-    return statusTexts[status] || status;
-}
+    function filterProducts() {
+        const search = document.getElementById('search').value.toLowerCase();
+        const statusFilter = document.getElementById('status-filter').value;
 
-function getStatusBadgeClass(status) {
-    const badgeClasses = {
-        pending: 'warning',
-        active: 'success',
-        rejected: 'error',
-        suspended: 'gray'
-    };
-    return badgeClasses[status] || 'gray';
-}
+        filteredProducts = allProducts.filter(product => {
+            const matchesSearch = !search ||
+                product.name.toLowerCase().includes(search) ||
+                product.categoryName?.toLowerCase().includes(search);
 
-async function approveProduct(productId) {
-    try {
-        const response = await apiCall(`Admin/products/${productId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({ Status: 'Approved' })
+
+            const matchesStatus = !statusFilter || product.status === statusFilter;
+
+            return matchesSearch && matchesStatus;
         });
-        
-        // Response format might be different now, check for .message or .success
-        if (response.message || response.success) {
-            // Ürün listesini yeniden yükle
-            await loadProducts();
-            showToast('Ürün onaylandı', 'success');
+
+        displayProducts();
+    }
+
+    function getStatusText(status) {
+        const statusTexts = {
+            pending: 'Beklemede',
+            active: 'Aktif',
+            rejected: 'Reddedildi',
+            suspended: 'Askıya Alındı'
+        };
+        return statusTexts[status] || status;
+    }
+
+    function getStatusBadgeClass(status) {
+        const badgeClasses = {
+            pending: 'warning',
+            active: 'success',
+            rejected: 'error',
+            suspended: 'gray'
+        };
+        return badgeClasses[status] || 'gray';
+    }
+
+    async function approveProduct(productId) {
+        try {
+            const product = allProducts.find(p => p.id === productId);
+            const finalPriceStr = prompt('Onaylanan fiyatı giriniz (örn: 150.50):', product ? product.suggestedPrice : '');
+            if (finalPriceStr === null) return; // İptal edildi
+
+            const finalPrice = parseFloat(finalPriceStr.replace(',', '.'));
+
+            const response = await apiCall(`Admin/products/${productId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: 1, // 1: Approved
+                    finalPrice: isNaN(finalPrice) ? null : finalPrice
+                })
+            });
+
+
+            // Response format might be different now, check for .message or .success
+            if (response.message || response.success) {
+                // Ürün listesini yeniden yükle
+                await loadProducts();
+                showToast('Ürün onaylandı', 'success');
+            }
+        } catch (error) {
+            showToast('Ürün onaylanırken hata oluştu: ' + error.message, 'error');
         }
-    } catch (error) {
-        showToast('Ürün onaylanırken hata oluştu: ' + error.message, 'error');
     }
-}
 
-async function rejectProduct(productId) {
-    const reason = prompt('Reddetme sebebini belirtiniz:');
-    if (!reason) return;
-    
-    try {
-        const response = await apiCall(`Admin/products/${productId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({ Status: 'Rejected' })
-        });
-        
-        if (response.message || response.success) {
-            await loadProducts();
-            showToast('Ürün reddedildi', 'success');
+    async function rejectProduct(productId) {
+        if (!(await openCustomModal('Ürünü reddetmek istediğinize emin misiniz?'))) return;
+
+        try {
+            const response = await apiCall(`Admin/products/${productId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: 2, // 2: Rejected
+                    finalPrice: null
+                })
+            });
+
+
+            if (response.message || response.success) {
+                await loadProducts();
+                showToast('Ürün reddedildi', 'success');
+            }
+        } catch (error) {
+            showToast('Ürün reddedilirken hata oluştu: ' + error.message, 'error');
         }
-    } catch (error) {
-        showToast('Ürün reddedilirken hata oluştu: ' + error.message, 'error');
     }
-}
 
-async function suspendProduct(productId) {
-    if (!confirm('Bu ürünü askıya almak istediğinizden emin misiniz?')) {
-        return;
-    }
-    
-    try {
-        const response = await apiCall(`Admin/products/${productId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({ Status: 'Suspended' })
-        });
-        
-        if (response.message || response.success) {
-            await loadProducts();
-            showToast('Ürün askıya alındı', 'success');
+    async function suspendProduct(productId) {
+        if (!(await openCustomModal('Bu ürünü askıya (beklemeye) almak istediğinizden emin misiniz?'))) {
+            return;
         }
-    } catch (error) {
-        showToast('Ürün askıya alınırken hata oluştu: ' + error.message, 'error');
-    }
-}
 
-async function activateProduct(productId) {
-    try {
-        const response = await apiCall(`Admin/products/${productId}/status`, {
-            method: 'PUT',
-            body: JSON.stringify({ Status: 'Approved' })
-        });
-        
-        if (response.message || response.success) {
-            await loadProducts();
-            showToast('Ürün aktifleştirildi', 'success');
+        try {
+            const response = await apiCall(`Admin/products/${productId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: 0, // 0: Pending'e çekilir.
+                    finalPrice: null
+                })
+            });
+
+
+            if (response.message || response.success) {
+                await loadProducts();
+                showToast('Ürün askıya alındı', 'success');
+            }
+        } catch (error) {
+            showToast('Ürün askıya alınırken hata oluştu: ' + error.message, 'error');
         }
-    } catch (error) {
-        showToast('Ürün aktifleştirilirken hata oluştu: ' + error.message, 'error');
     }
-}
 
-function exportProducts() {
-    const csvContent = "data:text/csv;charset=utf-8," + 
-        "Ürün Adı,Açıklama,Fiyat,Stok,Durum,Öğrenci\n" +
-        filteredProducts.map(product => 
-            `"${product.title}","${product.description || ''}","₺${product.price}","${product.stock}","${getStatusText(product.status)}","${product.student_name || ''}"`
-        ).join("\n");
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", "urunler.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    
-    showToast('Ürün listesi indirildi', 'success');
-}
+    async function activateProduct(productId) {
+        try {
+            const product = allProducts.find(p => p.id === productId);
+            const response = await apiCall(`Admin/products/${productId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({
+                    status: 1, // 1: Approved
+                    finalPrice: product ? product.finalPrice : null
+                })
+            });
 
-function escapeHtml(text) {
-    const div = document.createElement('div');
-    div.textContent = text;
-    return div.innerHTML;
-}
+
+            if (response.message || response.success) {
+                await loadProducts();
+                showToast('Ürün aktifleştirildi', 'success');
+            }
+        } catch (error) {
+            showToast('Ürün aktifleştirilirken hata oluştu: ' + error.message, 'error');
+        }
+    }
+
+    function exportProducts() {
+        const csvContent = "data:text/csv;charset=utf-8," +
+            "Ürün Adı,Kategori,Fiyat,Satıcı,Durum,Öğrenci\n" +
+            filteredProducts.map(product =>
+                `"${product.name}","${product.categoryName || ''}","₺${parseFloat(product.finalPrice || product.suggestedPrice)}","${product.merchantName || ''}","${getStatusText(product.status)}","${product.studentName || ''}"`
+            ).join("\n");
+
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", "urunler.csv");
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+
+        showToast('Ürün listesi indirildi', 'success');
+    }
+
+    function escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
 </script>
