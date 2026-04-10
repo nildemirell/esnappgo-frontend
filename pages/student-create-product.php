@@ -165,7 +165,7 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
     async function loadCategories() {
         try {
             // Merkezi apiCall() kullanıyoruz
-            const categories = await apiCall('Categories');
+            const categories = await apiCall('Categories/tree');
             const list = Array.isArray(categories) ? categories : (categories.data || []);
 
             const select = document.getElementById('category_id');

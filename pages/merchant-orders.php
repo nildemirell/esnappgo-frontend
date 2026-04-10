@@ -295,7 +295,7 @@ function filterOrders(status) {
 async function updateOrderStatus(orderId, newStatus) {
     try {
         const token = localStorage.getItem('auth_token');
-        const response = await fetch(`${API_BASE}/api/Order/update-status`, {
+        const response = await fetch(`${API_BASE}/api/Orders/update-status`, {
             method: 'PUT',
             headers: {
                 'Content-Type': 'application/json',
@@ -585,7 +585,7 @@ async function cancelOrder(orderId) {
     }
     
     try {
-        const response = await fetch('/api/orders/cancel', {
+       const response = await fetch(`${API_BASE}/api/Orders/cancel`, {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',

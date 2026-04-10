@@ -184,7 +184,7 @@ if (!$current_user) {
             // Çözüm olarak biz de ana ürün listesini arkada 1 kez çekip, sepetteki ürünlerin ID'sine bakıp resimlerini eşleştireceğiz.
             try {
                 const allProductsResp = await apiCall('products');
-                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.data || []);
+                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
 
                 rawItems.forEach(cartItem => {
                     // Sepetteki ürünün ID'si ile, gerçek listedeki ürünün ID'sini buluştur (Id .NET'ten büyük de küçük de gelebilir)

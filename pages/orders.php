@@ -206,8 +206,35 @@ if (!$current_user) {
 
     async function loadOrders() {
         try {
-            const response = await apiCall('orders');
-            const orders = response.data;
+           const response = await apiCall('orders');
+            let rawOrders = Array.isArray(response) ? response : (response.data || []);
+            
+            // YENİ EKLEME: Tüm sipariş durumlarını zorla küçük harfe çevir (.NET Enum uyumu)
+            const orders = rawOrders.map(o => ({
+                ...o,
+                status: (o.status || '').toLowerCase() 
+            }));
+            // YENİ EKLEME: Sipariş resimlerini Ana Ürün listesiyle (products) eşleştiriyoruz
+            try {
+                const allProductsResp = await apiCall('products');
+                // Sayfalanmış DTO'dan products dizisini çıkarıyoruz
+                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
+
+                orders.forEach(order => {
+                    if (order.orderItems) {
+                        order.orderItems.forEach(item => {
+                            const matchedProduct = allProductsList.find(p => p.id == item.productId || p.Id == item.productId);
+                            if (matchedProduct) {
+                                // Bulunan orijinal ürünün ilk resmini item içerisine yedekle
+                                const images = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
+                                item.imageUrl = images.length > 0 ? images[0] : null;
+                            }
+                        });
+                    }
+                });
+            } catch (e) {
+                console.error("Resim eşleşmesi başarısız", e);
+            }
 
             const container = document.getElementById('orders-container');
 
@@ -219,19 +246,18 @@ if (!$current_user) {
 
             container.innerHTML = orders.map(order => `
             <div class="bg-white rounded-xl shadow-sm overflow-hidden border border-gray-100 hover:shadow-md transition-shadow">
-                <!-- Order Header -->
                 <div class="bg-gradient-to-r from-gray-50 to-white px-6 py-4 border-b border-gray-100">
                     <div class="flex items-center justify-between">
                         <div>
                             <h3 class="text-lg font-semibold text-gray-900">
-                                Sipariş #${order.order_number || order.id}
+                                Sipariş #${order.orderNumber || order.id}
                             </h3>
                             <p class="text-sm text-gray-500 mt-1">
-                                ${formatDate(order.created_at)}
+                                ${formatDate(order.createdAt)}
                             </p>
                         </div>
                         <div class="flex items-center space-x-3">
-                            ${order.student_support_total > 0 ? `
+                            ${order.studentSupportAmount > 0 ? `
                                 <span class="inline-flex items-center px-3 py-1 rounded-full text-xs font-medium bg-purple-100 text-purple-700">
                                     <svg class="w-3.5 h-3.5 mr-1" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clip-rule="evenodd"></path>
@@ -246,16 +272,15 @@ if (!$current_user) {
                     </div>
                 </div>
                 
-                <!-- Order Items -->
                 <div class="p-6">
                     <div class="space-y-4">
-                        ${order.items.map(item => `
+                        ${(order.orderItems || []).map(item => `
                             <div class="flex items-center space-x-4">
                                 <div class="flex-shrink-0">
-                                    ${item.images && item.images.length > 0 ? `
+                                    ${item.imageUrl ? `
                                         <img 
-                                            src="${item.images[0]}" 
-                                            alt="${escapeHtml(item.title)}"
+                                            src="${item.imageUrl}" 
+                                            alt="${escapeHtml(item.productName)}"
                                             class="w-16 h-16 object-cover rounded-lg border border-gray-200"
                                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNjY2MiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMmM1LjUxNCAwIDEwIDQuNDg2IDEwIDEwcy00LjQ4NiAxMC0xMCAxMFMyIDEyIDIgMTJTNi40ODYgMiAxMiAyek0xMiA2YTYgNiAwIDEwMCAxMiA2IDYgMCAwMDAtMTJ6Ii8+PC9zdmc+'"
                                         />
@@ -270,26 +295,25 @@ if (!$current_user) {
                                 
                                 <div class="flex-1 min-w-0">
                                     <h4 class="text-sm font-medium text-gray-900 line-clamp-1">
-                                        ${escapeHtml(item.title)}
+                                        ${escapeHtml(item.productName)}
                                     </h4>
                                     <p class="text-sm text-gray-500 mt-1">
-                                        ${item.quantity} adet x ₺${parseFloat(item.unit_price).toFixed(2)}
+                                        ${item.quantity} adet x ₺${parseFloat(item.unitPrice).toFixed(2)}
                                     </p>
                                 </div>
                                 
                                 <div class="text-sm font-semibold text-gray-900">
-                                    ₺${parseFloat(item.total_price).toFixed(2)}
+                                    ₺${parseFloat(item.quantity * item.unitPrice).toFixed(2)}
                                 </div>
                             </div>
                         `).join('')}
                     </div>
                     
-                    <!-- Order Total & Student Support -->
                     <div class="mt-6 pt-4 border-t border-gray-100">
-                        ${order.student_support_total > 0 ? `
+                        ${order.studentSupportAmount > 0 ? `
                             <div class="flex justify-between items-center mb-2 text-sm">
                                 <span class="text-gray-500">Ara Toplam</span>
-                                <span class="text-gray-700">₺${parseFloat(order.subtotal || (order.total_amount - order.student_support_total)).toFixed(2)}</span>
+                                <span class="text-gray-700">₺${parseFloat(order.totalAmount - order.studentSupportAmount).toFixed(2)}</span>
                             </div>
                             <div class="flex justify-between items-center mb-3 text-sm">
                                 <span class="text-purple-600 font-medium flex items-center">
@@ -298,19 +322,18 @@ if (!$current_user) {
                                     </svg>
                                     Öğrenci Desteği
                                 </span>
-                                <span class="text-purple-600 font-medium">+₺${parseFloat(order.student_support_total).toFixed(2)}</span>
+                                <span class="text-purple-600 font-medium">+₺${parseFloat(order.studentSupportAmount).toFixed(2)}</span>
                             </div>
                         ` : ''}
                         <div class="flex justify-between items-center">
                             <span class="text-lg font-semibold text-gray-900">Toplam</span>
                             <span class="text-xl font-bold text-gray-900">
-                                ₺${parseFloat(order.total_amount).toFixed(2)}
+                                ₺${parseFloat(order.totalAmount).toFixed(2)}
                             </span>
                         </div>
                     </div>
                 </div>
                 
-                <!-- Order Actions -->
                 <div class="bg-gray-50 px-6 py-4 flex justify-end space-x-3">
                     ${order.status === 'pending' ? `
                         <button 
@@ -320,8 +343,8 @@ if (!$current_user) {
                             İptal Et
                         </button>
                     ` : ''}
-                    
-                    <button 
+
+                    <button
                         onclick="viewOrderDetails('${order.id}')"
                         class="btn btn-primary"
                     >
@@ -331,7 +354,7 @@ if (!$current_user) {
                         </svg>
                         Detaylar
                     </button>
-                    
+
                     ${order.status === 'delivered' ? `
                         <button 
                             onclick="reorderItems('${order.id}')"
@@ -435,35 +458,54 @@ if (!$current_user) {
         document.getElementById('modal-content').style.display = 'none';
 
         try {
-            const response = await apiCall(`orders/${orderId}`);
-            const order = response.data;
+          const response = await apiCall(`orders/${orderId}`);
+            let rawOrder = response.data ? response.data : response;
+            // Durumu küçük harfe zorla
+            const order = { ...rawOrder, status: (rawOrder.status || '').toLowerCase() };
+            // YENİ EKLEME: Detay Modal'ı içindeki resim eşleştirmesi
+            try {
+                const allProductsResp = await apiCall('products');
+                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
+
+                if (order.orderItems) {
+                    order.orderItems.forEach(item => {
+                        const matchedProduct = allProductsList.find(p => p.id == item.productId || p.Id == item.productId);
+                        if (matchedProduct) {
+                            const images = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
+                            item.imageUrl = images.length > 0 ? images[0] : null;
+                        }
+                    });
+                }
+            } catch (e) {
+                console.error("Modal resim eşleşmesi başarısız", e);
+            }
 
             // Header bilgileri
-            document.getElementById('modal-order-number').textContent = `Sipariş #${order.order_number || order.id}`;
-            document.getElementById('modal-order-date').textContent = formatDate(order.created_at);
+            document.getElementById('modal-order-number').textContent = `Sipariş #${order.orderNumber || order.id}`;
+            document.getElementById('modal-order-date').textContent = formatDate(order.createdAt);
 
             // Status badge
             const statusBadge = document.getElementById('modal-status-badge');
             statusBadge.className = `badge ${getStatusBadgeClass(order.status)}`;
             statusBadge.textContent = getStatusText(order.status);
 
-            // Tracking number
+            // Tracking number (Eğer backend dönüyorsa, dönmüyorsa boş kalır)
             const trackingEl = document.getElementById('modal-tracking');
-            if (order.tracking_number) {
-                trackingEl.innerHTML = `<span class="font-medium">Takip No:</span> ${order.tracking_number}`;
+            if (order.trackingNumber) {
+                trackingEl.innerHTML = `<span class="font-medium">Takip No:</span> ${order.trackingNumber}`;
             } else {
                 trackingEl.textContent = '';
             }
 
             // Order items
             const itemsContainer = document.getElementById('modal-items');
-            itemsContainer.innerHTML = order.items.map(item => `
+            itemsContainer.innerHTML = (order.orderItems || []).map(item => `
             <div class="flex items-center space-x-4 p-4 bg-gray-50 rounded-lg">
                 <div class="flex-shrink-0">
-                    ${item.images && item.images.length > 0 ? `
+                    ${item.imageUrl ? `
                         <img 
-                            src="${item.images[0]}" 
-                            alt="${escapeHtml(item.title)}"
+                            src="${item.imageUrl}" 
+                            alt="${escapeHtml(item.productName)}"
                             class="w-16 h-16 object-cover rounded-lg border border-gray-200"
                             onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNjQiIGhlaWdodD0iNjQiIGZpbGw9IiNjY2MiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMmM1LjUxNCAwIDEwIDQuNDg2IDEwIDEwcy00LjQ4NiAxMC0xMCAxMFMyIDEyIDIgMTJTNi40ODYgMiAxMiAyek0xMiA2YTYgNiAwIDEwMCAxMiA2IDYgMCAwMDAtMTJ6Ii8+PC9zdmc+'"
                         />
@@ -476,94 +518,48 @@ if (!$current_user) {
                     `}
                 </div>
                 <div class="flex-1 min-w-0">
-                    <h5 class="font-medium text-gray-900">${escapeHtml(item.title)}</h5>
+                    <h5 class="font-medium text-gray-900">${escapeHtml(item.productName)}</h5>
                     <p class="text-sm text-gray-500 mt-1">
-                        ${item.quantity} adet x ₺${parseFloat(item.unit_price).toFixed(2)}
+                        ${item.quantity} adet x ₺${parseFloat(item.unitPrice).toFixed(2)}
                     </p>
-                    ${item.shop_name ? `<p class="text-xs text-gray-400 mt-1">Satıcı: ${escapeHtml(item.shop_name)}</p>` : ''}
                 </div>
                 <div class="text-right">
-                    <span class="font-semibold text-gray-900">₺${parseFloat(item.total_price).toFixed(2)}</span>
+                    <span class="font-semibold text-gray-900">₺${parseFloat(item.quantity * item.unitPrice).toFixed(2)}</span>
                 </div>
             </div>
         `).join('');
 
             // Student Support Section
             const studentSupportSection = document.getElementById('modal-student-support');
-            if (order.student_support_total > 0) {
+            const donationDetails = document.getElementById('modal-donation-details');
+
+            if (order.studentSupportAmount > 0) {
                 studentSupportSection.style.display = 'block';
 
-                const donationDetails = document.getElementById('modal-donation-details');
-                if (order.donations && order.donations.length > 0) {
-                    donationDetails.innerHTML = order.donations.map(donation => {
-                        const totalPercentage = parseFloat(donation.donation_percentage) || 10;
-                        const extraPercentage = Math.max(0, totalPercentage - 10);
-                        const donationAmount = parseFloat(donation.donation_amount) || 0;
-
-                        // Doğal ve ekstra katkıyı hesapla
-                        const naturalRatio = 10 / totalPercentage;
-                        const extraRatio = extraPercentage / totalPercentage;
-                        const naturalAmount = donationAmount * naturalRatio;
-                        const extraAmount = donationAmount * extraRatio;
-
-                        return `
-                        <div class="bg-white rounded-lg p-3 border border-purple-100 mb-2">
-                            <div class="font-medium text-purple-800 mb-2">${escapeHtml(donation.product_title || 'Ürün')}</div>
-                            <div class="space-y-1 text-sm">
-                                <div class="flex justify-between text-blue-600">
-                                    <span>Doğal Kazanç (%10)</span>
-                                    <span>₺${naturalAmount.toFixed(2)}</span>
-                                </div>
-                                ${extraPercentage > 0 ? `
-                                    <div class="flex justify-between text-purple-600">
-                                        <span>Ekstra Destek (%${extraPercentage.toFixed(0)})</span>
-                                        <span>₺${extraAmount.toFixed(2)}</span>
-                                    </div>
-                                ` : ''}
-                                <div class="flex justify-between font-semibold text-purple-700 pt-1 border-t border-purple-100">
-                                    <span>Bu Ürün Toplam</span>
-                                    <span>₺${donationAmount.toFixed(2)}</span>
-                                </div>
-                            </div>
-                        </div>
-                    `;
-                    }).join('');
-                } else {
-                    // Donations boşsa ama student_support_total varsa, genel bilgi göster
-                    const subtotal = order.subtotal || (order.total_amount - order.student_support_total);
-                    const naturalSupport = subtotal * 0.10;
-                    const extraSupport = order.student_support_total - naturalSupport;
-
-                    donationDetails.innerHTML = `
-                    <div class="space-y-2 text-sm">
-                        <div class="flex justify-between text-blue-600">
-                            <span>Doğal Kazanç (%10)</span>
-                            <span>₺${naturalSupport.toFixed(2)}</span>
-                        </div>
-                        ${extraSupport > 0 ? `
-                            <div class="flex justify-between text-purple-600">
-                                <span>Ekstra Destek</span>
-                                <span>₺${extraSupport.toFixed(2)}</span>
-                            </div>
-                        ` : ''}
+                // Basitleştirilmiş destek gösterimi (.NET backend detaylı donation listesi dönmüyor, sadece total dönüyor)
+                donationDetails.innerHTML = `
+                <div class="space-y-2 text-sm">
+                    <div class="flex justify-between text-purple-600">
+                        <span>Siparişe Eklenen Toplam Destek</span>
+                        <span>₺${parseFloat(order.studentSupportAmount).toFixed(2)}</span>
                     </div>
+                </div>
                 `;
-                }
 
-                document.getElementById('modal-total-donation').textContent = `₺${parseFloat(order.student_support_total).toFixed(2)}`;
+                document.getElementById('modal-total-donation').textContent = `₺${parseFloat(order.studentSupportAmount).toFixed(2)}`;
 
                 // Support row in summary
                 document.getElementById('modal-support-row').style.display = 'flex';
-                document.getElementById('modal-support-amount').textContent = `+₺${parseFloat(order.student_support_total).toFixed(2)}`;
+                document.getElementById('modal-support-amount').textContent = `+₺${parseFloat(order.studentSupportAmount).toFixed(2)}`;
             } else {
                 studentSupportSection.style.display = 'none';
                 document.getElementById('modal-support-row').style.display = 'none';
             }
 
             // Order Summary
-            const subtotal = order.subtotal || (order.total_amount - (order.student_support_total || 0));
+            const subtotal = order.totalAmount - (order.studentSupportAmount || 0);
             document.getElementById('modal-subtotal').textContent = `₺${parseFloat(subtotal).toFixed(2)}`;
-            document.getElementById('modal-total').textContent = `₺${parseFloat(order.total_amount).toFixed(2)}`;
+            document.getElementById('modal-total').textContent = `₺${parseFloat(order.totalAmount).toFixed(2)}`;
 
             // Payment Info
             const paymentMethods = {
@@ -571,13 +567,13 @@ if (!$current_user) {
                 'credit_card': 'Kredi Kartı',
                 'cash': 'Kapıda Ödeme'
             };
-            document.getElementById('modal-payment-method').textContent = paymentMethods[order.payment_method] || order.payment_method || 'Havale/EFT';
+            document.getElementById('modal-payment-method').textContent = paymentMethods[order.paymentMethod] || order.paymentMethod || 'Havale/EFT';
 
             // Payment proof
             const proofRow = document.getElementById('modal-payment-proof-row');
-            if (order.payment_id) {
+            if (order.receiptUrl) {
                 proofRow.style.display = 'flex';
-                document.getElementById('modal-payment-proof').href = order.payment_id;
+                document.getElementById('modal-payment-proof').href = order.receiptUrl;
             } else {
                 proofRow.style.display = 'none';
             }
@@ -585,10 +581,10 @@ if (!$current_user) {
             // Timeline
             const timelineContent = document.getElementById('modal-timeline-content');
             const timelineSteps = [
-                { status: 'pending', label: 'Sipariş Alındı', date: order.created_at, icon: 'clipboard-list' },
-                { status: 'paid', label: 'Ödeme Onaylandı', date: order.status !== 'pending' && order.status !== 'cancelled' ? order.created_at : null, icon: 'check-circle' },
-                { status: 'shipped', label: 'Kargoya Verildi', date: order.shipped_at, icon: 'truck' },
-                { status: 'delivered', label: 'Teslim Edildi', date: order.delivered_at, icon: 'home' }
+                { status: 'pending', label: 'Sipariş Alındı', date: order.createdAt, icon: 'clipboard-list' },
+                { status: 'paid', label: 'Ödeme Onaylandı', date: order.paymentConfirmedAt || (order.status !== 'pending' && order.status !== 'cancelled' ? order.createdAt : null), icon: 'check-circle' },
+                { status: 'shipped', label: 'Kargoya Verildi', date: order.shippedAt, icon: 'truck' },
+                { status: 'delivered', label: 'Teslim Edildi', date: order.deliveredAt, icon: 'home' }
             ];
 
             const statusOrder = ['pending', 'paid', 'shipped', 'delivered'];
@@ -596,8 +592,6 @@ if (!$current_user) {
 
             timelineContent.innerHTML = timelineSteps.map((step, index) => {
                 const isCompleted = index <= currentStatusIndex && order.status !== 'cancelled';
-                const isCurrent = statusOrder[index] === order.status;
-
                 return `
                 <div class="flex items-center space-x-3 ${isCompleted ? 'text-green-600' : 'text-gray-400'}">
                     <div class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center ${isCompleted ? 'bg-green-100' : 'bg-gray-100'}">
@@ -665,14 +659,14 @@ if (!$current_user) {
 
             // Sipariş detaylarını al
             const response = await apiCall(`orders/${orderId}`);
-            const order = response.data;
+            const order = response.data ? response.data : response;
 
-            // Her ürünü sepete ekle
-            for (const item of order.items) {
+            // Her ürünü sepete ekle (Yeni .NET DTO formatına göre)
+            for (const item of (order.orderItems || [])) {
                 await apiCall('cart', {
                     method: 'POST',
                     body: JSON.stringify({
-                        product_id: item.product_id,
+                        productId: item.productId, // .NET tarafı muhtemelen productId bekler
                         quantity: item.quantity
                     })
                 });

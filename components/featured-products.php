@@ -55,12 +55,11 @@ async function loadFeaturedProducts() {
     try {
         const response = await apiCall('products?limit=5');
         
-        if (!response.success) {
-            throw new Error(response.message || 'API error');
-        }
-        
-        const products = response.data || [];
-        
+        // .NET backend dönebilir array veya { products: [...] }
+        const products = Array.isArray(response) 
+            ? response 
+            : (response.products || response.data || []);
+
         const container = document.getElementById('featured-products-container');
         
         if (products.length === 0) {
@@ -72,14 +71,17 @@ async function loadFeaturedProducts() {
             <a href="/products/${product.id}" class="group">
                 <div class="card hover:shadow-lg transition-shadow duration-200">
                     <div class="relative h-48 mb-4 bg-gray-100 rounded-lg overflow-hidden">
-                        ${product.images && product.images.length > 0 ? `
+                        ${(product.imageUrls || product.images) && (product.imageUrls || product.images).length > 0 ? (() => { 
+                            let imgUrl = (product.imageUrls || product.images)[0];
+                            if (!imgUrl.startsWith('/') && !imgUrl.startsWith('http')) imgUrl = '/' + imgUrl;
+                            return `
                             <img 
-                                src="${product.images[0]}" 
-                                alt="${escapeHtml(product.title)}"
+                                src="${imgUrl}" 
+                                alt="${escapeHtml(product.name || product.title)}"
                                 class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                onerror="console.error('Image load error:', '${product.images[0]}'); this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center bg-gray-200\\'>📷 Resim Yükleniyor...</div>'"
+                                onerror="this.parentElement.innerHTML='<div class=\\'w-full h-full flex items-center justify-center bg-gray-200\\'>📷 Resim Yükleniyor...</div>'"
                             />
-                        ` : `
+                        `})() : `
                             <div class="w-full h-full flex items-center justify-center bg-gray-200">
                                 <span class="text-gray-400">📷 Resim Yükleniyor...</span>
                             </div>
@@ -97,16 +99,16 @@ async function loadFeaturedProducts() {
                     </div>
 
                     <h3 class="font-semibold text-gray-900 mb-2 line-clamp-2">
-                        ${escapeHtml(product.title)}
+                        ${escapeHtml(product.name || product.title || 'İsimsiz Ürün')}
                     </h3>
                     
                     <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                        ${escapeHtml(product.description || '')}
+                        ${escapeHtml(product.categoryName || product.description || '')}
                     </p>
 
                     <div class="flex items-center justify-between">
                         <span class="text-lg font-bold text-blue-600">
-                            ₺${parseFloat(product.price).toFixed(2)}
+                            ₺${parseFloat(product.finalPrice || product.suggestedPrice || 0).toFixed(2)}
                         </span>
                         
                         <div class="flex items-center">
@@ -119,7 +121,7 @@ async function loadFeaturedProducts() {
 
                     <div class="mt-3 pt-3 border-t border-gray-100">
                         <span class="text-xs text-gray-500">
-                            ${escapeHtml(product.shop?.name || 'Mağaza')}
+                            ${escapeHtml(product.merchantName || product.shop?.name || 'Mağaza')}
                         </span>
                     </div>
                 </div>

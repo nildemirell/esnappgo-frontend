@@ -564,12 +564,12 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     </svg>
                 </div>
                 <div class="flex-1">
-                    <p class="font-semibold text-gray-900">${order.order_number}</p>
-                    <p class="text-sm text-gray-500">${escapeHtml(order.customer_name)}</p>
-                    <p class="text-xs text-gray-400">${formatDate(order.created_at)}</p>
+                    <p class="font-semibold text-gray-900">${order.orderNumber || order.id}</p>
+                    <p class="text-sm text-gray-500">${escapeHtml(order.customerName || order.userName || '')}</p>
+                    <p class="text-xs text-gray-400">${formatDate(order.createdAt)}</p>
                 </div>
                 <div class="text-right">
-                    <p class="font-semibold text-gray-900">₺${order.total_amount.toFixed(2)}</p>
+                    <p class="font-semibold text-gray-900">₺${parseFloat(order.totalAmount || 0).toFixed(2)}</p>
                     <span class="badge badge-${getStatusBadgeClass(order.status)}">${getStatusText(order.status)}</span>
                 </div>
             </div>

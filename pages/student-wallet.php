@@ -135,8 +135,8 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Artık sadece loadWalletData'yı çağırıyoruz (ikisi bir arada çalışacak)
     loadWalletData();
-    loadTransactionHistory();
     
     document.getElementById('withdrawal-form').addEventListener('submit', handleWithdrawal);
 });
@@ -153,10 +153,12 @@ async function loadWalletData() {
         if (!res.ok) throw new Error('Cüzdan verisi yüklenemedi');
         const wallet = await res.json();
 
-        document.getElementById('available-balance').textContent = `₺${wallet.withdrawableBalance.toFixed(2)}`;
-        document.getElementById('pending-balance').textContent = `₺${wallet.pendingBalance.toFixed(2)}`;
-        document.getElementById('total-earned').textContent = `₺${wallet.totalEarnings.toFixed(2)}`;
+        // 1. Bakiye Kısımlarını Doldur
+        document.getElementById('available-balance').textContent = `₺${(wallet.withdrawableBalance || 0).toFixed(2)}`;
+        document.getElementById('pending-balance').textContent = `₺${(wallet.pendingBalance || 0).toFixed(2)}`;
+        document.getElementById('total-earned').textContent = `₺${(wallet.totalEarnings || 0).toFixed(2)}`;
 
+        // Banka bilgilerini doldur
         if (wallet.savedIban) {
             document.getElementById('saved-iban').textContent = wallet.savedIban;
             document.getElementById('iban').value = wallet.savedIban;
@@ -164,46 +166,56 @@ async function loadWalletData() {
         if (wallet.savedAccountHolder) {
             document.getElementById('account_holder').value = wallet.savedAccountHolder;
         }
+
+        // 2. İşlem Geçmişini Doldur (Tek API isteğiyle hallettik)
+        renderTransactions(wallet.transactions || []);
+
     } catch (error) {
         console.error('Error loading wallet data:', error);
     }
 }
 
-
-async function loadTransactionHistory() {
-    try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) return;
-
-        const res = await fetch(`${API_BASE}/api/Wallet/my-wallet`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (!res.ok) throw new Error('İşlem geçmişi yüklenemedi');
-        const wallet = await res.json();
-        const transactions = (wallet.transactions || []).map(t => ({
-            id: t.id,
-            type: t.type,          // backend'den "earning"/"payout" gibi gelecek
-            amount: t.amount,
-            description: t.description,
-            date: t.date,
-            status: 'completed'    // backend DTO'da status yok — varsayılan "completed" kullan
-        }));
-
-        const container = document.getElementById('transactions-container');
-        
-        if (transactions.length === 0) {
-            container.innerHTML = '<div class="text-center text-gray-500 py-8">Henüz işlem geçmişi bulunmamaktadır.</div>';
-            return;
-        }
-        
-        // ← KRİTİK: Aşağıdaki render kodu AYNEN KALACAK — UI DEĞİŞMİYOR
-        container.innerHTML = transactions.map(transaction => `
-            <!-- mevcut template HTML AYNEN KALACAK -->
-        `).join('');
-    } catch (error) {
-        console.error('Error loading transaction history:', error);
+// Transactionları ekrana çizen yardımcı fonksiyon
+function renderTransactions(transactionsData) {
+    const container = document.getElementById('transactions-container');
+    
+    if (!transactionsData || transactionsData.length === 0) {
+        container.innerHTML = '<div class="text-center text-gray-500 py-8">Henüz işlem geçmişi bulunmamaktadır.</div>';
+        return;
     }
+
+    const transactions = transactionsData.map(t => ({
+        id: t.id,
+        type: t.type ? t.type.toLowerCase() : 'unknown', // backend'den "Earning"/"Payout" gibi gelebilir
+        amount: t.amount,
+        description: t.description,
+        date: t.date,
+        status: 'completed'
+    }));
+    
+    container.innerHTML = transactions.map(transaction => {
+        // Renk ayarlamaları
+        const isEarning = transaction.type === 'earning';
+        const colorClass = isEarning ? 'green' : 'blue';
+        const sign = isEarning ? '+' : '-';
+
+        return `
+        <div class="flex items-center space-x-3 p-3 rounded-lg hover:bg-gray-50">
+            <div class="w-10 h-10 bg-${colorClass}-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-${colorClass}-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1"/>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">${escapeHtml(transaction.description || transaction.type)}</p>
+                <p class="text-xs text-gray-500">${formatDate(transaction.date)}</p>
+            </div>
+            <span class="text-sm font-semibold text-${colorClass}-600">
+                ${sign}₺${parseFloat(transaction.amount).toFixed(2)}
+            </span>
+        </div>
+        `;
+    }).join('');
 }
 
 
@@ -220,7 +232,7 @@ async function handleWithdrawal(e) {
         return;
     }
     
-       try {
+    try {
         const token = localStorage.getItem('auth_token');
         const res = await fetch(`${API_BASE}/api/Wallet/withdraw`, {
             method: 'POST',
@@ -231,7 +243,7 @@ async function handleWithdrawal(e) {
             body: JSON.stringify({
                 amount: amount,
                 iban: iban,
-                accountHolder: accountHolder   // ← camelCase (backend case-insensitive)
+                accountHolder: accountHolder
             })
         });
 
@@ -244,10 +256,9 @@ async function handleWithdrawal(e) {
 
         e.target.reset();
         
-        // Reload data
+        // İşlem bittikten sonra veriyi yenile (tek fonksiyon yetiyor)
         setTimeout(() => {
             loadWalletData();
-            loadTransactionHistory();
         }, 1000);
         
     } catch (error) {
@@ -255,27 +266,14 @@ async function handleWithdrawal(e) {
     }
 }
 
-function getTransactionStatusText(status) {
-    const statusTexts = {
-        completed: 'Tamamlandı',
-        processing: 'İşleniyor',
-        failed: 'Başarısız',
-        pending: 'Beklemede'
-    };
-    return statusTexts[status] || status;
-}
-
-function getTransactionStatusBadge(status) {
-    const badgeClasses = {
-        completed: 'success',
-        processing: 'warning',
-        failed: 'error',
-        pending: 'gray'
-    };
-    return badgeClasses[status] || 'gray';
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
 }
 
 function formatDate(dateString) {
+    if(!dateString) return '';
     const date = new Date(dateString);
     return date.toLocaleDateString('tr-TR', {
         year: 'numeric',

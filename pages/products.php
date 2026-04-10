@@ -319,9 +319,10 @@
         });
     }
 
-    async function loadCategories() {
+   async function loadCategories() {
         try {
-            const response = await apiCall('Categories');
+            // BURASI DÜZELTİLDİ: Artık hiyerarşik (tree) yapıyı getirecek
+            const response = await apiCall('Categories/tree'); 
 
             // .NET backend direkt array döner
             if (Array.isArray(response)) {
@@ -397,12 +398,40 @@
             currentFilters.category = []; // "Tüm Kategoriler" seçilirse diziyi boşalt
         } else {
             categoryId = String(categoryId);
-            const index = currentFilters.category.indexOf(categoryId);
+            
+            // 1. Tıklanan kategoriyi bul
+            const category = findCategoryById(categoryId);
+            
+            // 2. Bu kategorinin ve varsa TÜM alt kategorilerinin ID'lerini bu dizide toplayacağız
+            let idsToToggle = [categoryId];
+            
+            // Alt kategorileri bulan yardımcı (recursive) fonksiyon
+            function collectChildIds(cat) {
+                const children = cat.children || cat.subCategories || [];
+                children.forEach(child => {
+                    idsToToggle.push(String(child.id));
+                    collectChildIds(child); // Altın da altı varsa diye kendini tekrar çağır
+                });
+            }
+            
+            // Eğer kategori bulunduysa alt kategorilerini topla
+            if (category) {
+                collectChildIds(category);
+            }
 
-            if (index > -1) {
-                currentFilters.category.splice(index, 1); // Zaten seçiliyse çıkar
+            // 3. Tıkladığımız ana kategori şu an dizide var mı? (Seçili mi?)
+            const isCurrentlySelected = currentFilters.category.includes(categoryId);
+
+            if (isCurrentlySelected) {
+                // SEÇİMİ KALDIR: Hem ana kategoriyi hem de altındaki tüm çocukları diziden çıkar
+                currentFilters.category = currentFilters.category.filter(id => !idsToToggle.includes(id));
             } else {
-                currentFilters.category.push(categoryId); // Seçili değilse ekle
+                // SEÇ: Hem ana kategoriyi hem de tüm çocukları diziye ekle (Mükerrer eklememek için kontrol et)
+                idsToToggle.forEach(id => {
+                    if (!currentFilters.category.includes(id)) {
+                        currentFilters.category.push(id);
+                    }
+                });
             }
         }
 
@@ -577,15 +606,16 @@
         try {
             const limit = 9;
             const offset = currentPage * limit;
-
-            // Backend parametre isimleri: minPrice, maxPrice, search, categoryId
+            // Backend parametre isimleri: minPrice, maxPrice, search, categoryId, limit, offset, sort
             let params = new URLSearchParams();
+            
+            params.set('limit', limit);
+            params.set('offset', offset);
 
             if (currentFilters.search) {
                 params.set('search', currentFilters.search);
             }
             if (currentFilters.category && currentFilters.category.length > 0) {
-                // Backend tek bir categoryId (int?) kabul ediyor
                 params.set('categoryId', currentFilters.category[0]);
             }
             if (currentFilters.minPrice !== '' && currentFilters.minPrice !== null && currentFilters.minPrice !== undefined) {
@@ -594,16 +624,23 @@
             if (currentFilters.maxPrice !== '' && currentFilters.maxPrice !== null && currentFilters.maxPrice !== undefined) {
                 params.set('maxPrice', Number(currentFilters.maxPrice));
             }
+            if (currentFilters.sort && currentFilters.sort !== 'newest') {
+                params.set('sort', currentFilters.sort);
+            }
 
             const queryString = params.toString();
-            let endpoint = queryString ? `products?${queryString}` : 'products';
+            let endpoint = `products?${queryString}`;
 
             const response = await apiCall(endpoint);
-            // .NET backend düz array dönerse onu al, dönmezse obje içindeki data'yı dene
-            const products = Array.isArray(response) ? response : (response.data || []);
-            // .NET backend meta dönmüyorsa varsayılan fake meta oluştur
-            const meta = response.meta || { has_more: products.length >= limit };
-
+            // .NET backend `products` array ve `totalCount` dönüyor
+            const products = Array.isArray(response) ? response : (response.products || response.data || []);
+            const totalCount = response.totalCount ?? response.TotalCount ?? null;
+            
+            // Pagination hesabı
+            const meta = { 
+                has_more: totalCount !== null ? (offset + limit < totalCount) : products.length >= limit,
+                total: totalCount ?? products.length
+            };
 
             const container = document.getElementById('products-container');
 
@@ -694,9 +731,9 @@
             <span class="text-gray-400 text-4xl">📷</span>
         </div>`;
 
-        const categoryBadge = product.category && product.category.name ?
+        const categoryBadge = (product.categoryName || (product.category && product.category.name)) ?
             `<span class="absolute top-2 left-2 px-2 py-1 bg-white/90 backdrop-blur-sm text-xs font-medium text-gray-700 rounded-full">
-            ${escapeHtml(product.category.name)}
+            ${escapeHtml(product.categoryName || product.category?.name)}
         </span>` : '';
 
         return `
@@ -755,7 +792,7 @@
 
                     <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
                         <span class="text-xs text-gray-500 truncate max-w-[120px]">
-                            ${escapeHtml(product.shop?.name || 'Market')}
+                            ${escapeHtml(product.merchantName || product.shop?.name || 'Esnaf')}
                         </span>
                         
                         <button 

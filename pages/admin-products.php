@@ -277,7 +277,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 product.categoryName?.toLowerCase().includes(search);
 
 
-            const matchesStatus = !statusFilter || product.status === statusFilter;
+           const statusTextMap = { 0: 'pending', 1: 'active', 2: 'rejected', 3: 'suspended' };
+const normalizedStatus = statusTextMap[product.status] ?? String(product.status).toLowerCase();
+const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
+
 
             return matchesSearch && matchesStatus;
         });
@@ -322,12 +325,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             });
 
 
-            // Response format might be different now, check for .message or .success
-            if (response.message || response.success) {
-                // Ürün listesini yeniden yükle
+
                 await loadProducts();
                 showToast('Ürün onaylandı', 'success');
-            }
         } catch (error) {
             showToast('Ürün onaylanırken hata oluştu: ' + error.message, 'error');
         }
@@ -346,10 +346,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             });
 
 
-            if (response.message || response.success) {
+           
                 await loadProducts();
                 showToast('Ürün reddedildi', 'success');
-            }
+            
         } catch (error) {
             showToast('Ürün reddedilirken hata oluştu: ' + error.message, 'error');
         }
@@ -370,10 +370,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             });
 
 
-            if (response.message || response.success) {
+           
                 await loadProducts();
                 showToast('Ürün askıya alındı', 'success');
-            }
+            
         } catch (error) {
             showToast('Ürün askıya alınırken hata oluştu: ' + error.message, 'error');
         }
@@ -391,10 +391,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             });
 
 
-            if (response.message || response.success) {
+           
                 await loadProducts();
                 showToast('Ürün aktifleştirildi', 'success');
-            }
+            
         } catch (error) {
             showToast('Ürün aktifleştirilirken hata oluştu: ' + error.message, 'error');
         }

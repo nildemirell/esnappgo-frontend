@@ -65,13 +65,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 <!-- Modal -->
 <div id="category-modal" class="fixed inset-0 z-50 hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
     <div class="flex items-center justify-center min-h-screen px-4 pt-4 pb-20 text-center sm:block sm:p-0">
-        <!-- Arkaplan overlay -->
         <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity backdrop-blur-sm shadow-2xl" aria-hidden="true" onclick="closeCategoryModal()"></div>
 
-        <!-- Ortalama hilesi -->
         <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-        <!-- Modal İçeriği -->
         <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg w-full">
             <form id="category-form" onsubmit="handleCategorySubmit(event)">
                 <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
@@ -90,11 +87,17 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                                 
                                 <div>
                                     <label for="category-name" class="block text-sm font-medium text-gray-700 mb-1">Kategori Adı</label>
-                                    <input type="text" id="category-name" name="name" required
-                                        class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
-                                        placeholder="Örn: Elektronik">
+                                    <input type="text" id="category-name" name="name" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors" placeholder="Örn: Elektronik">
                                 </div>
 
+                                <div>
+                                    <label for="category-parent-id" class="block text-sm font-medium text-gray-700 mb-1">Üst Kategori (Opsiyonel)</label>
+                                    <select id="category-parent-id" name="parentId" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors">
+                                        <option value="">-- Ana Kategori (Üst Kategori Yok) --</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500">Alt kategori eklemek istiyorsanız bir üst kategori seçin.</p>
+                                </div>
+                                
                                 <div>
                                     <label for="category-icon" class="block text-sm font-medium text-gray-700 mb-1">İkon Sınıfı veya URL (Opsiyonel)</label>
                                     <input type="text" id="category-icon" name="icon"
@@ -103,7 +106,6 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                                     <p class="mt-1 text-xs text-gray-500">İkon için class ismi veya emoji kullanabilirsiniz.</p>
                                 </div>
                                 
-                                <!-- Düzenleme esnasında aktif/pasiflik görünür yapılacak -->
                                 <div id="status-container" class="hidden">
                                     <label class="flex items-center space-x-3 cursor-pointer">
                                         <input type="checkbox" id="category-is-active" name="isActive" class="form-checkbox h-5 w-5 text-teal-600 rounded transition duration-150 ease-in-out border-gray-300">
@@ -143,7 +145,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 return;
             }
 
-            const response = await fetch(`${API_BASE}/api/Categories`, {
+            const response = await fetch(`${API_BASE}/api/Categories/tree`, {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
@@ -185,41 +187,61 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     function displayCategories() {
         const tbody = document.getElementById('categories-table-body');
         
-        if (allCategories.length === 0) {
+        if (!allCategories || allCategories.length === 0) {
             tbody.innerHTML = `<tr><td colspan="3" class="text-center py-8 text-gray-500 bg-gray-50 rounded-b-xl">Henüz eklenmiş kategori bulunmuyor.</td></tr>`;
             return;
         }
+        
+        tbody.innerHTML = renderCategoryTree(allCategories);
+    }
 
-        tbody.innerHTML = allCategories.map(cat => `
-            <tr class="hover:bg-teal-50/30 transition-colors group">
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <div class="flex items-center">
-                        <div class="w-10 h-10 bg-gradient-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center shadow-md transform group-hover:scale-105 transition-transform duration-200">
-                            <span class="text-white text-lg font-bold">${cat.icon && cat.icon.trim() !== '' ? parseIcon(cat.icon) : cat.name.charAt(0)}</span>
+    function renderCategoryTree(categories, depth = 0) {
+        let html = '';
+        categories.forEach(cat => {
+            const paddingStr = depth > 0 ? `style="padding-left: ${depth * 28}px"` : '';
+            const treeIcon = depth > 0 ? `<span class="text-gray-300 mr-2">└─</span>` : '';
+            const bgColor = depth > 0 ? (depth === 1 ? 'bg-gray-50/50' : 'bg-gray-100/50') : 'bg-white';
+            const iconSize = depth > 0 ? 'w-8 h-8 text-sm' : 'w-10 h-10 text-lg';
+            const nameSize = depth > 0 ? 'text-sm font-semibold' : 'text-sm font-bold';
+
+            html += `
+                <tr class="${bgColor} hover:bg-teal-50/30 transition-colors group border-b border-gray-100">
+                    <td class="px-6 py-3 whitespace-nowrap">
+                        <div class="flex items-center" ${paddingStr}>
+                            ${treeIcon}
+                            <div class="${iconSize} bg-gradient-to-br from-teal-400 to-teal-600 rounded-lg flex items-center justify-center shadow-sm transform group-hover:scale-105 transition-transform duration-200">
+                                <span class="text-white font-bold">${cat.icon && cat.icon.trim() !== '' ? parseIcon(cat.icon) : cat.name.charAt(0)}</span>
+                            </div>
+                            <div class="ml-4">
+                                <div class="${nameSize} text-gray-900">${escapeHtml(cat.name)}</div>
+                                <div class="text-xs text-gray-400">ID: #${cat.id}</div>
+                            </div>
                         </div>
-                        <div class="ml-4">
-                            <div class="text-sm font-bold text-gray-900">${escapeHtml(cat.name)}</div>
-                            <div class="text-xs text-gray-500">ID: #${cat.id}</div>
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap">
+                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-600 border border-gray-200">
+                            ${cat.icon ? escapeHtml(cat.icon) : 'Yok'}
+                        </span>
+                    </td>
+                    <td class="px-6 py-3 whitespace-nowrap text-sm font-medium">
+                        <div class="flex space-x-2">
+                            <button onclick='editCategory(${JSON.stringify(cat).replace(/'/g, "&#39;")})' class="text-teal-600 hover:text-teal-900 bg-teal-50 px-2 py-1 rounded transition-colors border border-teal-100 hover:bg-teal-100 text-xs">
+                                Düzenle
+                            </button>
+                            <button onclick="deleteCategory(${cat.id})" class="text-red-600 hover:text-red-900 bg-red-50 px-2 py-1 rounded transition-colors border border-red-100 hover:bg-red-100 text-xs">
+                                Sil
+                            </button>
                         </div>
-                    </div>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap">
-                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-gray-100 text-gray-800 border border-gray-200">
-                        ${cat.icon ? escapeHtml(cat.icon) : 'İkon Yok'}
-                    </span>
-                </td>
-                <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                    <div class="flex space-x-3">
-                        <button onclick='editCategory(${JSON.stringify(cat)})' class="text-teal-600 hover:text-teal-900 bg-teal-50 px-3 py-1 rounded-md transition-colors border border-teal-100 hover:bg-teal-100">
-                            Düzenle
-                        </button>
-                        <button onclick="deleteCategory(${cat.id})" class="text-red-600 hover:text-red-900 bg-red-50 px-3 py-1 rounded-md transition-colors border border-red-100 hover:bg-red-100">
-                            Sil
-                        </button>
-                    </div>
-                </td>
-            </tr>
-        `).join('');
+                    </td>
+                </tr>
+            `;
+            if (cat.subCategories && cat.subCategories.length > 0) {
+                html += renderCategoryTree(cat.subCategories, depth + 1);
+            } else if (cat.children && cat.children.length > 0) {
+                html += renderCategoryTree(cat.children, depth + 1);
+            }
+        });
+        return html;
     }
 
     function parseIcon(iconStr) {
@@ -230,6 +252,29 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         return escapeHtml(iconStr);
     }
 
+    function getFlatCategories(categories, flatList = [], prefix = '') {
+        categories.forEach(cat => {
+            flatList.push({ id: cat.id, name: prefix + cat.name });
+            let children = cat.subCategories || cat.children || [];
+            if (children.length > 0) {
+                getFlatCategories(children, flatList, prefix + '-- ');
+            }
+        });
+        return flatList;
+    }
+
+    function populateParentSelect(excludeId = null) {
+        const select = document.getElementById('category-parent-id');
+        select.innerHTML = '<option value="">-- Ana Kategori (Üst Kategori Yok) --</option>';
+        
+        const flatCats = getFlatCategories(allCategories);
+        flatCats.forEach(cat => {
+            if (cat.id !== excludeId) { 
+                select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
+            }
+        });
+    }
+
     function openCategoryModal() {
         document.getElementById('modal-title').textContent = 'Yeni Kategori Ekle';
         document.getElementById('category-id').value = '';
@@ -237,6 +282,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         document.getElementById('category-icon').value = '';
         document.getElementById('status-container').classList.add('hidden');
         document.getElementById('category-is-active').checked = true;
+        
+        populateParentSelect(); 
+        document.getElementById('category-parent-id').value = ''; 
         
         const modal = document.getElementById('category-modal');
         modal.classList.remove('hidden');
@@ -252,9 +300,11 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         document.getElementById('category-name').value = cat.name;
         document.getElementById('category-icon').value = cat.icon || '';
         
-        // Düzenlerken status alanını göster.
+        populateParentSelect(cat.id); 
+        document.getElementById('category-parent-id').value = cat.parentId || ''; 
+        
         document.getElementById('status-container').classList.remove('hidden');
-        document.getElementById('category-is-active').checked = true; // API'den isactive gelmiyor ama default true sayıyoruz GET çektiğimiz için.
+        document.getElementById('category-is-active').checked = true; 
 
         document.getElementById('category-modal').classList.remove('hidden');
     }
@@ -268,15 +318,18 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         const icon = iconInput.trim() === '' ? null : iconInput;
         const isActive = document.getElementById('category-is-active').checked;
         
-        const isEditing = id && id !== '';
+        const parentIdVal = document.getElementById('category-parent-id').value;
+        const parentId = parentIdVal === '' ? null : parseInt(parentIdVal);
         
+        const isEditing = id && id !== '';
         const token = localStorage.getItem('auth_token');
         const endpoint = isEditing ? `${API_BASE}/api/Categories/${id}` : `${API_BASE}/api/Categories`;
         const method = isEditing ? 'PUT' : 'POST';
         
+        // PAYLOAD HATASINI BURADA DÜZELTTİK: ParentId eklendi!
         const payload = isEditing 
-            ? { Name: name, Icon: icon, IsActive: isActive } 
-            : { Name: name, Icon: icon };
+            ? { Name: name, Icon: icon, ParentId: parentId, IsActive: isActive } 
+            : { Name: name, Icon: icon, ParentId: parentId };
 
         try {
             const response = await fetch(endpoint, {
@@ -291,7 +344,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             if (response.ok) {
                 showToast(isEditing ? 'Kategori güncellendi!' : 'Kategori başarıyla eklendi!', 'success');
                 closeCategoryModal();
-                loadCategories(); // Tabloyu yenile
+                loadCategories(); 
             } else {
                 const errData = await response.json();
                 throw new Error(errData.error || 'İşlem başarısız.');

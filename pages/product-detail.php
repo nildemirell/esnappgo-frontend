@@ -216,48 +216,76 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         console.log('Fetching real product data for ID:', productId);
 
         try {
-            // BACKEND'DE ŞU AN TEKİL ÜRÜN ÇAĞIRMA (GET api/products/{id}) OLMADIĞI İÇİN:
-            // Mobil uygulamanın yaptığı gibi API'den tüm ürünleri çekip içinden bizimkini cımbızlıyoruz
-            const response = await apiCall('products');
+            // Backend'den çekiyoruz, limit = 1000 koyarak bulma olasılığını yükseltiyoruz
+            const response = await apiCall('products?limit=1000');
+            const allProducts = Array.isArray(response) ? response : (response.products || response.data || []);
+            let foundProduct = allProducts.find(p => p.id == productId || p.Id == productId);
 
-            // Tüm ürünler içinden URL'deki ID ile eşleşen ürünü buluyoruz (.NET'ten 'Id' veya 'id' gelebilir)
-            const allProducts = Array.isArray(response) ? response : (response.data || []);
-            const foundProduct = allProducts.find(p => p.id == productId || p.Id == productId);
+            // Eğer ürün onaylanmamış/reddedilmiş ise public listede çıkmaz. 
+            // Kullanıcının rolüne göre kendi ürünleri listesinde tekrar ara!
+            if (!foundProduct) {
+                // PHP Session'ına (%100 güvenemeyiz) alternatif olarak JWT'den okuyalım.
+                let userRole = <?php echo json_encode($current_user ? $current_user['role'] : null); ?>;
+                const token = localStorage.getItem('auth_token');
+                if (token) {
+                    try {
+                        const payload = JSON.parse(atob(token.split('.')[1]));
+                        const jwtRole = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload.role;
+                        if (jwtRole) userRole = jwtRole.toLowerCase();
+                    } catch (e) { }
+                }
+
+                if (userRole) {
+                    try {
+                        console.log('Searching in private list for role:', userRole);
+                        let privateResponse = null;
+                        if (userRole === 'esnaf' || userRole === 'merchant') {
+                            privateResponse = await apiCall('Merchant/products');
+                        } else if (userRole === 'ogrenci' || userRole === 'student') {
+                            privateResponse = await apiCall('Products/my-products');
+                        } else if (userRole === 'admin') {
+                            privateResponse = await apiCall('Admin/products');
+                        }
+
+                        if (privateResponse) {
+                            console.log('Private response:', privateResponse);
+                            const privateProducts = Array.isArray(privateResponse)
+                                ? privateResponse
+                                : (privateResponse.products || privateResponse.data || privateResponse.items || Object.values(privateResponse).find(v => Array.isArray(v)) || []);
+
+                            console.log('Parsed private products list:', privateProducts);
+                            foundProduct = privateProducts.find(p => p.id == productId || p.Id == productId);
+                        }
+                    } catch (e) {
+                        console.log('Kullanıcıya özel listede ürün aranırken hata oluştu:', e);
+                    }
+                }
+            }
 
             if (!foundProduct) {
-                console.error('Product not found in full list');
                 showToast('Ürün bulunamadı veya onaylanmamış.', 'error');
-                // Backend gelene kadar sayfadan atmasın diye redirect kapalı
-                // window.location.href = '/products';
                 return;
             }
 
-            // Gelen gerçek datayı Frontend'in beklediği yapıya tam oturması için uyarlıyoruz
             currentProduct = {
                 ...foundProduct,
                 id: foundProduct.id || foundProduct.Id,
                 title: foundProduct.name || foundProduct.title || foundProduct.Name,
                 price: foundProduct.finalPrice || foundProduct.suggestedPrice || foundProduct.SuggestedPrice,
-                // Resimler varsa al, yoksa boş dizi yap (kodun kırılmasını önler)
                 images: foundProduct.imageUrls || foundProduct.ImageUrls || ['/media/68a658361732a_1755732022.jpg'],
                 description: foundProduct.description || "Bu ürünün detaylı açıklaması bulunmamaktadır.",
                 shop_name: foundProduct.merchantName || foundProduct.MerchantName || "Kampüs Esnafı"
             };
 
-            console.log('Real product set to:', currentProduct);
-
-            // Gerçekçi yüklenme süresi efekti
             setTimeout(() => {
                 displayProduct(currentProduct);
             }, 300);
 
         } catch (error) {
             console.error('Error loading product:', error);
-            showToast('Ürün yüklenirken hata oluştu', 'error');
+            showToast('Ürün yüklenirken hata oluştu: ' + error.message, 'error');
         }
     }
-
-
 
     function displayProduct(product) {
         // Hide loading, show content
@@ -271,8 +299,8 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         const displayPrice = product.finalPrice || product.suggestedPrice || product.price || 0;
         document.getElementById('product-price').textContent = `₺${parseFloat(displayPrice).toFixed(2)}`;
 
-        // .NET Backend henüz stok tutmuyorsa varsayılan 1 yazıyoruz
-        document.getElementById('stock-info').textContent = `Stok: ${product.stock || 1} adet`;
+        product.stock = product.stock || product.stockQuantity || 10;
+        document.getElementById('stock-info').textContent = `Stok: ${product.stock} adet`;
 
 
         // Set shop info
@@ -392,18 +420,20 @@ if (!isset($product_id) || !is_numeric($product_id)) {
     }
 
     function setCurrentImage(index) {
-        if (!currentProduct || !currentProduct.images) return;
+        if (!currentProduct) return;
+        const imagesArray = currentProduct.images || currentProduct.imageUrls || [];
+        if (!imagesArray || imagesArray.length === 0) return;
 
         currentImageIndex = index;
         const mainImage = document.getElementById('main-image');
 
-        // Resim yolunu düzelt (http korumalı)
-        let imagePath = currentProduct.images[index];
-        if (!imagePath.startsWith('/') && !imagePath.startsWith('http')) {
+        // Resim yolunu düzelt
+        let imagePath = imagesArray[index];
+        if (imagePath && !imagePath.startsWith('/') && !imagePath.startsWith('http')) {
             imagePath = '/' + imagePath;
         }
 
-        mainImage.src = imagePath;
+        mainImage.src = imagePath || '/media/68a658361732a_1755732022.jpg';
 
         console.log('Image changed to:', imagePath);
 
@@ -418,8 +448,9 @@ if (!isset($product_id) || !is_numeric($product_id)) {
     }
 
     function changeQuantity(delta) {
+        const maxStock = currentProduct.stock || 10;
         const newQuantity = quantity + delta;
-        if (newQuantity >= 1 && newQuantity <= currentProduct.stock) {
+        if (newQuantity >= 1 && newQuantity <= maxStock) {
             quantity = newQuantity;
             document.getElementById('quantity').value = quantity;
             updateQuantityControls();
@@ -429,9 +460,10 @@ if (!isset($product_id) || !is_numeric($product_id)) {
     function updateQuantityControls() {
         const decreaseBtn = document.getElementById('decrease-qty');
         const increaseBtn = document.getElementById('increase-qty');
+        const maxStock = currentProduct ? (currentProduct.stock || 10) : 10;
 
         decreaseBtn.disabled = quantity <= 1;
-        increaseBtn.disabled = quantity >= currentProduct.stock;
+        increaseBtn.disabled = quantity >= maxStock;
     }
 
     function checkFavoriteStatus(productId) {

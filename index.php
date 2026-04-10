@@ -98,6 +98,9 @@ switch ($page) {
     case 'favorites':
         $page_file = 'pages/favorites.php';
         break;
+   case 'notifications':
+        $page_file = 'pages/notifications.php';
+        break;
     case 'account':
         $page_file = 'pages/account.php';
         break;
@@ -815,17 +818,13 @@ switch ($page) {
                 showToast(error.message, 'error');
             }
         }
-
         async function updateCartCount() {
-            // YENİ EKLENEN KOD: Eğer localStorage'da token yoksa hiç istek atma
             const token = localStorage.getItem('auth_token');
             if (!token) return;
 
             try {
                 const response = await apiCall('cart');
-                // Backend CartDto objesi dönüyor, ürünler Items dizisinin içindedir.
                 const cartCount = response.items ? response.items.length : 0;
-
 
                 const cartButton = document.getElementById('cart-count');
                 if (cartButton) {
@@ -837,14 +836,37 @@ switch ($page) {
             }
         }
 
+        // YENİ EKLEDİĞİMİZ FONKSİYON: Bildirimleri Çek
+        async function loadNotificationCount() {
+            const token = localStorage.getItem('auth_token');
+            if (!token) return;
 
-        // Initialize cart count on page load
+            try {
+                const notifications = await apiCall('Notifications'); 
+                const unread = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
+
+                const badge = document.getElementById('notification-badge');
+                if (badge) {
+                    if (unread > 0) {
+                        badge.textContent = unread;
+                        badge.style.display = 'flex';
+                    } else {
+                        badge.style.display = 'none';
+                    }
+                }
+            } catch (error) {
+                console.error('Bildirimler çekilemedi:', error);
+            }
+        }
+
+        // Initialize cart AND notifications on page load
         document.addEventListener('DOMContentLoaded', function () {
             <?php if ($current_user): ?>
                 updateCartCount();
+                loadNotificationCount(); // Bildirim fonksiyonunu tetikle
             <?php endif; ?>
         });
-
+    
         // Form submission helpers
         function handleFormSubmit(formId, endpoint, successCallback) {
             const form = document.getElementById(formId);

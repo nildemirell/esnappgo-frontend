@@ -214,69 +214,43 @@ document.addEventListener('DOMContentLoaded', function() {
 
 
 async function loadStudentEarnings() {
-    try {
-        const token = localStorage.getItem('auth_token');
-        if (!token) return;
-
-        const res = await fetch(`${API_BASE}/api/Products/student-dashboard`, {
-            headers: { 'Authorization': `Bearer ${token}` }
-        });
-
-        if (res.ok) {
-            const data = await res.json();
-            document.getElementById('total-earnings').textContent = `₺${data.totalEarnings.toFixed(2)}`;
-            document.getElementById('photos-count').textContent = data.totalProducts;
-            
-            const avg = data.totalProducts > 0 ? (data.totalEarnings / data.totalProducts) : 0;
-            document.getElementById('avg-per-photo').textContent = `₺${avg.toFixed(2)}`;
-        }
-
-        // monthly_earnings → backend'de yok, mock KALSIN
-        // Şimdilik değer güncellenmeyecek (HTML'deki ₺0.00 kalacak veya mock değer)
-    } catch (error) {
-        console.error('Error loading student earnings:', error);
+    const res = await fetch(`${API_BASE}/api/Products/student-dashboard`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+    });
+    if (res.ok) {
+        const data = await res.json();
+        document.getElementById('total-earnings').textContent = `₺${data.totalEarnings.toFixed(2)}`;
+        document.getElementById('photos-count').textContent = data.totalProducts;
+        const avg = data.totalProducts > 0 ? (data.totalEarnings / data.totalProducts) : 0;
+        document.getElementById('avg-per-photo').textContent = `₺${avg.toFixed(2)}`;
+        // ← BURAYI EKLE: Mock yerine gerçek veri kullan
+        renderRecentEarnings(data.recentActivities || []);
     }
 }
 
-
-async function loadRecentEarnings() {
-    try {
-        // Mock data - API endpoint eklenecek
-        const earnings = [
-            { date: '2025-08-20', amount: 15.50, product: 'Taze Domates', type: 'sale' },
-            { date: '2025-08-20', amount: 8.25, product: 'Organik Salatalık', type: 'sale' },
-            { date: '2025-08-19', amount: 12.00, product: 'Köy Ekmeği', type: 'sale' },
-            { date: '2025-08-19', amount: 5.00, product: 'Yeni Ürün Bonusu', type: 'bonus' }
-        ];
-        
-        const container = document.getElementById('recent-earnings');
-        container.innerHTML = earnings.map(earning => `
-            <div class="flex items-center space-x-3">
-                <div class="w-10 h-10 bg-${earning.type === 'sale' ? 'green' : 'blue'}-100 rounded-lg flex items-center justify-center">
-                    ${earning.type === 'sale' ? `
-                        <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                        </svg>
-                    ` : `
-                        <svg class="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v13m0-13V6a2 2 0 112 2h-2zm0 0V5.5A2.5 2.5 0 114.5 8H12zm-7 4h14M5 12a2 2 0 110-4h14a2 2 0 110 4M5 12v7a2 2 0 002 2h10a2 2 0 002-2v-7"></path>
-                        </svg>
-                    `}
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm font-medium text-gray-900">₺${earning.amount.toFixed(2)}</p>
-                    <p class="text-xs text-gray-500">${earning.product} • ${formatDate(earning.date)}</p>
-                </div>
-                <span class="badge badge-${earning.type === 'sale' ? 'success' : 'primary'}">
-                    ${earning.type === 'sale' ? 'Satış' : 'Bonus'}
-                </span>
+function renderRecentEarnings(activities) {
+    const container = document.getElementById('recent-earnings');
+    if (activities.length === 0) {
+        container.innerHTML = '<p class="text-sm text-gray-500 text-center py-4">Henüz aktivite yok</p>';
+        return;
+    }
+    container.innerHTML = activities.map(a => `
+        <div class="flex items-center space-x-3">
+            <div class="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
+                <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
             </div>
-        `).join('');
-        
-    } catch (error) {
+            <div class="flex-1">
+                <p class="text-sm font-medium text-gray-900">${escapeHtml(a.productName)}</p>
+                <p class="text-xs text-gray-500">${a.statusMessage} • ${formatDate(a.date)}</p>
+            </div>
+        </div>
+    `).join('');
+} catch (error) {
         console.error('Error loading recent earnings:', error);
     }
-}
+
 
 function loadEarningsChart() {
     // Mock chart data

@@ -45,27 +45,12 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    loadPrivacyContent();
-});
+   
+    document.getElementById('privacy-content').innerHTML = getDefaultPrivacyContent();
+    
 
-async function loadPrivacyContent() {
-    try {
-        const response = await apiCall('pages/privacy');
-        
-        if (response.success) {
-            const page = response.data;
-            document.getElementById('privacy-content').innerHTML = page.content;
-            document.getElementById('last-updated').textContent = `Son güncelleme: ${formatDate(page.updated_at)}`;
-        } else {
-            // Fallback content
-            document.getElementById('privacy-content').innerHTML = getDefaultPrivacyContent();
-        }
-        
-    } catch (error) {
-        console.error('Error loading privacy policy:', error);
-        document.getElementById('privacy-content').innerHTML = getDefaultPrivacyContent();
-    }
-}
+    document.getElementById('last-updated').textContent = `Son güncelleme: Nisan 2026`;
+});
 
 function getDefaultPrivacyContent() {
     return `
@@ -124,20 +109,10 @@ function getDefaultPrivacyContent() {
         <h3>7. İletişim</h3>
         <p>Gizlilik politikası ile ilgili sorularınız için:</p>
         <p><strong>E-posta:</strong> privacy@esnappgo.com</p>
-        <p><strong>Adres:</strong> Teknokent, İTÜ Maslak, İstanbul</p>
         
         <h3>8. Değişiklikler</h3>
         <p>Bu gizlilik politikası zaman zaman güncellenebilir. Önemli değişiklikler kullanıcılara bildirilir.</p>
     `;
-}
-
-function formatDate(dateString) {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-    });
 }
 </script>
 
