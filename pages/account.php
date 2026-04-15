@@ -24,6 +24,18 @@ if (!$current_user) {
                         </svg>
                         Kişisel Bilgiler
                     </a>
+
+                    <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
+                    <a href="/merchant/shop"
+                        class="flex items-center px-3 py-2 text-sm font-medium rounded-md text-amber-700 bg-amber-50 hover:bg-amber-100 transition-colors my-2 border border-amber-200">
+                        <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4">
+                            </path>
+                        </svg>
+                        Mağaza Ayarlarına Git
+                    </a>
+                    <?php endif; ?>
                     <a href="#addresses" onclick="showSection('addresses')"
                         class="account-nav-link flex items-center px-3 py-2 text-sm font-medium rounded-md">
                         <svg class="w-5 h-5 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,6 +113,12 @@ if (!$current_user) {
                                         value="<?php echo htmlspecialchars($current_user['full_name']); ?>"
                                         class="w-full rounded-md border-gray-300 focus:border-blue-500 focus:ring-blue-500 py-2 px-3 border"
                                         required />
+                                        <?php if ($current_user['role'] === 'merchant' || $current_user['role'] === 'esnaf'): ?>
+                                    <p class="text-xs text-orange-600 mt-1 font-medium flex items-center">
+                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                                        Bu sizin gerçek adınızdır. İşletme adınızı sol menüdeki Mağaza Ayarları'ndan değiştirebilirsiniz.
+                                    </p>
+                                    <?php endif; ?>
                                 </div>
 
                                 <div>
@@ -873,39 +891,32 @@ if (!$current_user) {
             FullName: formData.get('full_name'),
             PhoneNumber: cleanPhone,
             Gender: formData.get('gender') || null,
-            BirthDate: formData.get('birth_date') || null
+            BirthDate: formData.get('birth_date') ? `${formData.get('birth_date')}T00:00:00Z` : null
         };
 
 
 
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE}/api/User/profile`, {
+            const response = await apiCall('User/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(data)
             });
 
-            if (response.ok) {
-                if (typeof showToast === 'function') showToast('Kişisel bilgiler başarıyla güncellendi', 'success');
-                else await openCustomModal('Kişisel bilgiler güncellendi', 'alert');
+            // Başarılı kayıttan sonra sağ üstteki ismin anında değişmesi için local memory'i güncelle
+            localStorage.setItem('user_name', data.FullName);
 
-                const phoneInput = document.getElementById('phone');
-                const editBtn = document.getElementById('edit-phone-btn');
-                if (phoneInput && editBtn) {
-                    phoneInput.setAttribute('readonly', 'readonly');
-                    phoneInput.classList.add('bg-gray-50');
-                    editBtn.textContent = 'Güncelle';
-                    editBtn.classList.replace('text-gray-500', 'text-blue-600');
-                    editBtn.classList.replace('hover:text-gray-700', 'hover:text-blue-500');
-                    document.getElementById('phone-hint').classList.add('hidden');
-                }
-            } else {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Güncelleme başarısız oldu.');
+            if (typeof showToast === 'function') showToast('Kişisel bilgiler başarıyla güncellendi', 'success');
+            else await openCustomModal('Kişisel bilgiler güncellendi', 'alert');
+
+            const phoneInput = document.getElementById('phone');
+            const editBtn = document.getElementById('edit-phone-btn');
+            if (phoneInput && editBtn) {
+                phoneInput.setAttribute('readonly', 'readonly');
+                phoneInput.classList.add('bg-gray-50');
+                editBtn.textContent = 'Güncelle';
+                editBtn.classList.replace('text-gray-500', 'text-blue-600');
+                editBtn.classList.replace('hover:text-gray-700', 'hover:text-blue-500');
+                document.getElementById('phone-hint').classList.add('hidden');
             }
         } catch (error) {
             if (typeof showToast === 'function') showToast(error.message, 'error');
@@ -984,19 +995,30 @@ if (!$current_user) {
         }
     }
 
-    async function handleDeleteAccountSubmit(e) {
-        e.preventDefault();
-        const formData = new FormData(e.target);
-        if (formData.get('delete_confirmation') !== 'HESABI SİL') {
-            if (typeof showToast === 'function') showToast('Onay metni hatalı', 'error');
-            else await openCustomModal('Onay metni hatalı', 'alert');
-            return;
-        }
-        if (!(await openCustomModal('Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz? Bu işlem geri alınamaz!'))) return;
-
-        if (typeof showToast === 'function') showToast('Hesap silme işlemi yakında eklenecek', 'info');
-        else await openCustomModal('Hesap silme işlemi yakında eklenecek', 'alert');
+   async function handleDeleteAccountSubmit(e) {
+    e.preventDefault();
+    const formData = new FormData(e.target);
+    if (formData.get('delete_confirmation') !== 'HESABI SİL') {
+        showToast('Onay metni hatalı', 'error');
+        return;
     }
+    if (!(await openCustomModal('Hesabınızı kalıcı olarak silmek istediğinizden emin misiniz?'))) return;
+
+    try {
+        const token = localStorage.getItem('auth_token');
+        const response = await fetch(`${API_BASE}/api/User/account`, {
+            method: 'DELETE',
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!response.ok) throw new Error('Hesap silinemedi.');
+        showToast('Hesabınız silindi. Yönlendiriliyorsunuz...', 'success');
+        localStorage.clear();
+        setTimeout(() => window.location.href = '/', 2000);
+    } catch (error) {
+        showToast(error.message, 'error');
+    }
+}
+
 
     async function loadNotificationSettings() {
         try {

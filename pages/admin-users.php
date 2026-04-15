@@ -28,7 +28,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         Ara
                     </label>
                     <input type="text" id="search" placeholder="Ad, email ara..." class="w-full"
-                        onkeyup="filterUsers()" />
+                        onkeyup="debounceFilter()" />
                 </div>
 
                 <div>
@@ -128,7 +128,13 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <script>
     let allUsers = [];
-    let filteredUsers = [];
+
+    // Debounce: Kullanıcı yazmayı bırakınca 400ms sonra arama yap
+    let _filterTimer = null;
+    function debounceFilter() {
+        clearTimeout(_filterTimer);
+        _filterTimer = setTimeout(() => filterUsers(), 400);
+    }
 
     document.addEventListener('DOMContentLoaded', function () {
         // Linkteki (URL) parametreyi yakala (?role=ogrenci vb.)
@@ -150,49 +156,35 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     async function loadUsers() {
         try {
-            // 1. LocalStorage'dan JWT token'ı al (Doğru anahtar: auth_token)
             const token = localStorage.getItem('auth_token');
-
-            // Eğer token yoksa, kullanıcı giriş yapmamıştır. Giriş sayfasına yönlendir.
             if (!token) {
                 window.location.href = '/login';
                 return;
             }
 
-            const response = await fetch(`${API_BASE}/api/Admin/users`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    // En önemli kısım: Token'ı Bearer formatında gönderiyoruz
-                    'Authorization': `Bearer ${token}`
-                }
-            });
+            // Server-side filtreleme: Backend GET /api/Admin/users?search=&role=&status= destekliyor
+            const search       = document.getElementById('search')?.value || '';
+            const roleFilter   = document.getElementById('role-filter')?.value || '';
+            const statusFilter = document.getElementById('status-filter')?.value || '';
 
+            let url = 'Admin/users';
+            const params = [];
+            if (search)       params.push(`search=${encodeURIComponent(search)}`);
+            if (roleFilter)   params.push(`role=${encodeURIComponent(roleFilter)}`);
+            if (statusFilter) params.push(`status=${encodeURIComponent(statusFilter)}`);
+            if (params.length) url += '?' + params.join('&');
 
-            // 3. Yanıtın başarılı olup olmadığını kontrol et (HTTP 200 OK)
-            if (response.ok) {
-                // .NET API doğrudan bir liste (array) dönüyor, response.data falan yok
-                const data = await response.json();
-                allUsers = data;
+            const response = await apiCall(url);
 
-                // BURASI DEĞİŞTİ: Tümünü basmak (displayUsers) yerine 
-                // linkten gelen Dropdown menü değerini uygulatarak (filterUsers) ekrana yansıtıyoruz
-                filterUsers();
-
-            } else {
-                // Hata durumunu yönet (örn: 401 Unauthorized veya 403 Forbidden)
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Kullanıcılar yüklenemedi');
-            }
+            // Backend { success: true, data: [...] } sarıcısını aç
+            allUsers = Array.isArray(response) ? response : (response.data || []);
+            displayUsers();
 
         } catch (error) {
             console.error('Error loading users:', error);
-            // showToast fonksiyonun daha önce tanımlanmış, onu kullanmaya devam edebilirsin
             showToast('Kullanıcılar yüklenirken hata oluştu: ' + error.message, 'error');
 
-            // Fallback: empty state
             allUsers = [];
-            filteredUsers = [];
             document.getElementById('users-table-body').innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
         }
     }
@@ -200,12 +192,17 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     function displayUsers() {
         const tbody = document.getElementById('users-table-body');
 
-        tbody.innerHTML = filteredUsers.map(user => `
+        if (!allUsers.length) {
+            tbody.innerHTML = '<tr><td colspan="5" class="text-center py-8 text-gray-500">Kullanıcı bulunamadı</td></tr>';
+            return;
+        }
+
+        tbody.innerHTML = allUsers.map(user => `
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap">
                 <div class="flex items-center">
                     <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                        <span class="text-sm font-medium text-blue-600">${user.fullName.charAt(0)}</span>
+                       <span class="text-sm font-medium text-blue-600">${(user.fullName || '?').charAt(0)}</span>
                     </div>
                     <div class="ml-4">
                         <div class="text-sm font-medium text-gray-900">${escapeHtml(user.fullName)}</div>
@@ -240,30 +237,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     `).join('');
     }
 
+    // Filtreler backend'e gönderiliyor — loadUsers() yeniden çağrılıyor
     function filterUsers() {
-        const search = document.getElementById('search').value.toLowerCase();
-        const roleFilter = document.getElementById('role-filter').value;
-        const statusFilter = document.getElementById('status-filter').value;
-
-        filteredUsers = allUsers.filter(user => {
-            const matchesSearch = !search ||
-                user.fullName.toLowerCase().includes(search) ||
-                user.email.toLowerCase().includes(search);
-
-            // Backend'den Ogrenci/ogrenci ya da integer geldiğini varsayarak garantili check:
-            const roleMap = { "0": "ogrenci", "1": "esnaf", "2": "musteri", "3": "admin" };
-            const safeRole = roleMap[String(user.role)] || String(user.role).toLowerCase();
-            const matchesRole = !roleFilter || safeRole === roleFilter.toLowerCase();
-
-
-            const matchesStatus = !statusFilter ||
-                (statusFilter === 'active' && user.isActive) ||
-                (statusFilter === 'inactive' && !user.isActive);
-
-            return matchesSearch && matchesRole && matchesStatus;
-        });
-
-        displayUsers();
+        loadUsers();
     }
 
     async function toggleUserStatus(userId) {
@@ -274,31 +250,49 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         if (!(await openCustomModal(`${user.fullName} kullanıcısını ${action} istediğinizden emin misiniz?`))) return;
 
         try {
-            const token = localStorage.getItem('auth_token');
-            // Backend'de bu endpoint henüz yok, şimdilik uyarı göster
-            showToast('Bu özellik yakında aktif olacak.', 'warning');
-            return;
+            await apiCall(`Admin/users/${userId}/toggle-status`, { method: 'PUT' });
 
-            // Endpoint hazır olunca aşağıdaki satırları aç:
-            // const response = await fetch(`${API_BASE}/api/Admin/users/${userId}/status`, {
-            //     method: 'PUT',
-            //     headers: { 'Authorization': `Bearer ${token}` }
-            // });
+            // Listeyi sunucudan yeniden çek (server-side filtrelemeyle tutarlılık)
+            await loadUsers();
+            showToast(user.isActive ? 'Kullanıcı pasifleştirildi.' : 'Kullanıcı aktifleştirildi.', 'success');
         } catch (error) {
-            showToast('İşlem başarısız.', 'error');
+            showToast('İşlem başarısız: ' + error.message, 'error');
         }
     }
     // ← BURADA FAZLADAN catch OLMAMALI
 
-    function editUser(userId) {
-        showToast('Kullanıcı düzenleme özelliği yakında eklenecek', 'info');
-    }
+    async function editUser(userId) {
+        const user = allUsers.find(u => u.id === userId);
+        if (!user) return;
 
+        const newRole = prompt(
+            `Rol değiştir (ogrenci / esnaf / musteri / admin):\nMevcut: ${user.role}`,
+            user.role
+        );
+        if (!newRole || newRole === user.role) return;
+
+        const validRoles = ['ogrenci', 'esnaf', 'musteri', 'admin'];
+        if (!validRoles.includes(newRole)) {
+            showToast('Geçersiz rol. Geçerli değerler: ogrenci, esnaf, musteri, admin', 'error');
+            return;
+        }
+
+        try {
+            await apiCall(`Admin/users/${userId}/role`, {
+                method: 'PUT',
+                body: JSON.stringify({ newRole: newRole })
+            });
+            showToast('Kullanıcı rolü güncellendi.', 'success');
+            await loadUsers();
+        } catch (error) {
+            showToast('Hata: ' + error.message, 'error');
+        }
+    }
     function exportUsers() {
         // Simple CSV export
         const csvContent = "data:text/csv;charset=utf-8," +
             "Ad Soyad,Email,Rol,Durum,Kayıt Tarihi\n" +
-            filteredUsers.map(user =>
+            allUsers.map(user =>
                 `"${user.fullName}","${user.email}","${getRoleName(user.role)}","${user.isActive ? 'Aktif' : 'Pasif'}","${user.createdAt}"`
             ).join("\n");
 

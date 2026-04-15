@@ -1,6 +1,7 @@
 <?php
 // Esnaf kontrolü
-if (($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf')) {
+if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf')) {
+
     header('Location: /dashboard');
     exit;
 }
@@ -142,12 +143,13 @@ if (($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf'))
                 const shop = await response.json();
 
                 // Backend DTO'sundan (veritabanından) gelen isimlerle formu dolduruyoruz
-                document.getElementById('shop_name').value = shop.shopName || '';
-                document.getElementById('shop_description').value = shop.shopDescription || '';
-                document.getElementById('shop_address').value = shop.address || '';
-                document.getElementById('shop_phone').value = shop.phoneNumber || '';
-                document.getElementById('opening_time').value = shop.openingTime || '09:00';
-                document.getElementById('closing_time').value = shop.closingTime || '18:00';
+                document.getElementById('shop_name').value = shop.shopName || shop.name || shop.ShopName || '';
+                document.getElementById('shop_description').value = shop.shopDescription || shop.description || '';
+                document.getElementById('shop_address').value = shop.address || shop.shopAddress || '';
+                document.getElementById('shop_phone').value = shop.phoneNumber || shop.phone || '';
+                document.getElementById('opening_time').value = (shop.openingTime || '09:00').substring(0, 5);
+                document.getElementById('closing_time').value = (shop.closingTime || '18:00').substring(0, 5);
+
 
                 // Tüm checkboxları önce temizleyelim
                 document.querySelectorAll('input[name="working_days[]"]').forEach(cb => cb.checked = false);
@@ -174,7 +176,8 @@ if (($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf'))
         const formData = new FormData(e.target);
         const workingDays = Array.from(document.querySelectorAll('input[name="working_days[]"]:checked')).map(cb => cb.value);
 
-        // Bebeğinin DTO'sunda istediği BİREBİR aynı isimleri (shopName, phoneNumber vb.) kullanıyoruz
+        // .NET positional record'ları constructor parametresi bazında json bekler (örn: shopName, phoneNumber)
+        // O yüzden kesinlikle camelCase olmak zorundadır.
         const data = {
             shopName: formData.get('name'),
             shopDescription: formData.get('description'),
@@ -182,7 +185,7 @@ if (($current_user['role'] !== 'merchant' && $current_user['role'] !== 'esnaf'))
             phoneNumber: formData.get('phone'),
             openingTime: formData.get('opening_time'),
             closingTime: formData.get('closing_time'),
-            workingDays: workingDays // List<string> olarak backend'e gidiyor
+            workingDays: workingDays
         };
 
         try {

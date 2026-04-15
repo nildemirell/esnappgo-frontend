@@ -168,6 +168,37 @@ if (!$current_user) {
     }
 
     async function markAllAsRead() {
-        showLocalToast('Tümünü okundu işaretleme servisi yapım aşamasında.', 'info');
+    const token = localStorage.getItem('auth_token');
+    // Sayfadaki tüm "Okundu İşaretle" butonlarının ID'lerini topla
+    const readButtons = document.querySelectorAll('button[onclick^="markAsRead"]');
+    if (readButtons.length === 0) {
+        showLocalToast('Okunmamış bildirim yok.', 'info');
+        return;
     }
+
+    // Her birini sırayla markAsRead et
+    const ids = [];
+    readButtons.forEach(btn => {
+        const match = btn.getAttribute('onclick').match(/markAsRead\((\d+)\)/);
+        if (match) ids.push(parseInt(match[1]));
+    });
+
+    showLocalToast('Tüm bildirimler okunuyor...', 'info');
+
+    let successCount = 0;
+    for (const id of ids) {
+        try {
+            const res = await fetch(`${API_BASE}/api/Notifications/${id}/read`, {
+                method: 'PUT',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+            if (res.ok) successCount++;
+        } catch (e) { /* devam et */ }
+    }
+
+    showLocalToast(`${successCount} bildirim okundu olarak işaretlendi.`, 'success');
+    loadNotificationsPage();
+    if (typeof loadNotificationCount === 'function') loadNotificationCount();
+}
+
 </script>

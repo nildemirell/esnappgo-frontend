@@ -145,21 +145,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 return;
             }
 
-            const response = await fetch(`${API_BASE}/api/Categories/tree`, {
-                method: 'GET',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok) {
-                const data = await response.json();
-                allCategories = data;
-                displayCategories();
-            } else {
-                throw new Error('Kategoriler yüklenemedi.');
-            }
+            const data = await apiCall('Categories/tree');
+            allCategories = data;
+            displayCategories();
         } catch (error) {
             console.error('Kategori hatası:', error);
             showToast('Kategoriler çekilirken hata oluştu.', 'error');
@@ -322,33 +310,22 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         const parentId = parentIdVal === '' ? null : parseInt(parentIdVal);
         
         const isEditing = id && id !== '';
-        const token = localStorage.getItem('auth_token');
-        const endpoint = isEditing ? `${API_BASE}/api/Categories/${id}` : `${API_BASE}/api/Categories`;
         const method = isEditing ? 'PUT' : 'POST';
         
-        // PAYLOAD HATASINI BURADA DÜZELTTİK: ParentId eklendi!
+        // PAYLOAD: ParentId eklendi!
         const payload = isEditing 
             ? { Name: name, Icon: icon, ParentId: parentId, IsActive: isActive } 
             : { Name: name, Icon: icon, ParentId: parentId };
 
         try {
-            const response = await fetch(endpoint, {
+            await apiCall(isEditing ? `Categories/${id}` : 'Categories', {
                 method: method,
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(payload)
             });
 
-            if (response.ok) {
-                showToast(isEditing ? 'Kategori güncellendi!' : 'Kategori başarıyla eklendi!', 'success');
-                closeCategoryModal();
-                loadCategories(); 
-            } else {
-                const errData = await response.json();
-                throw new Error(errData.error || 'İşlem başarısız.');
-            }
+            showToast(isEditing ? 'Kategori güncellendi!' : 'Kategori başarıyla eklendi!', 'success');
+            closeCategoryModal();
+            loadCategories();
         } catch (error) {
             showToast(error.message, 'error');
         }
@@ -358,21 +335,9 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         if (!(await openCustomModal('Bu kategoriyi silmek istediğinizden emin misiniz? (Soft Delete)'))) return;
 
         try {
-            const token = localStorage.getItem('auth_token');
-            const response = await fetch(`${API_BASE}/api/Categories/${id}`, {
-                method: 'DELETE',
-                headers: {
-                    'Authorization': `Bearer ${token}`
-                }
-            });
-
-            if (response.ok || response.status === 204) {
-                showToast('Kategori silindi.', 'success');
-                loadCategories();
-            } else {
-                const errData = await response.json().catch(() => ({}));
-                throw new Error(errData.error || 'Silme işlemi başarısız.');
-            }
+            await apiCall(`Categories/${id}`, { method: 'DELETE' });
+            showToast('Kategori silindi.', 'success');
+            loadCategories();
         } catch (error) {
             showToast(error.message, 'error');
         }

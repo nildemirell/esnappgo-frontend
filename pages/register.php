@@ -9,225 +9,273 @@ if ($current_user) {
 }
 ?>
 
-<div class="min-h-screen bg-gray-50 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+<style>
+.register-bg {
+    background-color: #f8fafc;
+}
+.register-bg::before {
+    content: '';
+    position: absolute;
+    top: -10%;
+    right: -5%;
+    width: 50vw;
+    height: 50vw;
+    background: radial-gradient(circle, rgba(59, 130, 246, 0.05) 0%, transparent 60%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+.register-bg::after {
+    content: '';
+    position: absolute;
+    bottom: -10%;
+    left: -5%;
+    width: 40vw;
+    height: 40vw;
+    background: radial-gradient(circle, rgba(99, 102, 241, 0.04) 0%, transparent 60%);
+    border-radius: 50%;
+    pointer-events: none;
+}
+</style>
+
+<div class="register-bg relative min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8 font-sans overflow-hidden">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="text-center">
-            <h2 class="text-3xl font-bold gradient-text">EsnappGO</h2>
-            <h3 class="mt-6 text-2xl font-bold text-gray-900">
+        <div class="text-center relative z-10">
+            <h2 class="text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-blue-600 to-indigo-600 tracking-tight pb-1">
+                EsnappGO
+            </h2>
+            <h3 class="mt-4 text-2xl font-bold text-gray-800">
                 Hesap oluşturun
             </h3>
-            <p class="mt-2 text-sm text-gray-600">
+            <p class="mt-2 text-sm text-gray-500">
                 Zaten hesabınız var mı? 
-                <a href="/login" class="font-medium text-blue-600 hover:text-blue-500">
+                <a href="/login" class="font-semibold text-blue-600 hover:text-blue-500 transition-colors">
                     Giriş yapın
                 </a>
             </p>
         </div>
     </div>
 
-    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div class="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-            <form id="register-form" class="space-y-6">
-                <!-- Role Selection -->
+    <div class="mt-8 sm:mx-auto sm:w-full sm:max-w-xl relative z-10">
+        <div class="bg-white/80 backdrop-blur-lg py-10 px-6 shadow-2xl shadow-blue-900/5 sm:rounded-2xl sm:px-12 border border-white">
+            <form id="register-form" class="space-y-7">
+                
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-3">
+                    <label class="block text-sm font-semibold text-gray-700 mb-4">
                         Hesap türünüz nedir?
                     </label>
-                    <div class="space-y-3">
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 <?php echo $selected_role === 'customer' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'; ?>">
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <label class="relative flex flex-col items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md <?php echo $selected_role === 'customer' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-300 bg-white'; ?>">
                             <input
                                 type="radio"
                                 name="role"
                                 value="musteri"
-
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                class="sr-only"
                                 <?php echo $selected_role === 'customer' ? 'checked' : ''; ?>
                             />
-                            <div class="ml-3">
-                                <div class="text-sm font-medium text-gray-900">Müşteri</div>
-                                <div class="text-xs text-gray-500">Alışveriş yapmak istiyorum</div>
-                            </div>
+                            <svg class="w-8 h-8 mb-2 <?php echo $selected_role === 'customer' ? 'text-blue-500' : 'text-gray-400'; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
+                            </svg>
+                            <div class="text-sm font-bold text-gray-900 text-center">Müşteri</div>
+                            <div class="text-[10px] text-gray-500 text-center mt-1 leading-tight">Alışveriş yapmak istiyorum</div>
                         </label>
                         
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 <?php echo $selected_role === 'student' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'; ?>">
+                        <label class="relative flex flex-col items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md <?php echo $selected_role === 'student' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-300 bg-white'; ?>">
                             <input
                                 type="radio"
                                 name="role"
                                 value="ogrenci"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                class="sr-only"
                                 <?php echo $selected_role === 'student' ? 'checked' : ''; ?>
                             />
-                            <div class="ml-3">
-                                <div class="text-sm font-medium text-gray-900">Öğrenci</div>
-                                <div class="text-xs text-gray-500">Ürün fotoğrafları çekerek para kazanmak istiyorum</div>
-                            </div>
+                            <svg class="w-8 h-8 mb-2 <?php echo $selected_role === 'student' ? 'text-blue-500' : 'text-gray-400'; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M15 13a3 3 0 11-6 0 3 3 0 016 0z"/>
+                            </svg>
+                            <div class="text-sm font-bold text-gray-900 text-center">Öğrenci</div>
+                            <div class="text-[10px] text-gray-500 text-center mt-1 leading-tight">Fotoğraf çekerek kazan</div>
                         </label>
                         
-                        <label class="flex items-center p-3 border rounded-lg cursor-pointer hover:bg-gray-50 <?php echo $selected_role === 'merchant' ? 'border-blue-500 bg-blue-50' : 'border-gray-300'; ?>">
+                        <label class="relative flex flex-col items-center p-4 border rounded-xl cursor-pointer transition-all duration-200 hover:shadow-md <?php echo $selected_role === 'merchant' ? 'border-blue-500 bg-blue-50' : 'border-gray-300 hover:border-blue-300 bg-white'; ?>">
                             <input
                                 type="radio"
                                 name="role"
                                 value="esnaf"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500"
+                                class="sr-only"
                                 <?php echo $selected_role === 'merchant' ? 'checked' : ''; ?>
                             />
-                            <div class="ml-3">
-                                <div class="text-sm font-medium text-gray-900">Esnaf</div>
-                                <div class="text-xs text-gray-500">Ürünlerimi satmak istiyorum</div>
-                            </div>
+                            <svg class="w-8 h-8 mb-2 <?php echo $selected_role === 'merchant' ? 'text-blue-500' : 'text-gray-400'; ?>" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M19 21V10l-7-5-7 5v11m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                            </svg>
+                            <div class="text-sm font-bold text-gray-900 text-center">Esnaf</div>
+                            <div class="text-[10px] text-gray-500 text-center mt-1 leading-tight">Ürünlerimi satmak istiyorum</div>
                         </label>
                     </div>
                 </div>
 
-                <!-- Ad Soyad -->
-                <div>
-                    <label for="full_name" class="block text-sm font-medium text-gray-700">
-                        Ad Soyad
+                <div id="shop-name-container" style="display: none;" class="animate-fade-in-down">
+                    <label for="shop_name" class="block text-sm font-medium text-gray-700">
+                        Mağaza / İşletme Adı
                     </label>
-                    <div class="mt-1">
-                        <input
-                            id="full_name"
-                            name="full_name"
-                            type="text"
-                            autocomplete="name"
-                            required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="Adınız ve soyadınız"
-                        />
-                    </div>
-                </div>
-
-                <!-- E-posta -->
-                <div>
-                    <label for="email" class="block text-sm font-medium text-gray-700">
-                        E-posta adresi
-                    </label>
-                    <div class="mt-1">
-                        <input
-                            id="email"
-                            name="email"
-                            type="email"
-                            autocomplete="email"
-                            required
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="ornek@email.com"
-                        />
-                    </div>
-                </div>
-
-                <!-- Telefon (Görev 1: Placeholder düzeltildi + format validasyonu) -->
-                <div>
-                    <label for="phone" class="block text-sm font-medium text-gray-700">
-                        Telefon numarası
-                    </label>
-                    <div class="mt-1">
-                        <input
-                            id="phone"
-                            name="phone"
-                            type="tel"
-                            autocomplete="tel"
-                            class="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="05XX XXX XX XX"
-                            maxlength="14"
-                        />
-                    </div>
-                    <p id="phone-error" class="mt-1 text-xs text-red-500 hidden">Geçerli bir telefon numarası girin (05XX XXX XX XX)</p>
-                </div>
-
-                <!-- Şifre (Görev 4: Göster/gizle + Görev 5: Güçlük göstergesi) -->
-                <div>
-                    <label for="password" class="block text-sm font-medium text-gray-700">
-                        Şifre
-                    </label>
-                    <div class="mt-1 relative">
-                        <input
-                            id="password"
-                            name="password"
-                            type="password"
-                            autocomplete="new-password"
-                            required
-                            minlength="6"
-                            class="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="En az 6 karakter"
-                        />
-                        <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600" data-target="password" aria-label="Şifreyi göster/gizle">
-                            <svg class="eye-open h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            <svg class="eye-closed h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m-2.411-2.411L3 3"/>
-                            </svg>
-                        </button>
-                    </div>
-                    <!-- Şifre güçlük göstergesi (Görev 5) -->
                     <div class="mt-2">
-                        <div class="flex space-x-1">
-                            <div id="str-1" class="h-1 flex-1 rounded-full bg-gray-200"></div>
-                            <div id="str-2" class="h-1 flex-1 rounded-full bg-gray-200"></div>
-                            <div id="str-3" class="h-1 flex-1 rounded-full bg-gray-200"></div>
-                            <div id="str-4" class="h-1 flex-1 rounded-full bg-gray-200"></div>
-                        </div>
-                        <p id="strength-text" class="mt-1 text-xs text-gray-500">En az 6 karakter olmalıdır</p>
-                    </div>
-                </div>
-
-                <!-- Şifre Tekrarı (Görev 4: Göster/gizle + Görev 7: Anlık eşleşme kontrolü) -->
-                <div>
-                    <label for="password_confirm" class="block text-sm font-medium text-gray-700">
-                        Şifre tekrarı
-                    </label>
-                    <div class="mt-1 relative">
                         <input
-                            id="password_confirm"
-                            name="password_confirm"
-                            type="password"
-                            autocomplete="new-password"
-                            required
-                            class="appearance-none block w-full px-3 py-2 pr-10 border border-gray-300 rounded-md placeholder-gray-400 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
-                            placeholder="Şifrenizi tekrar girin"
+                            id="shop_name"
+                            name="shop_name"
+                            type="text"
+                            class="appearance-none block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                            placeholder="İşletmenizin adını girin"
                         />
-                        <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center pr-3 text-gray-400 hover:text-gray-600" data-target="password_confirm" aria-label="Şifreyi göster/gizle">
-                            <svg class="eye-open h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-                            </svg>
-                            <svg class="eye-closed h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m-2.411-2.411L3 3"/>
-                            </svg>
-                        </button>
                     </div>
-                    <p id="password-match-error" class="mt-1 text-xs text-red-500 hidden">Şifreler eşleşmiyor</p>
+                    <p class="mt-2 text-xs text-gray-500">Müşterileriniz ürünlerinizi bu isimle görecektir.</p>
                 </div>
 
-                <!-- Kullanım Koşulları -->
-                <div class="flex items-center">
-                    <input
-                        id="terms"
-                        name="terms"
-                        type="checkbox"
-                        required
-                        class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
-                    />
-                    <label for="terms" class="ml-2 block text-sm text-gray-900">
-                        <a href="/terms" class="text-blue-600 hover:text-blue-500" target="_blank">Kullanım Koşulları</a> ve 
-                        <a href="/privacy" class="text-blue-600 hover:text-blue-500" target="_blank">Gizlilik Politikası</a>'nı kabul ediyorum
-                    </label>
+                <div class="grid grid-cols-1 gap-6">
+                    <div>
+                        <label for="full_name" class="block text-sm font-medium text-gray-700">
+                            Ad Soyad
+                        </label>
+                        <div class="mt-2">
+                            <input
+                                id="full_name"
+                                name="full_name"
+                                type="text"
+                                autocomplete="name"
+                                required
+                                class="appearance-none block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                                placeholder="Örn: Ahmet Yılmaz"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-gray-700">
+                            E-posta adresi
+                        </label>
+                        <div class="mt-2">
+                            <input
+                                id="email"
+                                name="email"
+                                type="email"
+                                autocomplete="email"
+                                required
+                                class="appearance-none block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                                placeholder="ornek@email.com"
+                            />
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="phone" class="block text-sm font-medium text-gray-700">
+                            Telefon numarası
+                        </label>
+                        <div class="mt-2">
+                            <input
+                                id="phone"
+                                name="phone"
+                                type="tel"
+                                autocomplete="tel"
+                                required
+                                class="appearance-none block w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                                placeholder="05XX XXX XX XX"
+                                maxlength="14"
+                            />
+                        </div>
+                        <p id="phone-error" class="mt-2 text-xs text-red-500 hidden font-medium">Geçerli bir telefon numarası girin (05XX XXX XX XX)</p>
+                    </div>
+
+                    <div>
+                        <label for="password" class="block text-sm font-medium text-gray-700">
+                            Şifre
+                        </label>
+                        <div class="mt-2 relative">
+                            <input
+                                id="password"
+                                name="password"
+                                type="password"
+                                autocomplete="new-password"
+                                required
+                                minlength="6"
+                                class="appearance-none block w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                                placeholder="En az 6 karakter"
+                            />
+                            <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-blue-500 transition-colors" data-target="password" aria-label="Şifreyi göster/gizle">
+                                <svg class="eye-open h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <svg class="eye-closed h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m-2.411-2.411L3 3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <div class="mt-3">
+                            <div class="flex space-x-1.5">
+                                <div id="str-1" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-colors duration-300"></div>
+                                <div id="str-2" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-colors duration-300"></div>
+                                <div id="str-3" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-colors duration-300"></div>
+                                <div id="str-4" class="h-1.5 flex-1 rounded-full bg-gray-200 transition-colors duration-300"></div>
+                            </div>
+                            <p id="strength-text" class="mt-2 text-xs font-medium text-gray-500">En az 6 karakter olmalıdır</p>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label for="password_confirm" class="block text-sm font-medium text-gray-700">
+                            Şifre tekrarı
+                        </label>
+                        <div class="mt-2 relative">
+                            <input
+                                id="password_confirm"
+                                name="password_confirm"
+                                type="password"
+                                autocomplete="new-password"
+                                required
+                                class="appearance-none block w-full px-4 py-3 pr-10 bg-gray-50 border border-gray-200 rounded-xl text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500 focus:bg-white transition-colors sm:text-sm"
+                                placeholder="Şifrenizi tekrar girin"
+                            />
+                            <button type="button" class="toggle-password absolute inset-y-0 right-0 flex items-center pr-4 text-gray-400 hover:text-blue-500 transition-colors" data-target="password_confirm" aria-label="Şifreyi göster/gizle">
+                                <svg class="eye-open h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                </svg>
+                                <svg class="eye-closed h-5 w-5 hidden" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13.875 18.825A10.05 10.05 0 0112 19c-4.478 0-8.268-2.943-9.543-7a9.97 9.97 0 011.563-3.029m5.858.908a3 3 0 114.243 4.243M9.878 9.878l4.242 4.242M9.88 9.88l-3.29-3.29m7.532 7.532l3.29 3.29M3 3l3.59 3.59m0 0A9.953 9.953 0 0112 5c4.478 0 8.268 2.943 9.543 7a10.025 10.025 0 01-4.132 4.411m-2.411-2.411L3 3"/>
+                                </svg>
+                            </button>
+                        </div>
+                        <p id="password-match-error" class="mt-2 text-xs font-medium text-red-500 hidden">Şifreler eşleşmiyor</p>
+                    </div>
                 </div>
 
-                <!-- Submit Butonu -->
-                <div>
+                <div class="flex items-start pt-2">
+                    <div class="flex items-center h-5">
+                        <input
+                            id="terms"
+                            name="terms"
+                            type="checkbox"
+                            required
+                            class="h-5 w-5 text-blue-600 focus:ring-blue-500 border-gray-300 rounded cursor-pointer"
+                        />
+                    </div>
+                    <div class="ml-3 text-sm">
+                        <label for="terms" class="font-medium text-gray-600 cursor-pointer">
+                            <a href="/terms" class="text-blue-600 hover:text-blue-500 underline decoration-blue-200 underline-offset-2" target="_blank">Kullanım Koşulları</a> ve 
+                            <a href="/privacy" class="text-blue-600 hover:text-blue-500 underline decoration-blue-200 underline-offset-2" target="_blank">Gizlilik Politikası</a>'nı kabul ediyorum
+                        </label>
+                    </div>
+                </div>
+
+                <div class="pt-2">
                     <button
                         type="submit"
                         id="register-btn"
-                        class="group relative w-full flex justify-center py-2 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                        class="group relative w-full flex justify-center py-3.5 px-4 border border-transparent text-sm font-bold rounded-xl text-white bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 shadow-md shadow-blue-500/30 transform transition-all duration-200 hover:-translate-y-0.5 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none disabled:shadow-none"
                     >
-                        <span class="absolute left-0 inset-y-0 flex items-center pl-3">
-                            <svg class="h-5 w-5 text-blue-500 group-hover:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
+                        <span class="absolute left-0 inset-y-0 flex items-center pl-4">
+                            <svg class="h-5 w-5 text-blue-300 group-hover:text-blue-200 transition-colors" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd" d="M10 2a8 8 0 100 16 8 8 0 000-16zM8 11a1 1 0 102 0v3a1 1 0 11-2 0v-3zm2-4a1 1 0 11-2 0 1 1 0 012 0z" clip-rule="evenodd"></path>
                             </svg>
                         </span>
-                        <span id="register-btn-text">Hesap Oluştur</span>
+                        <span id="register-btn-text" class="tracking-wide">Hesap Oluştur</span>
                     </button>
                 </div>
             </form>
@@ -261,13 +309,29 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // ----------------------------------------------------------
-        // GÖREV 1: Telefon validasyonu (dolu ama geçersizse engelle)
+        // GÖREV 1: Telefon validasyonu — ZORUNLU ALAN
         // ----------------------------------------------------------
         const phoneDigits = document.getElementById('phone').value.replace(/\D/g, '');
-        if (phoneDigits.length > 0 && (phoneDigits.length !== 11 || !phoneDigits.startsWith('05'))) {
+        if (phoneDigits.length === 0) {
+            showToast('Telefon numarası zorunludur', 'error');
+            document.getElementById('phone').focus();
+            return;
+        }
+        if (phoneDigits.length !== 11 || !phoneDigits.startsWith('05')) {
             showToast('Geçerli bir telefon numarası girin (05XX XXX XX XX)', 'error');
             document.getElementById('phone').focus();
             return;
+        }
+
+        // Esnaf ise Mağaza Adı kontrolü
+        const selectedRole = document.querySelector('input[name="role"]:checked')?.value;
+        if (selectedRole === 'esnaf' || selectedRole === 'merchant') {
+            const shopNameVal = document.getElementById('shop_name')?.value?.trim();
+            if (!shopNameVal || shopNameVal.length < 2) {
+                showToast('Esnaf hesabı için Mağaza Adı zorunludur', 'error');
+                document.getElementById('shop_name').focus();
+                return;
+            }
         }
 
         // Şifre eşleşme kontrolü
@@ -286,12 +350,14 @@ document.addEventListener('DOMContentLoaded', function() {
         try {
             const formData = new FormData(form);
             
+           const role = formData.get('role');
            const data = {
     fullName: formData.get('full_name'),
     email: formData.get('email'),
     phoneNumber: formData.get('phone'),
     password: formData.get('password'),
-    role: formData.get('role') // musteri / ogrenci / esnaf — backend küçük harfli Türkçe bekliyor
+    role: role, // musteri / ogrenci / esnaf — backend küçük harfli Türkçe bekliyor
+    shopName: (role === 'esnaf' || role === 'merchant') ? formData.get('shop_name') : null
 };
 
 
@@ -360,14 +426,42 @@ setTimeout(() => {
     const roleRadios = document.querySelectorAll('input[name="role"]');
 
     function updateRoleHighlight() {
+        const shopNameContainer = document.getElementById('shop-name-container');
+        const shopNameInput = document.getElementById('shop_name');
+
         roleRadios.forEach(function(radio) {
             const card = radio.closest('label');
             if (radio.checked) {
-                card.classList.remove('border-gray-300');
+                card.classList.remove('border-gray-300', 'bg-white', 'hover:border-blue-300');
                 card.classList.add('border-blue-500', 'bg-blue-50');
+                
+                // İkon rengini güncelle (Yeni eklenen görsel özellik için)
+                const icon = card.querySelector('svg');
+                if(icon) {
+                    icon.classList.remove('text-gray-400');
+                    icon.classList.add('text-blue-500');
+                }
+                
+                if (radio.value === 'esnaf' || radio.value === 'merchant') {
+                    if (shopNameContainer) shopNameContainer.style.display = 'block';
+                    if (shopNameInput) shopNameInput.required = true;
+                } else {
+                    if (shopNameContainer) shopNameContainer.style.display = 'none';
+                    if (shopNameInput) {
+                        shopNameInput.required = false;
+                        shopNameInput.value = '';
+                    }
+                }
             } else {
                 card.classList.remove('border-blue-500', 'bg-blue-50');
-                card.classList.add('border-gray-300');
+                card.classList.add('border-gray-300', 'bg-white', 'hover:border-blue-300');
+                
+                // İkon rengini sıfırla
+                const icon = card.querySelector('svg');
+                if(icon) {
+                    icon.classList.remove('text-blue-500');
+                    icon.classList.add('text-gray-400');
+                }
             }
         });
     }
@@ -427,28 +521,28 @@ setTimeout(() => {
         // Boş bırakılabilir (opsiyonel alan)
         if (digits.length === 0) {
             phoneError.classList.add('hidden');
-            this.classList.remove('border-red-500');
-            this.classList.add('border-gray-300');
+            this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            this.classList.add('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
             return;
         }
 
         // Doluysa: 11 hane olmalı ve 05 ile başlamalı
         if (digits.length !== 11 || !digits.startsWith('05')) {
             phoneError.classList.remove('hidden');
-            this.classList.add('border-red-500');
-            this.classList.remove('border-gray-300');
+            this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            this.classList.remove('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
         } else {
             phoneError.classList.add('hidden');
-            this.classList.remove('border-red-500');
-            this.classList.add('border-gray-300');
+            this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            this.classList.add('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
         }
     });
 
     // Alana odaklanıldığında kırmızıyı kaldır (tekrar deneme hissi)
     phoneInput.addEventListener('focus', function() {
         phoneError.classList.add('hidden');
-        this.classList.remove('border-red-500');
-        this.classList.add('border-gray-300');
+        this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+        this.classList.add('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
     });
     // ------------------------------------------------------------------
 
@@ -538,13 +632,13 @@ setTimeout(() => {
         var pw = document.getElementById('password').value;
         if (this.value && this.value !== pw) {
             matchError.classList.remove('hidden');
-            this.classList.add('border-red-500');
-            this.classList.remove('border-gray-300');
+            this.classList.add('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            this.classList.remove('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
             this.setCustomValidity('Şifreler eşleşmiyor');
         } else {
             matchError.classList.add('hidden');
-            this.classList.remove('border-red-500');
-            this.classList.add('border-gray-300');
+            this.classList.remove('border-red-500', 'focus:ring-red-500', 'focus:border-red-500');
+            this.classList.add('border-gray-200', 'focus:ring-blue-500', 'focus:border-blue-500');
             this.setCustomValidity('');
         }
     });

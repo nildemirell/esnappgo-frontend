@@ -200,14 +200,14 @@ if (!$current_user) {
 
             // Backendden gelen isimleri (.NET), sizin frontend izinlerinize (PHP) otomatik çeviriyoruz
             cartItems = rawItems.map(item => ({
-                ...item,
-                id: item.id || item.Id,             // .NET büyük/küçük 'Id' koruması
-                price: item.unitPrice,
-                title: item.productName,
-                // Eşleştirdiğimiz orijinal resmi (imageUrls) buraya basıyoruz, eğer bulamadıysa boş bırakıp varsayılan resme düşürüyoruz:
-                images: item.imageUrls ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : []),
-                student_donation_percentage: Math.round((item.extraSupportRate || 0) * 100)
-            }));
+    ...item,
+    id: item.id || item.Id,
+    price: item.unitPrice || item.price || 0,
+    title: item.productName || item.name || 'Ürün',
+    shopName: item.shopName || item.merchantName || item.shop_name || '',
+    images: item.imageUrls ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : []),
+    student_donation_percentage: Math.round((item.extraSupportRate || 0) * 100)
+}));
 
 
 
@@ -304,7 +304,8 @@ if (!$current_user) {
                     </div>
                     
                     <p class="text-sm text-gray-500 mb-3">
-                        ${escapeHtml(item.shop_name || 'Test Market')}
+                        ${escapeHtml(item.shopName || item.merchantName || item.shop_name || 'Mağaza')}
+
                     </p>
                     
                     <!-- Price and Quantity -->

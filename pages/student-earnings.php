@@ -207,26 +207,38 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    loadStudentEarnings();
-    loadRecentEarnings();
+    loadStudentEarnings();  // Bu zaten renderRecentEarnings'i çağırıyor
     loadEarningsChart();
+    // loadRecentEarnings() kaldırıldı — tanımlı değil, loadStudentEarnings içinde yönetiliyor
 });
 
 
+
 async function loadStudentEarnings() {
-    const res = await fetch(`${API_BASE}/api/Products/student-dashboard`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-    });
-    if (res.ok) {
+    try {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        const res = await fetch(`${API_BASE}/api/Products/student-dashboard`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+
+        if (!res.ok) throw new Error('Kazanç verisi yüklenemedi');
         const data = await res.json();
-        document.getElementById('total-earnings').textContent = `₺${data.totalEarnings.toFixed(2)}`;
-        document.getElementById('photos-count').textContent = data.totalProducts;
-        const avg = data.totalProducts > 0 ? (data.totalEarnings / data.totalProducts) : 0;
+
+        document.getElementById('total-earnings').textContent = `₺${(data.totalEarnings || 0).toFixed(2)}`;
+        document.getElementById('monthly-earnings').textContent = data.thisMonthEarnings != null
+            ? `₺${data.thisMonthEarnings.toFixed(2)}`
+            : '₺—';
+        document.getElementById('photos-count').textContent = data.totalProducts || 0;
+        const avg = (data.totalProducts || 0) > 0 ? (data.totalEarnings / data.totalProducts) : 0;
         document.getElementById('avg-per-photo').textContent = `₺${avg.toFixed(2)}`;
-        // ← BURAYI EKLE: Mock yerine gerçek veri kullan
         renderRecentEarnings(data.recentActivities || []);
+    } catch (error) {
+        console.error('Error loading student earnings:', error);
     }
 }
+
 
 function renderRecentEarnings(activities) {
     const container = document.getElementById('recent-earnings');
@@ -247,10 +259,7 @@ function renderRecentEarnings(activities) {
             </div>
         </div>
     `).join('');
-} catch (error) {
-        console.error('Error loading recent earnings:', error);
-    }
-
+}
 
 function loadEarningsChart() {
     // Mock chart data
@@ -290,6 +299,12 @@ function setPeriod(period) {
     
     // Reload chart with new period
     loadEarningsChart();
+}
+
+function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
 }
 
 function formatDate(dateString) {

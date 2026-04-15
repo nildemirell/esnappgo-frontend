@@ -5,28 +5,9 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
     exit;
 }
 
-// MOCK DATA: Backend OrdersController henüz hazır olmadığı için UI Mock ile korunmuştur.
-$orders = [
-    [
-        'id' => 1,
-        'order_number' => 'ORD-2026-001',
-        'customer_name' => 'Ahmet Yılmaz',
-        'customer_phone' => '05551234567',
-        'created_at' => date('Y-m-d H:i:s', strtotime('-1 day')),
-        'status' => 'pending',
-        'total_amount' => 120.50,
-        'tracking_number' => null,
-        'payment_method' => 'bank_transfer',
-        'items' => [
-            [
-                'title' => 'Calculus 1 Öğrenci Notu',
-                'quantity' => 1,
-                'unit_price' => 120.50,
-                'images' => ['/media/mock-note.jpg']
-            ]
-        ]
-    ]
-];
+// PHP kısmını tamamen boşalt:
+$orders = [];
+
 ?>
 <div class="min-h-screen bg-gray-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -244,6 +225,68 @@ $orders = [
 </div>
 
 <script>
+  
+  document.addEventListener('DOMContentLoaded', async function() {
+    await loadMerchantOrders();
+});
+
+async function loadMerchantOrders() {
+    try {
+        const token = localStorage.getItem('auth_token');
+        const res = await fetch(`${API_BASE}/api/Orders`, {
+            headers: { 'Authorization': `Bearer ${token}` }
+        });
+        if (!res.ok) throw new Error('Siparişler yüklenemedi');
+        const orders = await res.json();
+        renderOrders(Array.isArray(orders) ? orders : (orders.data || orders.orders || []));
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+function renderOrders(orders) {
+    const container = document.getElementById('merchant-orders-container');
+    if (!container) return;
+
+    if (!orders || orders.length === 0) {
+        container.innerHTML = `
+            <div class="text-center py-12 bg-white rounded-lg shadow-sm">
+                <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                </svg>
+                <h3 class="text-lg font-medium text-gray-900 mb-2">Henüz sipariş yok</h3>
+                <p class="text-gray-500">Mağazanıza sipariş geldiğinde burada görünecek.</p>
+            </div>`;
+        return;
+    }
+
+    container.innerHTML = orders.map(order => {
+        const statusClasses = { pending:'bg-yellow-100 text-yellow-800', paid:'bg-blue-100 text-blue-800', shipped:'bg-indigo-100 text-indigo-800', delivered:'bg-green-100 text-green-800', cancelled:'bg-red-100 text-red-800' };
+        const statusTexts  = { pending:'Yeni', paid:'Ödendi', shipped:'Kargoda', delivered:'Teslim Edildi', cancelled:'İptal Edildi' };
+        const status = (order.status || 'pending').toLowerCase();
+        const badgeClass = statusClasses[status] || 'bg-gray-100 text-gray-800';
+        const statusText  = statusTexts[status]  || status;
+        const total = order.totalAmount ?? order.total_amount ?? 0;
+        const customerName = order.customerName || order.customer_name || 'Müşteri';
+        const orderNum = order.orderNumber || order.order_number || ('#' + order.id);
+        const createdAt = order.createdAt || order.created_at || '';
+
+        return `
+        <div class="bg-white rounded-lg shadow-sm p-6 order-item" data-status="${status}">
+            <div class="flex items-center justify-between mb-4">
+                <div>
+                    <h3 class="text-lg font-medium text-gray-900">Sipariş ${escapeHtml(orderNum)}</h3>
+                    <p class="text-sm text-gray-500">${escapeHtml(customerName)} • ${createdAt ? new Date(createdAt).toLocaleDateString('tr-TR') : ''}</p>
+                </div>
+                <div class="text-right">
+                    <span class="inline-flex px-3 py-1 rounded-full text-xs font-semibold ${badgeClass}">${statusText}</span>
+                    <p class="text-lg font-bold text-gray-900 mt-1">₺${parseFloat(total).toFixed(2)}</p>
+                </div>
+            </div>
+        </div>`;
+    }).join('');
+}
+
 // Sipariş verilerini PHP'den JavaScript'e aktar
 const ordersData = <?php echo json_encode($orders); ?>;
 
@@ -310,9 +353,9 @@ async function updateOrderStatus(orderId, newStatus) {
         
         const result = await response.json();
         
-        if (result.success) {
-            showToast('Sipariş durumu başarıyla güncellendi!', 'success');
-            
+       if (response.ok) {
+    showToast('Sipariş durumu başarıyla güncellendi!', 'success');
+
             // Sayfayı yenile
             setTimeout(() => {
                 window.location.reload();
@@ -587,9 +630,11 @@ async function cancelOrder(orderId) {
     try {
        const response = await fetch(`${API_BASE}/api/Orders/cancel`, {
             method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
+           headers: {
+    'Content-Type': 'application/json',
+    'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
+},
+
             credentials: 'include',
             body: JSON.stringify({
                 order_id: orderId

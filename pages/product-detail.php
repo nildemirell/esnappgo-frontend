@@ -274,7 +274,8 @@ if (!isset($product_id) || !is_numeric($product_id)) {
                 price: foundProduct.finalPrice || foundProduct.suggestedPrice || foundProduct.SuggestedPrice,
                 images: foundProduct.imageUrls || foundProduct.ImageUrls || ['/media/68a658361732a_1755732022.jpg'],
                 description: foundProduct.description || "Bu ürünün detaylı açıklaması bulunmamaktadır.",
-                shop_name: foundProduct.merchantName || foundProduct.MerchantName || "Kampüs Esnafı"
+                shop_name: foundProduct.merchantName || foundProduct.MerchantName || "Kampüs Esnafı",
+                merchantId: foundProduct.merchantId || foundProduct.MerchantId || null
             };
 
             setTimeout(() => {
@@ -306,15 +307,20 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         // Set shop info
         if (product.shop_name) {
             document.getElementById('shop-name').textContent = product.shop_name;
-            // Address ve Link gelmediği için koruma altına aldık
-            document.getElementById('shop-address').textContent = product.shop_address || 'Sistemde kayıtlı adres yok';
+            // Address backendden gelmediği taktirde gizle veya varsayılan göster
+            document.getElementById('shop-address').textContent = product.shop_address || 'Kampüs İçi';
 
             const shopLinkBtn = document.getElementById('shop-link');
-            shopLinkBtn.href = "#";
-            shopLinkBtn.onclick = function (e) {
-                e.preventDefault();
-                showToast('Mağaza profili özelliği yakında aktif edilecektir.', 'info');
-            };
+            if (product.merchantId) {
+                shopLinkBtn.href = `/shops/${product.merchantId}`;
+                shopLinkBtn.onclick = null; // Eski toast engellemesini kaldır
+            } else {
+                shopLinkBtn.href = "#";
+                shopLinkBtn.onclick = function (e) {
+                    e.preventDefault();
+                    showToast('Mağaza profili bulunamadı.', 'info');
+                };
+            }
         } else if (product.shop) {
 
             document.getElementById('shop-name').textContent = product.shop.name;

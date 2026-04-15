@@ -150,23 +150,20 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     document.addEventListener('DOMContentLoaded', function () {
         loadProducts();
-        loadProductStats();
     });
 
     async function loadProducts() {
         try {
-            const response = await apiCall('Admin/products'); // Baş harf büyük güvenli
+            const response = await apiCall('Admin/products');
 
-            // .NET backend dizi döner (success sarmalayıcısı yoktur)
-            if (Array.isArray(response)) {
-                allProducts = response;
-
-                filteredProducts = [...allProducts];
-                displayProducts();
-                loadProductStats();
-            } else {
-                throw new Error(response.message || 'Ürünler yüklenemedi');
-            }
+            // Backend { success: true, data: [...] } sarıcısını açıyoruz
+            const products = Array.isArray(response) ? response : (response.data || []);
+            allProducts = products;
+            filteredProducts = [...allProducts];
+            
+            populateStudentFilter(products);
+            displayProducts();
+            loadProductStats();
 
         } catch (error) {
             console.error('Error loading products:', error);
@@ -202,8 +199,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 
                 <!-- Status Badge -->
                 <div class="absolute top-2 right-2">
-                    <span class="badge badge-${getStatusBadgeClass(product.status)}">
-                        ${getStatusText(product.status)}
+                    <span class="badge badge-${getStatusBadgeClass(product.status, product.isActive)}">
+                        ${getStatusText(product.status, product.isActive)}
                     </span>
                 </div>
             </div>
@@ -232,80 +229,124 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
                 
                 <!-- Actions -->
-                <div class="flex space-x-2">
+                <div class="flex space-x-2 flex-wrap gap-1">
                     <a href="/products/${product.id}" class="flex-1 btn btn-outline btn-sm">
                         Görüntüle
                     </a>
                     
-                               ${String(product.status).toLowerCase() === 'pending' || product.status === 0 ? `
-                <button onclick="approveProduct(${product.id})" class="btn btn-success btn-sm">Onayla</button>
-                <button onclick="rejectProduct(${product.id})" class="btn btn-error btn-sm">Reddet</button>
-            ` : String(product.status).toLowerCase() === 'approved' || String(product.status).toLowerCase() === 'active' || product.status === 1 ? `
-                <button onclick="suspendProduct(${product.id})" class="btn btn-warning btn-sm">Askıya Al</button>
-            ` : `
-                <button onclick="activateProduct(${product.id})" class="btn btn-success btn-sm">Aktifleştir</button>
-            `}
-
+                              ${normalizeStatus(product.status, product.isActive) === 'pending' ? `
+                        <button onclick="approveProduct(${product.id})" class="btn btn-success btn-sm">Onayla</button>
+                        <button onclick="rejectProduct(${product.id})" class="btn btn-error btn-sm">Reddet</button>
+                    ` : normalizeStatus(product.status, product.isActive) === 'active' ? `
+                        <button onclick="suspendProduct(${product.id})" class="btn btn-warning btn-sm">Askıya Al</button>
+                    ` : normalizeStatus(product.status, product.isActive) === 'rejected' ? `
+                        <button onclick="approveProduct(${product.id})" class="btn btn-success btn-sm">Onayla</button>
+                    ` : normalizeStatus(product.status, product.isActive) === 'suspended' ? `
+                        <button onclick="activateProduct(${product.id})" class="btn btn-success btn-sm">Aktifleştir</button>
+                    ` : ''}
+                    <button onclick="deleteProduct(${product.id})" class="btn btn-error btn-sm" title="Sil">🗑️</button>
                 </div>
             </div>
         </div>
     `).join('');
     }
 
-    function loadProductStats() {
-        // Calculate stats from products
-        const stats = {
-            active: allProducts.filter(p => p.status === 'active').length,
-            pending: allProducts.filter(p => p.status === 'pending').length,
-            rejected: allProducts.filter(p => p.status === 'rejected').length,
-            total_sales: 15678.90 // Mock data
-        };
+    async function loadProductStats() {
+        try {
+            const statsResponse = await apiCall('Admin/products/stats');
+            const stats = statsResponse.data || statsResponse || {};
+            // AdminProductStatsDto: activeProducts, pendingProducts, rejectedProducts, totalSales
+            document.getElementById('active-products').textContent = stats.activeProducts ?? '—';
+            document.getElementById('pending-products').textContent = stats.pendingProducts ?? '—';
+            document.getElementById('rejected-products').textContent = stats.rejectedProducts ?? '—';
+            document.getElementById('total-sales').textContent = stats.totalSales !== undefined
+                ? `₺${parseFloat(stats.totalSales).toFixed(2)}`
+                : '₺—';
+        } catch (e) {
+            console.error('Product stats yüklenemedi:', e);
+            // Fallback: client-side 'dan hesapla
+            const statusTextMap = { 0: 'pending', 1: 'active', 2: 'rejected', 3: 'suspended' };
+            const normalize = (s) => statusTextMap[s] ?? String(s).toLowerCase();
+            document.getElementById('active-products').textContent = allProducts.filter(p => normalize(p.status) === 'active').length;
+            document.getElementById('pending-products').textContent = allProducts.filter(p => normalize(p.status) === 'pending').length;
+            document.getElementById('rejected-products').textContent = allProducts.filter(p => normalize(p.status) === 'rejected').length;
+            document.getElementById('total-sales').textContent = '₺—';
+        }
+    }
 
-        document.getElementById('active-products').textContent = stats.active;
-        document.getElementById('pending-products').textContent = stats.pending;
-        document.getElementById('rejected-products').textContent = stats.rejected;
-        document.getElementById('total-sales').textContent = `₺${stats.total_sales.toLocaleString()}`;
+
+    function populateStudentFilter(products) {
+        const select = document.getElementById('student-filter');
+        select.innerHTML = '<option value="">Tüm Öğrenciler</option>';
+        const seen = new Set();
+        products.forEach(p => {
+            if (p.studentName && !seen.has(p.studentName)) {
+                seen.add(p.studentName);
+                const opt = document.createElement('option');
+                opt.value = p.studentName;
+                opt.textContent = p.studentName;
+                select.appendChild(opt);
+            }
+        });
     }
 
     function filterProducts() {
         const search = document.getElementById('search').value.toLowerCase();
         const statusFilter = document.getElementById('status-filter').value;
+        const studentFilter = document.getElementById('student-filter').value;
 
         filteredProducts = allProducts.filter(product => {
             const matchesSearch = !search ||
                 product.name.toLowerCase().includes(search) ||
                 product.categoryName?.toLowerCase().includes(search);
 
+            // Filtreleme için tek kaynak global normalizeStatus fonksiyonu kullanıldı
+            const normalizedStatus = normalizeStatus(product.status, product.isActive);
+            const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
 
-           const statusTextMap = { 0: 'pending', 1: 'active', 2: 'rejected', 3: 'suspended' };
-const normalizedStatus = statusTextMap[product.status] ?? String(product.status).toLowerCase();
-const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
+            const matchesStudent = !studentFilter || product.studentName === studentFilter;
 
-
-            return matchesSearch && matchesStatus;
+            return matchesSearch && matchesStatus && matchesStudent;
         });
 
         displayProducts();
     }
 
-    function getStatusText(status) {
+    function normalizeStatus(status, isActive = true) {
+        // Backend'de suspended (3) yok. 
+        // Eğer ürün daha önce onaylanmışsa (status 1 veya 'approved') ANCAK IsActive == false konumundaysa bu ürün askıdadır.
+        const map = { 0: 'pending', 1: 'active', 2: 'rejected' };
+        let raw = map[status] ?? String(status).toLowerCase();
+        
+        if (raw === 'approved') raw = 'active';
+
+        // Eğer onaylı bir ürün ama veritabanında "IsActive=false" ise, sistemde askıda (suspended) olarak gösterilecek
+        if (raw === 'active' && isActive === false) {
+            return 'suspended';
+        }
+
+        return raw;
+    }
+
+
+    function getStatusText(status, isActive = true) {
         const statusTexts = {
             pending: 'Beklemede',
             active: 'Aktif',
             rejected: 'Reddedildi',
             suspended: 'Askıya Alındı'
         };
-        return statusTexts[status] || status;
+        return statusTexts[normalizeStatus(status, isActive)] || String(status);
     }
 
-    function getStatusBadgeClass(status) {
+    function getStatusBadgeClass(status, isActive = true) {
         const badgeClasses = {
             pending: 'warning',
             active: 'success',
             rejected: 'error',
             suspended: 'gray'
         };
-        return badgeClasses[status] || 'gray';
+        return badgeClasses[normalizeStatus(status, isActive)] || 'gray';
     }
 
     async function approveProduct(productId) {
@@ -326,8 +367,8 @@ const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
 
 
 
-                await loadProducts();
-                showToast('Ürün onaylandı', 'success');
+            await loadProducts();
+            showToast('Ürün onaylandı', 'success');
         } catch (error) {
             showToast('Ürün onaylanırken hata oluştu: ' + error.message, 'error');
         }
@@ -346,34 +387,32 @@ const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
             });
 
 
-           
-                await loadProducts();
-                showToast('Ürün reddedildi', 'success');
-            
+
+            await loadProducts();
+            showToast('Ürün reddedildi', 'success');
+
         } catch (error) {
             showToast('Ürün reddedilirken hata oluştu: ' + error.message, 'error');
         }
     }
 
     async function suspendProduct(productId) {
-        if (!(await openCustomModal('Bu ürünü askıya (beklemeye) almak istediğinizden emin misiniz?'))) {
+        if (!(await openCustomModal('Bu ürünü askıya almak istediğinizden emin misiniz?'))) {
             return;
         }
 
         try {
-            const response = await apiCall(`Admin/products/${productId}/status`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    status: 0, // 0: Pending'e çekilir.
-                    finalPrice: null
-                })
+            const response = await apiCall(`Admin/products/${productId}/toggle-active`, {
+                method: 'PUT'
             });
 
-
-           
-                await loadProducts();
-                showToast('Ürün askıya alındı', 'success');
+            // Optimistic Update: Listeyi baştan çekmek yerine bellek üzerinde state'i güncelleştirip ekranı tekrar çizeriz.
+            const product = allProducts.find(p => p.id === productId);
+            if(product) product.isActive = response.isActive;
             
+            filterProducts();
+            showToast(response.message || 'Ürün askıya alındı', 'success');
+
         } catch (error) {
             showToast('Ürün askıya alınırken hata oluştu: ' + error.message, 'error');
         }
@@ -381,22 +420,30 @@ const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
 
     async function activateProduct(productId) {
         try {
-            const product = allProducts.find(p => p.id === productId);
-            const response = await apiCall(`Admin/products/${productId}/status`, {
-                method: 'PUT',
-                body: JSON.stringify({
-                    status: 1, // 1: Approved
-                    finalPrice: product ? product.finalPrice : null
-                })
+            const response = await apiCall(`Admin/products/${productId}/toggle-active`, {
+                method: 'PUT'
             });
 
+            // Optimistic Update
+            const product = allProducts.find(p => p.id === productId);
+            if(product) product.isActive = response.isActive;
 
-           
-                await loadProducts();
-                showToast('Ürün aktifleştirildi', 'success');
-            
+            filterProducts();
+            showToast(response.message || 'Ürün aktifleştirildi', 'success');
+
         } catch (error) {
             showToast('Ürün aktifleştirilirken hata oluştu: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteProduct(productId) {
+        if (!(await openCustomModal('Bu ürünü kalıcı olarak silmek istediğinizden emin misiniz?'))) return;
+        try {
+            await apiCall(`Admin/products/${productId}`, { method: 'DELETE' });
+            await loadProducts();
+            showToast('Ürün silindi.', 'success');
+        } catch (error) {
+            showToast('Ürün silinemedi: ' + error.message, 'error');
         }
     }
 

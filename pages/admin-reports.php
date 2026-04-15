@@ -154,115 +154,164 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Set default dates
+    // Varsayılan tarihleri ayarla
     const today = new Date();
     const lastMonth = new Date();
     lastMonth.setMonth(today.getMonth() - 1);
     
     document.getElementById('start-date').value = lastMonth.toISOString().split('T')[0];
-    document.getElementById('end-date').value = today.toISOString().split('T')[0];
+    document.getElementById('end-date').value   = today.toISOString().split('T')[0];
     
-    loadReportData();
+    // Sayfa açıldığında varsayılan raporu yükle
+    generateReport();
 });
 
 async function generateReport() {
-    const startDate = document.getElementById('start-date').value;
-    const endDate = document.getElementById('end-date').value;
+    const startDate  = document.getElementById('start-date').value;
+    const endDate    = document.getElementById('end-date').value;
     const reportType = document.getElementById('report-type').value;
     
     if (!startDate || !endDate) {
         showToast('Lütfen tarih aralığı seçin', 'error');
         return;
     }
-    
+
     try {
         showToast('Rapor oluşturuluyor...', 'info');
-        
-        // Mock report generation
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        
-        loadReportData();
+
+        // Rapor türüne göre doğru endpoint
+        const endpointMap = {
+            sales: `Admin/reports/sales?startDate=${startDate}&endDate=${endDate}`,
+            students: `Admin/reports/student-earnings?startDate=${startDate}&endDate=${endDate}`,
+            merchants: `Admin/reports/merchant-earnings?startDate=${startDate}&endDate=${endDate}`,
+            products: `Admin/reports/product-performance?startDate=${startDate}&endDate=${endDate}`
+        };
+
+        const url = endpointMap[reportType];
+        if (!url) { showToast('Bilinmeyen rapor türü', 'error'); return; }
+
+        const response = await apiCall(url);
+        const data = response.data || response || {};
+
+        // Sıfırla
+        document.getElementById('total-sales').textContent       = '₺0';
+        document.getElementById('total-orders').textContent      = '0';
+        document.getElementById('student-earnings').textContent  = '₺0';
+        document.getElementById('merchant-earnings').textContent = '₺0';
+
+        if (reportType === 'sales') {
+            // SalesReportDto: totalSales, totalOrders, merchantEarnings, weeklySales, topProducts
+            document.getElementById('total-sales').textContent       = `₺${parseFloat(data.totalSales || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
+            document.getElementById('total-orders').textContent      = (data.totalOrders || 0).toLocaleString();
+            document.getElementById('merchant-earnings').textContent = `₺${parseFloat(data.merchantEarnings || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
+            if (Array.isArray(data.weeklySales) && data.weeklySales.length) loadSalesChart(data.weeklySales);
+            if (Array.isArray(data.topProducts) && data.topProducts.length) loadTopProducts(data.topProducts);
+        }
+        else if (reportType === 'students') {
+            // StudentEarningsReportDto: totalStudentEarnings, totalOrders, totalStudents, studentDetails
+            document.getElementById('student-earnings').textContent = `₺${parseFloat(data.totalStudentEarnings || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
+            document.getElementById('total-orders').textContent     = (data.totalOrders || 0).toLocaleString();
+            document.getElementById('total-sales').textContent      = `${data.totalStudents || 0} öğrenci`;
+
+            // StudentDetails tablosu
+            if (Array.isArray(data.studentDetails) && data.studentDetails.length) {
+                const container = document.getElementById('top-products');
+                container.innerHTML = data.studentDetails.map(s => `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-bold text-blue-600">${s.productCount || 0}</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">${escapeHtml(s.studentName)}</p>
+                            <p class="text-xs text-gray-500">${s.productCount} ürün</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-900">₺${parseFloat(s.totalEarnings || 0).toFixed(2)}</p>
+                        </div>
+                    </div>`).join('');
+            }
+        }
+        else if (reportType === 'merchants') {
+            // MerchantEarningsReportDto: totalMerchantEarnings, totalOrders, totalMerchants, merchantDetails
+            document.getElementById('merchant-earnings').textContent = `₺${parseFloat(data.totalMerchantEarnings || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
+            document.getElementById('total-orders').textContent      = (data.totalOrders || 0).toLocaleString();
+            document.getElementById('total-sales').textContent       = `${data.totalMerchants || 0} esnaf`;
+
+            // MerchantDetails tablosu
+            if (Array.isArray(data.merchantDetails) && data.merchantDetails.length) {
+                const container = document.getElementById('top-products');
+                container.innerHTML = data.merchantDetails.map(m => `
+                    <div class="flex items-center space-x-3">
+                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
+                            <span class="text-sm font-bold text-green-600">${m.productsSold || 0}</span>
+                        </div>
+                        <div class="flex-1">
+                            <p class="text-sm font-medium text-gray-900">${escapeHtml(m.merchantName)}</p>
+                            <p class="text-xs text-gray-500">${m.shopName || ''}</p>
+                        </div>
+                        <div class="text-right">
+                            <p class="text-sm font-bold text-gray-900">₺${parseFloat(m.totalEarnings || 0).toFixed(2)}</p>
+                        </div>
+                    </div>`).join('');
+            }
+        }
+        else if (reportType === 'products') {
+            // ProductPerformanceReportDto: totalProducts, activeProducts, totalRevenue, topProducts
+            document.getElementById('total-sales').textContent  = `₺${parseFloat(data.totalRevenue || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
+            document.getElementById('total-orders').textContent = (data.activeProducts || 0).toLocaleString();
+            if (Array.isArray(data.topProducts) && data.topProducts.length) loadTopProducts(data.topProducts);
+        }
+
         showToast('Rapor oluşturuldu!', 'success');
-        
+
     } catch (error) {
-        showToast('Rapor oluşturulurken hata oluştu', 'error');
+        showToast('Rapor oluşturulurken hata oluştu: ' + error.message, 'error');
     }
 }
 
-function loadReportData() {
-    // Mock data
-    const stats = {
-        total_sales: 45678.90,
-        total_orders: 234,
-        student_earnings: 6851.34,
-        merchant_earnings: 34289.01
-    };
-    
-    document.getElementById('total-sales').textContent = `₺${stats.total_sales.toLocaleString()}`;
-    document.getElementById('total-orders').textContent = stats.total_orders.toLocaleString();
-    document.getElementById('student-earnings').textContent = `₺${stats.student_earnings.toLocaleString()}`;
-    document.getElementById('merchant-earnings').textContent = `₺${stats.merchant_earnings.toLocaleString()}`;
-    
-    // Load charts
-    loadSalesChart();
-    loadTopProducts();
-}
-
-function loadSalesChart() {
-    // Mock chart data
-    const chartData = [
-        { day: 'Pzt', amount: 1250.50 },
-        { day: 'Sal', amount: 1875.75 },
-        { day: 'Çar', amount: 2225.25 },
-        { day: 'Per', amount: 1500.00 },
-        { day: 'Cum', amount: 2850.50 },
-        { day: 'Cmt', amount: 2200.00 },
-        { day: 'Paz', amount: 1925.25 }
-    ];
-    
-    const maxAmount = Math.max(...chartData.map(d => d.amount));
+function loadSalesChart(weeklySales) {
+    // DailySalesDto: dayName, amount, orderCount
+    const amounts = weeklySales.map(d => parseFloat(d.amount || d.Amount || 0));
+    const maxAmount = Math.max(...amounts, 1);
     const chartContainer = document.getElementById('sales-chart');
     
-    chartContainer.innerHTML = chartData.map(data => {
-        const height = (data.amount / maxAmount) * 200; // Max height 200px
+    chartContainer.innerHTML = weeklySales.map(data => {
+        const amount = parseFloat(data.amount || data.Amount || 0);
+        const height = (amount / maxAmount) * 200;
         return `
             <div class="flex flex-col items-center">
-                <div class="bg-blue-500 rounded-t w-12 mb-2 relative group" style="height: ${height}px;">
-                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        ₺${data.amount.toFixed(2)}
+                <div class="bg-blue-500 rounded-t w-12 mb-2 relative group" style="height: ${Math.max(height, 4)}px;">
+                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                        ₺${amount.toFixed(2)}
                     </div>
                 </div>
-                <span class="text-xs text-gray-600">${data.day}</span>
-            </div>
-        `;
+                <span class="text-xs text-gray-600">${data.dayName || data.DayName || ''}</span>
+            </div>`;
     }).join('');
 }
 
-function loadTopProducts() {
-    // Mock top products data
-    const topProducts = [
-        { name: 'Taze Domates', sales: 45, revenue: 382.50 },
-        { name: 'Organik Salatalık', sales: 38, revenue: 228.00 },
-        { name: 'Köy Ekmeği', sales: 32, revenue: 128.00 },
-        { name: 'Taze Süt', sales: 28, revenue: 336.00 },
-        { name: 'Yerel Bal', sales: 15, revenue: 675.00 }
-    ];
-    
+function loadTopProducts(topProducts) {
+    // TopProductDto: rank, productName, salesCount, totalRevenue
     const container = document.getElementById('top-products');
-    
-    container.innerHTML = topProducts.map((product, index) => `
+    container.innerHTML = topProducts.map(product => `
         <div class="flex items-center space-x-3">
             <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span class="text-sm font-bold text-blue-600">${index + 1}</span>
+                <span class="text-sm font-bold text-blue-600">${product.rank || product.Rank || ''}</span>
             </div>
             <div class="flex-1">
-                <p class="text-sm font-medium text-gray-900">${product.name}</p>
-                <p class="text-xs text-gray-500">${product.sales} satış</p>
+                <p class="text-sm font-medium text-gray-900">${escapeHtml(product.productName || product.ProductName || '')}</p>
+                <p class="text-xs text-gray-500">${product.salesCount || product.SalesCount || 0} satış</p>
             </div>
             <div class="text-right">
-                <p class="text-sm font-bold text-gray-900">₺${product.revenue.toFixed(2)}</p>
+                <p class="text-sm font-bold text-gray-900">₺${parseFloat(product.totalRevenue || product.TotalRevenue || 0).toFixed(2)}</p>
             </div>
-        </div>
-    `).join('');
+        </div>`).join('');
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = String(text);
+    return div.innerHTML;
 }
 </script>

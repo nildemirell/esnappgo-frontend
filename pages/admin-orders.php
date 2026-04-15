@@ -40,11 +40,12 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     </label>
                     <select id="status-filter" class="w-full" onchange="filterOrders()">
                         <option value="">Tüm Durumlar</option>
-                        <option value="pending">Beklemede</option>
-                        <option value="paid">Ödendi</option>
-                        <option value="shipped">Kargoya Verildi</option>
-                        <option value="delivered">Teslim Edildi</option>
-                        <option value="cancelled">İptal Edildi</option>
+                       <option value="Pending">Beklemede</option>
+                       <option value="Processing">İşleniyor</option>
+                       <option value="Shipped">Kargoya Verildi</option>
+                       <option value="Delivered">Teslim Edildi</option>
+                       <option value="Cancelled">İptal Edildi</option>
+
                     </select>
                 </div>
                 
@@ -126,67 +127,58 @@ document.addEventListener('DOMContentLoaded', function() {
 
 async function loadOrders() {
     try {
-        // Mock data - API endpoint eklenecek
-        allOrders = [
-            { 
-                id: 1, 
-                order_number: 'ORD-001', 
-                customer_name: 'Test Müşteri', 
-                customer_email: 'musteri@test.com',
-                total_amount: 125.50, 
-                status: 'pending', 
-                created_at: '2025-08-20 21:58:00',
-                items_count: 3
-            },
-            { 
-                id: 2, 
-                order_number: 'ORD-002', 
-                customer_name: 'Ahmet Yılmaz', 
-                customer_email: 'ahmet@example.com',
-                total_amount: 89.90, 
-                status: 'shipped', 
-                created_at: '2025-08-20 15:30:00',
-                items_count: 2
-            },
-            { 
-                id: 3, 
-                order_number: 'ORD-003', 
-                customer_name: 'Ayşe Kaya', 
-                customer_email: 'ayse@example.com',
-                total_amount: 67.25, 
-                status: 'delivered', 
-                created_at: '2025-08-19 10:15:00',
-                items_count: 1
-            }
-        ];
-        
+        const statusFilter = document.getElementById('status-filter')?.value || '';
+        const dateFilter   = document.getElementById('date-filter')?.value || '';
+        const search       = document.getElementById('search')?.value || '';
+
+        // Filtreler server-side'a gönderiliyor — backend destekliyor
+        let url = 'Admin/orders';
+        const params = [];
+        if (search)       params.push(`search=${encodeURIComponent(search)}`);
+        if (statusFilter) params.push(`status=${statusFilter}`);
+        if (dateFilter)   params.push(`dateRange=${dateFilter}`);
+        if (params.length) url += '?' + params.join('&');
+
+        const response = await apiCall(url);
+        // Backend { success: true, data: [...] } döndürüyor
+        allOrders = Array.isArray(response) ? response : (response.data || []);
         filteredOrders = [...allOrders];
         displayOrders();
-        
+
     } catch (error) {
-        console.error('Error loading orders:', error);
+        console.error('Siparişler yüklenemedi:', error);
+        showToast('Siparişler yüklenirken hata oluştu.', 'error');
+        document.getElementById('orders-table-body').innerHTML =
+            '<tr><td colspan="6" class="text-center py-8 text-gray-500">Siparişler yüklenemedi.</td></tr>';
     }
 }
 
 function displayOrders() {
     const tbody = document.getElementById('orders-table-body');
     
+    if (!filteredOrders.length) {
+        tbody.innerHTML = '<tr><td colspan="6" class="text-center py-8 text-gray-500">Sipariş bulunamadı.</td></tr>';
+        return;
+    }
+
+    // Backend AdminOrderSummaryDto: id, orderNumber, customerName, customerEmail,
+    //                               itemCount, totalAmount, status, createdAt
     tbody.innerHTML = filteredOrders.map(order => `
         <tr class="hover:bg-gray-50">
             <td class="px-6 py-4 whitespace-nowrap">
                 <div>
-                    <div class="text-sm font-medium text-gray-900">#${order.order_number}</div>
-                    <div class="text-sm text-gray-500">${order.items_count} ürün</div>
+                    <div class="text-sm font-medium text-gray-900">#${escapeHtml(order.orderNumber || String(order.id))}</div>
+                    <div class="text-sm text-gray-500">${order.itemCount ?? 0} ürün</div>
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <div>
-                    <div class="text-sm font-medium text-gray-900">${escapeHtml(order.customer_name)}</div>
-                    <div class="text-sm text-gray-500">${escapeHtml(order.customer_email)}</div>
+                    <div class="text-sm font-medium text-gray-900">${escapeHtml(order.customerName || '')}</div>
+                    <div class="text-sm text-gray-500">${escapeHtml(order.customerEmail || '')}</div>
                 </div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
-                <div class="text-sm font-medium text-gray-900">₺${parseFloat(order.total_amount).toFixed(2)}</div>
+                <div class="text-sm font-medium text-gray-900">₺${parseFloat(order.totalAmount || 0).toFixed(2)}</div>
             </td>
             <td class="px-6 py-4 whitespace-nowrap">
                 <span class="badge badge-${getStatusBadgeClass(order.status)}">
@@ -194,101 +186,130 @@ function displayOrders() {
                 </span>
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                ${formatDate(order.created_at)}
+                ${formatDate(order.createdAt)}
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                <div class="flex space-x-2">
-                    <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-900">
-                        Detaylar
-                    </button>
-                    ${order.status === 'pending' ? `
-                        <button onclick="updateOrderStatus('${order.id}', 'cancelled')" class="text-red-600 hover:text-red-900">
-                            İptal Et
-                        </button>
-                    ` : ''}
-                </div>
-            </td>
+    <div class="flex space-x-2">
+        <button onclick="viewOrderDetails('${order.id}')" class="text-blue-600 hover:text-blue-900">
+            Detaylar
+        </button>
+        ${order.status?.toLowerCase() !== 'cancelled' && order.status?.toLowerCase() !== 'delivered' ? `
+            <select onchange="if(this.value) updateOrderStatus('${order.id}', this.value); this.value='';" 
+                    class="text-xs border rounded px-1 py-0.5">
+                <option value="">Durum Değiştir</option>
+                <option value="Processing">İşleniyor</option>
+                <option value="Shipped">Kargoya Verildi</option>
+                <option value="Delivered">Teslim Edildi</option>
+            </select>
+        ` : ''}
+        ${(order.status?.toLowerCase() === 'pending' || order.status?.toLowerCase() === 'processing') ? `
+            <button onclick="cancelOrder('${order.id}')" class="text-red-600 hover:text-red-900">
+                İptal Et
+            </button>
+        ` : ''}
+    </div>
+</td>
+
         </tr>
     `).join('');
 }
 
 function filterOrders() {
-    const search = document.getElementById('search').value.toLowerCase();
-    const statusFilter = document.getElementById('status-filter').value;
-    const dateFilter = document.getElementById('date-filter').value;
-    
-    filteredOrders = allOrders.filter(order => {
-        const matchesSearch = !search || 
-            order.order_number.toLowerCase().includes(search) || 
-            order.customer_name.toLowerCase().includes(search) ||
-            order.customer_email.toLowerCase().includes(search);
-        
-        const matchesStatus = !statusFilter || order.status === statusFilter;
-        
-        // Date filtering logic would go here
-        const matchesDate = true; // Simplified for now
-        
-        return matchesSearch && matchesStatus && matchesDate;
-    });
-    
-    displayOrders();
+    // Filtreler backend'e gönderildiği için loadOrders'ı yeniden çağırıyoruz
+    loadOrders();
 }
 
 function getStatusText(status) {
     const statusTexts = {
-        pending: 'Beklemede',
-        paid: 'Ödendi',
-        shipped: 'Kargoya Verildi',
-        delivered: 'Teslim Edildi',
-        cancelled: 'İptal Edildi',
-        refunded: 'İade Edildi'
-    };
+    Pending: 'Beklemede',   pending: 'Beklemede',
+    Processing: 'İşleniyor', processing: 'İşleniyor',
+    Shipped: 'Kargoya Verildi', shipped: 'Kargoya Verildi',
+    Delivered: 'Teslim Edildi', delivered: 'Teslim Edildi',
+    Cancelled: 'İptal Edildi', cancelled: 'İptal Edildi'
+    // 'Paid' ve 'Refunded' backend'de YOK — kaldırıldı
+};
     return statusTexts[status] || status;
 }
 
 function getStatusBadgeClass(status) {
+    const s = String(status).toLowerCase();
     const badgeClasses = {
         pending: 'warning',
-        paid: 'primary',
+        processing: 'primary',
         shipped: 'primary',
         delivered: 'success',
-        cancelled: 'error',
-        refunded: 'gray'
+        cancelled: 'error'
     };
-    return badgeClasses[status] || 'gray';
+    return badgeClasses[s] || 'gray';
 }
 
+
 function formatDate(dateString) {
+    if (!dateString) return '—';
     const date = new Date(dateString);
     return date.toLocaleDateString('tr-TR', {
-        year: 'numeric',
-        month: 'short',
-        day: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        year: 'numeric', month: 'short', day: 'numeric',
+        hour: '2-digit', minute: '2-digit'
     });
 }
 
-function viewOrderDetails(orderId) {
-    showToast('Sipariş detayları özelliği yakında eklenecek', 'info');
+async function viewOrderDetails(orderId) {
+    try {
+        const response = await apiCall(`Admin/orders/${orderId}`);
+        const order = response.data || response;
+        
+        // Modal ile detay göster
+        let itemsHtml = '';
+        if (order.items && order.items.length > 0) {
+            itemsHtml = order.items.map(item => `
+                <div class="flex justify-between py-2 border-b">
+                    <span>${escapeHtml(item.productName)} x${item.quantity}</span>
+                    <span>₺${parseFloat(item.price || 0).toFixed(2)}</span>
+                </div>
+            `).join('');
+        }
+        
+        const detailHtml = `
+            <div class="text-left">
+                <p><strong>Sipariş No:</strong> #${escapeHtml(order.orderNumber || String(order.id))}</p>
+                <p><strong>Müşteri:</strong> ${escapeHtml(order.customerName || '')}</p>
+                <p><strong>Email:</strong> ${escapeHtml(order.customerEmail || '')}</p>
+                <p><strong>Toplam:</strong> ₺${parseFloat(order.totalAmount || 0).toFixed(2)}</p>
+                <p><strong>Durum:</strong> ${getStatusText(order.status)}</p>
+                <p><strong>Tarih:</strong> ${formatDate(order.createdAt)}</p>
+                ${itemsHtml ? '<hr class="my-2"><h4 class="font-bold">Ürünler:</h4>' + itemsHtml : ''}
+            </div>
+        `;
+        
+        await openCustomModal(detailHtml, 'alert');
+    } catch (error) {
+        showToast('Sipariş detayları yüklenemedi: ' + error.message, 'error');
+    }
+}
+
+
+async function cancelOrder(orderId) {
+    if (!(await openCustomModal('Bu siparişi iptal etmek istediğinizden emin misiniz?'))) return;
+    try {
+        await apiCall(`Admin/orders/${orderId}/cancel`, { method: 'PUT' });
+        await loadOrders();
+        showToast('Sipariş iptal edildi.', 'success');
+    } catch (error) {
+        showToast('İptal işlemi başarısız: ' + error.message, 'error');
+    }
 }
 
 async function updateOrderStatus(orderId, newStatus) {
-    if (!(await openCustomModal('Sipariş durumunu değiştirmek istediğinizden emin misiniz?'))) {
-        return;
-    }
-    
+    if (!(await openCustomModal('Sipariş durumunu değiştirmek istediğinizden emin misiniz?'))) return;
     try {
-        // API endpoint eklenecek
-        const order = allOrders.find(o => o.id == orderId);
-        if (order) {
-            order.status = newStatus;
-            filterOrders();
-            showToast('Sipariş durumu güncellendi', 'success');
-        }
-        
+        await apiCall(`Admin/orders/${orderId}/status`, {
+            method: 'PUT',
+            body: JSON.stringify({ status: newStatus })
+        });
+        await loadOrders();
+        showToast('Sipariş durumu güncellendi.', 'success');
     } catch (error) {
-        showToast('Durum güncellenirken hata oluştu', 'error');
+        showToast('Güncelleme başarısız: ' + error.message, 'error');
     }
 }
 
@@ -296,7 +317,7 @@ function exportOrders() {
     const csvContent = "data:text/csv;charset=utf-8," + 
         "Sipariş No,Müşteri,Email,Tutar,Durum,Tarih\n" +
         filteredOrders.map(order => 
-            `"${order.order_number}","${order.customer_name}","${order.customer_email}","₺${order.total_amount}","${getStatusText(order.status)}","${order.created_at}"`
+            `"${order.orderNumber || order.id}","${order.customerName || ''}","${order.customerEmail || ''}","₺${order.totalAmount || 0}","${getStatusText(order.status)}","${order.createdAt}"`
         ).join("\n");
     
     const encodedUri = encodeURI(csvContent);
@@ -311,8 +332,9 @@ function exportOrders() {
 }
 
 function escapeHtml(text) {
+    if (!text) return '';
     const div = document.createElement('div');
-    div.textContent = text;
+    div.textContent = String(text);
     return div.innerHTML;
 }
 </script>

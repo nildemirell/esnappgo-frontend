@@ -64,7 +64,7 @@ if (!$current_user) {
             const response = await apiCall('products?limit=100');
 
             // 1. ÇÖZÜM: .NET backend'den gelen veriyi products.php'deki gibi güvenli alıyoruz
-            const allProducts = Array.isArray(response) ? response : (response.data || []);
+            const allProducts = Array.isArray(response) ? response : (response.products || response.data || []);
 
             // 2. ÇÖZÜM: ID'leri eşleştirirken String/Number uyuşmazlığını önlemek için Number() kullanıyoruz
             const favorites = allProducts.filter(p => favoriteIds.some(id => Number(id) === Number(p.id)));

@@ -39,7 +39,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                     <div>
                         <p class="text-sm font-medium text-gray-500 mb-1">Toplam Kullanıcı</p>
                         <p class="text-3xl font-bold text-gray-900" id="total-users">-</p>
-                        <p class="text-xs text-green-600 mt-1" id="users-growth">↗ Bu ay +12</p>
+                        <p class="text-xs text-green-600 mt-1" id="users-growth">-</p>
                     </div>
                     <div class="w-14 h-14 bg-blue-100 rounded-2xl flex items-center justify-center">
                         <svg class="w-8 h-8 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -451,13 +451,11 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     async function initDashboard() {
         try {
             // Bütün kullanıcıları bir kez alıyoruz (3x apiCall sorununu çözer)
-            const response = await apiCall('admin/users');
+           const response = await apiCall('Admin/users');
             const users = Array.isArray(response) ? response : (response.data || []);
             window._cachedUsers = users;
 
             loadAdminStats(users);
-            loadRecentUsers(users); // users değişkenini yolladık
-            loadRecentOrders();
             loadActivityTimeline();
         } catch (error) {
             console.error('Erişim hatası veya kullanıcılar çekilemedi', error);
@@ -466,53 +464,60 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     async function loadAdminStats(users = []) {
         try {
-            // Kullanıcı sayıları
-            const total = users.length;
-            const students = users.filter(u => u.role === 'ogrenci').length;
-            const merchants = users.filter(u => u.role === 'esnaf').length;
-            const customers = users.filter(u => u.role === 'musteri').length;
-
-            document.getElementById('total-users').textContent = total.toLocaleString();
-            updateUserBreakdownFromCache(students, merchants, customers);
-
-            // .NET Backend'den eksik olan rakamları (ürün, sipariş, gelir) çekiyoruz
+            // Tüm istatistikleri Backend AdminDashboardDto'dan çekiyoruz
             const statsResponse = await apiCall('Admin/stats');
             const stats = statsResponse.data || statsResponse || {};
 
-            document.getElementById('total-products').textContent = stats.total_products !== undefined ? stats.total_products.toLocaleString() : '—';
-            document.getElementById('total-orders').textContent = stats.total_orders !== undefined ? stats.total_orders.toLocaleString() : '—';
-            document.getElementById('total-revenue').textContent = stats.total_revenue !== undefined ? `₺${parseFloat(stats.total_revenue).toFixed(2)}` : '—';
+            // Toplam kullanıcı
+            document.getElementById('total-users').textContent = stats.totalUsers !== undefined ? stats.totalUsers.toLocaleString() : (users.length || '—');
 
-            if (document.getElementById('pending-products')) document.getElementById('pending-products').textContent = stats.pending_products !== undefined ? stats.pending_products : '—';
-            if (document.getElementById('today-orders')) document.getElementById('today-orders').textContent = stats.today_orders !== undefined ? stats.today_orders : '—';
-            if (document.getElementById('month-revenue')) document.getElementById('month-revenue').textContent = stats.month_revenue !== undefined ? `₺${parseFloat(stats.month_revenue).toFixed(2)}` : '—';
+            // Ürün / Sipariş / Gelir kartları (camelCase — .NET JSON varsayılanı)
+            document.getElementById('total-products').textContent = stats.activeProducts    !== undefined ? stats.activeProducts.toLocaleString()                              : '—';
+            document.getElementById('total-orders').textContent   = stats.totalOrders      !== undefined ? stats.totalOrders.toLocaleString()                                : '—';
+            document.getElementById('total-revenue').textContent  = stats.totalRevenue     !== undefined ? `₺${parseFloat(stats.totalRevenue).toFixed(2)}`                  : '—';
+
+            if (document.getElementById('pending-products')) document.getElementById('pending-products').textContent = stats.pendingProducts    !== undefined ? stats.pendingProducts : '—';
+            if (document.getElementById('today-orders'))     document.getElementById('today-orders').textContent     = stats.todayOrders        !== undefined ? stats.todayOrders     : '—';
+            if (document.getElementById('month-revenue'))    document.getElementById('month-revenue').textContent    = stats.thisMonthRevenue   !== undefined ? `₺${parseFloat(stats.thisMonthRevenue).toFixed(2)}` : '—';
+
+            // Rol bazlı istatistik kartları
+            updateRoleStats('student', stats.students  || {});
+            updateRoleStats('merchant', stats.merchants || {});
+            updateRoleStats('customer', stats.customers || {});
+
+            // Eğer stats içinde zaten recentUsers ve recentOrders geliyorsa onları kullanalım
+            loadRecentUsers(stats.recentUsers || stats.RecentUsers || []);
+            loadRecentOrders(stats.recentOrders || stats.RecentOrders || null);
 
         } catch (error) {
             console.error('Admin stats yüklenemedi:', error);
-            // İstatistikler fail olsa bile elimizdeki kullanıcı sayısını basalım
             document.getElementById('total-users').textContent = users.length > 0 ? users.length : '0';
         }
     }
 
-    // loadUserBreakdown() fonksiyonuna artık ihtiyacımız kalmadı, initDashboard tek seferde hallediyor.
-    function loadUserBreakdown() { }
-
-    function updateUserBreakdownFromCache(students, merchants, customers) {
-        if (document.getElementById('student-count')) document.getElementById('student-count').textContent = students;
-        if (document.getElementById('active-students')) document.getElementById('active-students').textContent = students;
-        if (document.getElementById('new-students')) document.getElementById('new-students').textContent = '—';
-        if (document.getElementById('merchant-count')) document.getElementById('merchant-count').textContent = merchants;
-        if (document.getElementById('active-shops')) document.getElementById('active-shops').textContent = merchants;
-        if (document.getElementById('new-merchants')) document.getElementById('new-merchants').textContent = '—';
-        if (document.getElementById('customer-count')) document.getElementById('customer-count').textContent = customers;
-        if (document.getElementById('active-customers')) document.getElementById('active-customers').textContent = customers;
-        if (document.getElementById('new-customers')) document.getElementById('new-customers').textContent = '—';
+    // Rol bazlı istatistik kartlarını güncelle (RoleStatsDto: total, active, newThisMonth)
+    function updateRoleStats(roleKey, dto) {
+        const map = {
+            student:  { count: 'student-count',   active: 'active-students', newMonth: 'new-students'   },
+            merchant: { count: 'merchant-count',  active: 'active-shops',    newMonth: 'new-merchants'  },
+            customer: { count: 'customer-count',  active: 'active-customers',newMonth: 'new-customers'  }
+        };
+        const ids = map[roleKey];
+        if (!ids) return;
+        if (document.getElementById(ids.count))    document.getElementById(ids.count).textContent    = dto.total        ?? '—';
+        if (document.getElementById(ids.active))   document.getElementById(ids.active).textContent   = dto.active       ?? '—';
+        if (document.getElementById(ids.newMonth)) document.getElementById(ids.newMonth).textContent = dto.newThisMonth  ?? '—';
     }
 
+    // Eski fonksiyon — artık stats endpoint hallediyor
+    function loadUserBreakdown() { }
+    function updateUserBreakdownFromCache() { }
 
-    function loadRecentUsers(allUsers = []) {
+
+    function loadRecentUsers(usersData = []) {
         try {
-            const users = allUsers.slice(0, 5);
+            // Data zaten recentUsers ise sadece 5 tanesini göster
+            const users = usersData.slice(0, 5);
 
             const container = document.getElementById('recent-users');
             if (!container) return;
@@ -548,13 +553,22 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         }
     }
 
-    async function loadRecentOrders() {
+    async function loadRecentOrders(recentOrdersData = null) {
         try {
-            const response = await apiCall('Admin/orders');
-            // Gelen veri direkt dizi mi yoksa data içinde mi kontrol ediyoruz:
-            const orders = Array.isArray(response) ? response : (response.data || []);
+            let orders = recentOrdersData;
+
+            // Eğer istatistiklerden gelmediyse fallback olarak ?limit=5 parametresi ile endpointten çek
+            if (!orders) {
+                const response = await apiCall('Admin/orders?limit=5');
+                const allOrders = Array.isArray(response) ? response : (response.data || []);
+                orders = allOrders.slice(0, 5);
+            }
 
             const container = document.getElementById('recent-orders');
+            if (!orders || !orders.length) {
+                container.innerHTML = '<p class="text-gray-500 text-center py-4">Henüz sipariş yok</p>';
+                return;
+            }
             container.innerHTML = orders.map(order => `
 
             <div class="flex items-center space-x-4 p-4 rounded-xl hover:bg-gray-50 transition-colors">
@@ -565,7 +579,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 </div>
                 <div class="flex-1">
                     <p class="font-semibold text-gray-900">${order.orderNumber || order.id}</p>
-                    <p class="text-sm text-gray-500">${escapeHtml(order.customerName || order.userName || '')}</p>
+                    <p class="text-sm text-gray-500">${escapeHtml(order.customerName || '')}</p>
                     <p class="text-xs text-gray-400">${formatDate(order.createdAt)}</p>
                 </div>
                 <div class="text-right">
@@ -593,20 +607,24 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">Henüz aktivite yok</p>';
                 return;
             }
-            container.innerHTML = activities.map(activity => `
-            <div class="flex items-start space-x-4">
-                <div class="w-10 h-10 bg-${activity.color}-100 rounded-full flex items-center justify-center">
-                    ${getActivityIcon(activity.icon, activity.color)}
-                </div>
-                <div class="flex-1">
-                    <p class="text-sm">
-                        <span class="font-semibold text-gray-900">${activity.user}</span>
-                        <span class="text-gray-600">${activity.action}</span>
-                    </p>
-                    <p class="text-xs text-gray-500 mt-1">${activity.time}</p>
-                </div>
-            </div>
-        `).join('');
+const activityColors = { 0: 'blue', 1: 'green', 2: 'purple', 3: 'teal' };
+const activityIcons  = { 0: 'user-plus', 1: 'plus', 2: 'check', 3: 'shield-check' };
+
+container.innerHTML = activities.map(activity => {
+    const color = activityColors[activity.type] || 'gray';
+    const icon  = activityIcons[activity.type]  || 'plus';
+    return `
+    <div class="flex items-start space-x-4">
+        <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center">
+            ${getActivityIcon(icon, color)}
+        </div>
+        <div class="flex-1">
+            <p class="text-sm font-semibold text-gray-900">${escapeHtml(activity.title)}</p>
+            <p class="text-xs text-gray-500 mt-1">${formatDate(activity.createdAt)}</p>
+        </div>
+    </div>`;
+}).join('');
+
 
         } catch (error) {
             console.error('Error loading activity timeline:', error);

@@ -79,8 +79,9 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
                     <label for="description" class="block text-sm font-medium text-gray-700 mb-2">
                         Ürün Açıklaması
                     </label>
-                    <textarea id="description" name="description" rows="4" class="w-full"
-                        placeholder="Ürün hakkında detaylı bilgi verin..." required></textarea>
+                  <textarea id="description" name="description" rows="4" class="w-full"
+                  placeholder="Ürün hakkında detaylı bilgi verin... (opsiyonel)"></textarea>
+
                 </div>
 
                 <!-- Shop Selection -->
@@ -155,8 +156,9 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
             }
             select.innerHTML = '<option value="">Mağaza seçin...</option>' +
                 list.map(m =>
-                    `<option value="${m.id}">${escapeHtml(m.fullName)}</option>`
-                ).join('');
+    `<option value="${m.id || m.Id}">${escapeHtml(m.name || m.fullName || m.Name || 'Bilinmiyor')}</option>`
+).join('');
+
         } catch (error) {
             console.error('Error loading merchants:', error);
             showToast('Mağaza listesi yüklenemedi. Lütfen sayfayı yenileyin.', 'error');

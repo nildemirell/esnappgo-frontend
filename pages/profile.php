@@ -265,49 +265,23 @@ if (!$current_user) {
     async function handleProfileSubmit(e) {
         e.preventDefault();
 
-        const formData = new FormData(e.target);
         const data = {
             FullName: formData.get('full_name'),
             PhoneNumber: formData.get('phone') || '',
-            // opsiyonel alanlar — form'da bu input'lar varsa, yoksa null gönder
             Address: formData.get('address') || null,
-            BirthDate: formData.get('birth_date') || null,
+            BirthDate: formData.get('birth_date') ? `${formData.get('birth_date')}T00:00:00Z` : null,
             Gender: formData.get('gender') || null
         };
 
-
         try {
-            const token = localStorage.getItem('auth_token');
-            if (!token) {
-                showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
-                setTimeout(() => { window.location.href = '/login'; }, 1500);
-                return;
-            }
-
-            const res = await fetch(`${API_BASE}/api/User/profile`, {
+            const response = await apiCall('User/profile', {
                 method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
                 body: JSON.stringify(data)
             });
 
-            const response = await res.json();
-
-            if (!res.ok) {
-                // 401 = Token süresi dolmuş
-                if (res.status === 401) {
-                    showToast('Oturum süresi dolmuş. Lütfen tekrar giriş yapın.', 'error');
-                    localStorage.removeItem('auth_token');
-                    setTimeout(() => { window.location.href = '/login'; }, 1500);
-                    return;
-                }
-                throw new Error(response.error || response.message || 'Profil güncellenemedi.');
-            }
-
             // localStorage'daki kullanıcı adını da güncelle (header'da görünsün diye)
             localStorage.setItem('user_name', data.FullName);
+
             showToast('Profil bilgileri başarıyla güncellendi!', 'success');
 
         } catch (error) {

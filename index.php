@@ -61,7 +61,7 @@ switch ($page) {
         $page_file = 'pages/orders.php';
         break;
     case 'profile':
-        $page_file = 'pages/profile.php';
+        $page_file = 'pages/account.php';
         break;
     case 'dashboard':
         $page_file = 'pages/dashboard.php';
@@ -864,6 +864,29 @@ switch ($page) {
             <?php if ($current_user): ?>
                 updateCartCount();
                 loadNotificationCount(); // Bildirim fonksiyonunu tetikle
+                
+                // Dinamik olarak isim güncelleme (kullanıcı çıkış yapmadan yeni ismini görebilsin)
+                const storedName = localStorage.getItem('user_name');
+                if (storedName) {
+                    const initial = storedName.charAt(0).toUpperCase();
+                    const firstName = storedName.split(' ')[0];
+                    
+                    const btnInner = document.querySelector('button[onclick="toggleUserMenu()"]');
+                    if (btnInner) {
+                       const avatar = btnInner.querySelector('div.bg-blue-600');
+                       if(avatar) avatar.textContent = initial;
+                       const firstNameEl = btnInner.querySelector('.text-slate-800');
+                       if(firstNameEl) firstNameEl.textContent = firstName;
+                    }
+
+                    const userMenu = document.getElementById('user-menu');
+                    if (userMenu) {
+                       const avatar2 = userMenu.querySelector('div.bg-blue-600');
+                       if(avatar2) avatar2.textContent = initial;
+                       const fullNameEl = userMenu.querySelector('.text-slate-800.font-semibold');
+                       if(fullNameEl) fullNameEl.textContent = storedName;
+                    }
+                }
             <?php endif; ?>
         });
     

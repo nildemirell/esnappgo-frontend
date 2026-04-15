@@ -125,20 +125,14 @@ document.addEventListener('DOMContentLoaded', function() {
 async function loadShop(shopId) {
     try {
         const response = await apiCall(`shops/${shopId}`);
-        
-        if (!response.success) {
-            showToast('Mağaza bulunamadı', 'error');
-            window.location.href = '/shops';
-            return;
-        }
-        
-        currentShop = response.data;
+        // apiCall { success, data } döndürür — data'yı çıkart
+        currentShop = response.data || response;
         displayShop(currentShop);
         
     } catch (error) {
         console.error('Error loading shop:', error);
-        showToast('Mağaza yüklenirken hata oluştu', 'error');
-        window.location.href = '/shops';
+        showToast('Mağaza bulunamadı veya yüklenemedi: ' + error.message, 'error');
+        setTimeout(() => { window.location.href = '/shops'; }, 2000);
     }
 }
 
@@ -147,17 +141,18 @@ function displayShop(shop) {
     document.getElementById('shop-loading').style.display = 'none';
     document.getElementById('shop-content').style.display = 'block';
     
-    // Set shop info
-    document.getElementById('shop-name').textContent = shop.name;
+        // Set shop info
+    document.getElementById('shop-name').textContent = shop.shopName || shop.name || 'İsimsiz Mağaza';
     document.getElementById('shop-description').textContent = shop.description || 'Açıklama bulunmamaktadır.';
     document.getElementById('shop-address').textContent = shop.address || 'Adres bilgisi yok';
-    document.getElementById('shop-phone').textContent = shop.phone || 'Telefon bilgisi yok';
-    
+    document.getElementById('shop-phone').textContent = shop.phoneNumber || 'Telefon bilgisi yok';
+
     // Set stats
     const products = shop.products || [];
     document.getElementById('shop-product-count').textContent = products.length;
-    document.getElementById('shop-active-products').textContent = products.filter(p => p.status === 'active').length;
-    document.getElementById('shop-created-date').textContent = formatDate(shop.created_at);
+        document.getElementById('shop-active-products').textContent = products.filter(p => (p.status || '').toString().toLowerCase() === 'approved' || p.status === 'active').length;
+    document.getElementById('shop-created-date').textContent = formatDate(shop.registrationDate);
+
     
     // Display products
     shopProducts = products;
@@ -172,59 +167,45 @@ function displayShopProducts(products) {
         return;
     }
     
-    container.innerHTML = products.map(product => `
-        <a href="/products/${product.id}" class="group">
-            <div class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">
-                <div class="relative h-48 bg-gray-100">
-                    ${product.images && product.images.length > 0 ? (() => {
-                        let imageUrl = product.images[0];
-                        if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-                            imageUrl = '/' + imageUrl;
-                        }
-                        return `
-                            <img 
-                                src="${imageUrl}" 
-                                alt="${escapeHtml(product.title)}"
-                                class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"
-                                onerror="this.src='/media/68a658361732a_1755732022.jpg'"
-                            />
-                        `;
-                    })() : `
-                        <div class="w-full h-full flex items-center justify-center bg-gray-200">
-                            <span class="text-gray-400">📷</span>
-                        </div>
-                    `}
-                    
-                    <!-- Status Badge -->
-                    <div class="absolute top-2 right-2">
-                        <span class="badge badge-${getStatusBadgeClass(product.status)}">
-                            ${getStatusText(product.status)}
-                        </span>
-                    </div>
-                </div>
-                
-                <div class="p-4">
-                    <h4 class="font-semibold text-gray-900 mb-2 line-clamp-1">
-                        ${escapeHtml(product.title)}
-                    </h4>
-                    
-                    <p class="text-sm text-gray-600 mb-3 line-clamp-2">
-                        ${escapeHtml(product.description || '')}
-                    </p>
-                    
-                    <div class="flex items-center justify-between">
-                        <span class="text-lg font-bold text-blue-600">
-                            ₺${parseFloat(product.price).toFixed(2)}
-                        </span>
-                        <span class="text-sm text-gray-500">
-                            Stok: ${product.stock}
-                        </span>
-                    </div>
-                </div>
-            </div>
-        </a>
-    `).join('');
+    container.innerHTML = products.map(function(product) {
+        // Alan adlarını backend ProductListDto'ya göre düzelt
+        var displayName = product.name || product.title || 'İsimsiz Ürün';
+        var displayPrice = product.finalPrice || product.suggestedPrice || product.price || 0;
+        var imagesArr = product.imageUrls || product.images || [];
+        
+        // Resim URL'sini hesapla — IIFE olmadan
+        var imageHtml;
+        if (imagesArr.length > 0) {
+            var imageUrl = imagesArr[0];
+            if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
+                imageUrl = '/' + imageUrl;
+            }
+            imageHtml = '<img src="' + imageUrl + '" alt="' + escapeHtml(displayName) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.src=\'/media/68a658361732a_1755732022.jpg\'" />';
+        } else {
+            imageHtml = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><span class="text-4xl text-gray-400">📷</span></div>';
+        }
+        
+        // Status — backend "Approved" enum dönüyor, normalize et
+        var normalizedStatus = (product.status || '').toLowerCase() === 'approved' ? 'active' : (product.status || '').toLowerCase();
+        
+        return '<a href="/products/' + product.id + '" class="group">' +
+            '<div class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">' +
+                '<div class="relative h-48 bg-gray-100">' +
+                    imageHtml +
+                '</div>' +
+                '<div class="p-4">' +
+                    '<h4 class="font-semibold text-gray-900 mb-2 line-clamp-1">' + escapeHtml(displayName) + '</h4>' +
+                    '<p class="text-sm text-gray-600 mb-3 line-clamp-2">' + escapeHtml(product.description || '') + '</p>' +
+                    '<div class="flex items-center justify-between">' +
+                        '<span class="text-lg font-bold text-blue-600">₺' + parseFloat(displayPrice).toFixed(2) + '</span>' +
+                        '<span class="text-xs text-gray-500">' + escapeHtml(product.categoryName || '') + '</span>' +
+                    '</div>' +
+                '</div>' +
+            '</div>' +
+        '</a>';
+    }).join('');
 }
+
 
 function filterShopProducts(status) {
     currentFilter = status;

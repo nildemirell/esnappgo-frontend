@@ -213,7 +213,8 @@ if (!$current_user) {
                         <div class="flex items-center space-x-3">
                             <img src="${item.images?.[0] || ''}" alt="${item.title}" class="w-12 h-12 object-cover rounded-lg" onerror="this.src='data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDgiIGhlaWdodD0iNDgiIGZpbGw9IiNjY2MiIHZpZXdCb3g9IjAgMCAyNCAyNCIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj48cGF0aCBkPSJNMTIgMmM1LjUxNCAwIDEwIDQuNDg2IDEwIDEwcy00LjQ4NiAxMC0xMCAxMFMyIDEyIDIgMTJTNi40ODYgMiAxMiAyek0xMiA2YTYgNiAwIDEwMCAxMiA2IDYgMCAwMDAtMTJ6Ii8+PC9zdmc+'">
                             <div>
-                                <h4 class="text-sm font-medium text-gray-900">${Ödeme YöntemHtml(item.title)}</h4>
+                               <h4 class="text-sm font-medium text-gray-900">${escapeHtml(item.title)}</h4>
+
                                 <p class="text-sm text-gray-500">${item.quantity} adet</p>
                             </div>
                         </div>
@@ -364,12 +365,13 @@ if (!$current_user) {
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    paymentMethod: 'bank_transfer',
-                    receiptUrl: receiptUrl,
-                    shippingAddress: addressInput, // Formdan aldığımız adresi koyduk
-                    billingAddress: addressInput,  // Faturayı da şimdilik aynı yolluyoruz
-                    transferNote: document.getElementById('transfer-note').value
-                })
+    paymentMethod: 'bank_transfer',
+    receiptUrl: receiptUrl,
+    shippingAddress: addressInput,
+    billingAddress: addressInput
+    // transferNote kaldırıldı — backend'de bu alan yok
+})
+
             });
 
             if (orderResponse.ok) {
@@ -390,5 +392,11 @@ if (!$current_user) {
             showToast(error.message, 'error');
         }
     }
+    function escapeHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text || '';
+    return div.innerHTML;
+}
+
 </script>
 </div> </div>

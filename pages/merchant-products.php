@@ -256,6 +256,11 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                 let rawStatus = (p.status || '').toLowerCase();
                 if (rawStatus === 'approved') rawStatus = 'active'; // ✅ Ana düzeltme
 
+                // Yeni eklenen IsActive kontrolü: Eğer ürün onaylıysa ama aktif değilse, esnaf için 'askı' olarak ata
+                if (rawStatus === 'active' && p.isActive === false) {
+                    rawStatus = 'suspended';
+                }
+
                 return {
                     id: p.id,
                     title: p.name || 'İsimsiz Ürün',
@@ -464,11 +469,11 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    status: 'Approved',
-                    finalPrice: parseFloat(formData.get('final_price')),
-                    stock: parseInt(formData.get('stock')), // Backend ekleyeceği için artık gönderiyoruz
-                    reason: formData.get('merchant_notes')  // Eklenen opsiyonel notu da gönderiyoruz
+                    status: 'Approved',       // Backend JsonStringEnumConverter varsa ✅
+                    finalPrice: parseFloat(formData.get('final_price'))
+                    // stock ve reason kaldırıldı — DTO'da bu alanlar yok
                 })
+
             });
             if (response.ok) {
                 showToast('Ürün onaylandı!', 'success');
@@ -490,8 +495,6 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
 
         try {
             const token = localStorage.getItem('auth_token');
-
-            // Yeni fetch isteği
             const response = await fetch(`${API_BASE}/api/Merchant/products/${productId}/status`, {
                 method: 'PUT',
                 headers: {
@@ -499,17 +502,14 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                     'Authorization': `Bearer ${token}`
                 },
                 body: JSON.stringify({
-                    status: 'Rejected',
-                    reason: reason // Backend sebebi kaydetsin diye buraya ekledik
+                    status: 'Rejected'
                 })
             });
 
-            // Standart fetch kullandığımız için response.success yerine response.ok kullanıyoruz
             if (response.ok) {
                 showToast('Ürün reddedildi', 'success');
-                await loadProducts(); // Ürün listesini yeniden yükle
+                await loadProducts();
             } else {
-                // Eğer sunucudan 200 OK dönmezse hata fırlatıyoruz
                 throw new Error('İşlem başarısız oldu.');
             }
 
@@ -691,7 +691,9 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
 
         const formData = new FormData(e.target);
         const productId = document.getElementById('edit-product-id').value;
-
+        const currentProduct = allProducts.find(p => p.id === parseInt(productId));
+        const currentStatus = currentProduct?.status === 'active' ? 'Approved' :
+            currentProduct?.status === 'suspended' ? 'Suspended' : 'Approved';
         const data = {
             price: parseFloat(formData.get('edit_price')),
             stock: parseInt(formData.get('edit_stock'))
@@ -705,7 +707,7 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                 },
                 body: JSON.stringify({
-                    status: 'Approved',
+                    status: currentStatus,
                     finalPrice: data.price
                 })
             });

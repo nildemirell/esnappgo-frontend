@@ -363,13 +363,13 @@ if (!$current_user) {
                         </a>
                     <?php endif; ?>
 
-                    <a href="/profile"
+                    <a href="/account"
                         class="flex items-center p-3 rounded-lg border border-gray-200 hover:bg-gray-50 transition-colors">
                         <svg class="w-5 h-5 text-gray-600 mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                 d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
                         </svg>
-                        <span>Profil Ayarları</span>
+                        <span>Hesap Ayarları</span>
                     </a>
                 </div>
             </div>
@@ -407,70 +407,86 @@ if (!$current_user) {
             await loadCustomerStats(token);
         }
     }
-   async function loadStudentStats(token) {
+    async function loadStudentStats(token) {
         try {
-            // 1. Cüzdan ve Ürün bilgilerini kendi apiCall fonksiyonunla güvenlice çekiyoruz
-           const [wallet, productsData] = await Promise.all([
-                apiCall('Wallet/my-wallet').catch(e => ({ totalEarnings: 0 })),
-                apiCall('Products/my-products').catch(e => ([])) // <-- SADECE KENDİ ÜRÜNLERİ
-            ]);
-
-            // Ürünler dizisi backend'den bazen direkt dizi, bazen data/products objesi içinde gelebilir
-            const productList = Array.isArray(productsData) ? productsData : (productsData.products || productsData.data || []);
+            // 1. Backend'in yeni hazırladığı tekil ve hızlı dashboard datasını çek
+            const dashboardData = await apiCall('Products/student-dashboard');
 
             // 2. Üstteki 4'lü İstatistik Kutusunu Güncelle
-            document.getElementById('stat-student-earnings').textContent = '₺' + (wallet.totalEarnings || 0).toFixed(2);
-            document.getElementById('stat-student-products').textContent = productList.length;
-            
-            document.getElementById('stat-student-approved').textContent = productList.filter(p => 
-                (p.status || '').toLowerCase() === 'approved' || (p.status || '').toLowerCase() === 'active'
-            ).length;
-            
-            document.getElementById('stat-student-pending').textContent = productList.filter(p => 
-                (p.status || '').toLowerCase() === 'pending'
-            ).length;
+            const total = dashboardData.totalEarnings || dashboardData.TotalEarnings || 0;
+            const thisMonth = dashboardData.thisMonthEarnings || dashboardData.ThisMonthEarnings || 0;
 
-            // 3. SON AKTİVİTELERİ DOLDUR (En yeni 5 ürünü listeye çeviriyoruz)
-            if (productList.length > 0) {
-                // Ürünleri eklenme tarihine göre (en yeni en üstte) sırala
-                const sortedProducts = productList.sort((a, b) => new Date(b.createdAt || 0) - new Date(a.createdAt || 0));
-                
-                // En yeni 5 ürünü "Aktivite" formatına map'le (çevir)
-                const recentActivities = sortedProducts.slice(0, 5).map(p => {
-                    // İngilizce status'ü Türkçe'ye çevir
-                    let trStatus = 'Beklemede';
-                    const st = (p.status || '').toLowerCase();
-                    if (st === 'approved' || st === 'active') trStatus = 'Onaylandı';
-                    else if (st === 'rejected') trStatus = 'Reddedildi';
+            // Eğer istersen ekranda alt metin olarak Bu Ayki kazancı da ekleyebiliriz:
+            document.getElementById('stat-student-earnings').innerHTML = `
+                ₺${parseFloat(total).toFixed(2)}
+                <span class="block text-xs font-normal text-gray-500 mt-1">Bu Ay: ₺${parseFloat(thisMonth).toFixed(2)}</span>
+            `;
 
-                    // Resim url'sini bul
-                    const images = p.imageUrls || p.images || [];
+            document.getElementById('stat-student-products').textContent = dashboardData.totalProducts || dashboardData.TotalProducts || 0;
+            document.getElementById('stat-student-approved').textContent = dashboardData.approvedProducts || dashboardData.ApprovedProducts || 0;
+            document.getElementById('stat-student-pending').textContent = dashboardData.pendingProducts || dashboardData.PendingProducts || 0;
 
+            // 3. SON AKTİVİTELERİ DOLDUR (Backend zaten 5 aktivite gönderiyor)
+            const activities = dashboardData.recentActivities || dashboardData.RecentActivities || [];
+
+            if (activities.length > 0) {
+                const mappedActivities = activities.map(a => {
                     return {
-                        productName: p.name || p.title || 'İsimsiz Ürün',
-                        imageUrl: images.length > 0 ? images[0] : null,
-                        date: p.createdAt || new Date().toISOString(),
-                        statusMessage: trStatus
+                        id: a.id || a.Id || a.productId || a.ProductId,
+                        productName: a.productName || a.ProductName || 'İsimsiz Ürün',
+                        imageUrl: null, // DTO'da görsel gelmezse null kalır, avatar basılır
+                        date: a.date || a.Date || new Date().toISOString(),
+                        statusMessage: a.statusMessage || a.StatusMessage || 'İşlem'
                     };
                 });
-
-                // Aktiviteleri ekrana bas
-                renderActivities(recentActivities);
+                renderActivities(mappedActivities);
             } else {
-                // Eğer hiç ürünü yoksa boş ekran göster
                 showEmptyActivities();
             }
-            
+
         } catch (e) {
             console.error('Öğrenci verileri yüklenirken hata:', e);
             showEmptyActivities();
         }
     }
+
     async function loadCustomerStats(token) {
-        // Müşteri için şimdilik Mock, backendcinin GET /api/User/dashboard/customer endpoint'i yazması gerekiyor.
-        console.log('Fetching customer stats...');
-        setTimeout(() => showEmptyActivities(), 500);
+    try {
+        // Backend GET /api/Orders zaten müşteri siparişlerini döner
+        const ordersResp = await apiCall('orders');
+        const orders = Array.isArray(ordersResp) ? ordersResp : (ordersResp.data || []);
+
+        const totalOrders = orders.length;
+        const totalSpent = orders.reduce((sum, o) => sum + (o.totalAmount || 0), 0);
+        const supportTotal = orders.reduce((sum, o) => sum + (o.studentSupportAmount || 0), 0);
+
+        const statOrders = document.getElementById('stat-customer-orders');
+        const statSpent = document.getElementById('stat-customer-spent');
+        const statSupport = document.getElementById('stat-customer-support');
+
+        if (statOrders) statOrders.textContent = totalOrders;
+        if (statSpent) statSpent.textContent = `₺${totalSpent.toFixed(2)}`;
+        if (statSupport) statSupport.textContent = `₺${supportTotal.toFixed(2)}`;
+
+        // Son aktiviteleri son 5 sipariş olarak göster
+        const activities = orders.slice(0, 5).map(o => ({
+            id: o.id,
+            description: `Sipariş #${o.orderNumber || o.id}`,
+            type: 'order_' + (o.status || 'received'),
+            statusMessage: o.status === 'delivered' ? 'Teslim Edildi' : (o.status === 'shipped' ? 'Kargoda' : 'Beklemede'),
+            date: o.createdAt,
+            imageUrl: null
+        }));
+
+        if (activities.length > 0) renderActivities(activities);
+        else showEmptyActivities();
+
+    } catch (e) {
+        console.error('Customer stats hatası:', e);
+        showEmptyActivities();
     }
+}
+
 
     async function loadMerchantStats(token) {
         try {
@@ -526,42 +542,59 @@ if (!$current_user) {
         container.innerHTML = '';
 
         activities.forEach(activity => {
-            // Backend'den ImageUrl gelmiyorsa UI Avatars ile güzel bir harf avatarı oluşturuyoruz
-            // Backendciye Not: RecentActivityDto'ya string ImageUrl ekleyip yollarsa otomatik bu resim çıkar.
-            const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(activity.productName || 'Urun')}&background=f3f4f6&color=374151&bold=true&rounded=true`;
+            // Backend'in MerchantActivityDto'su (type, description, date) veya StudentActivityDto (productName, statusMessage) dönebilir.
+            let displayTitle = activity.description || activity.productName || "Aktivite";
+            let status = (activity.type || activity.statusMessage || activity.status || "").toLowerCase();
+
+            let badgeText = activity.statusMessage || "Bilgi";
+            let badgeColor = "bg-gray-100 text-gray-700 border-gray-200";
+            let iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+
+            if (status.includes("approv") || status.includes("onay")) {
+                if (!activity.statusMessage) badgeText = "Onaylandı";
+                badgeColor = "bg-green-50 text-green-700 border-green-200";
+                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (status.includes("reject") || status.includes("red")) {
+                if (!activity.statusMessage) badgeText = "Reddedildi";
+                badgeColor = "bg-red-50 text-red-700 border-red-200";
+                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            } else if (status.includes("order") || status.includes("sipariş") || status.includes("received")) {
+                if (!activity.statusMessage) badgeText = "Sipariş Geldi";
+                badgeColor = "bg-blue-50 text-blue-700 border-blue-200";
+                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"></path></svg>`;
+            } else if (status.includes("pend") || status.includes("bekle") || status.includes("inceleniyor")) {
+                if (!activity.statusMessage) badgeText = "Beklemede";
+                badgeColor = "bg-yellow-50 text-yellow-700 border-yellow-200";
+                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            }
+
+            const defaultImage = `https://ui-avatars.com/api/?name=${encodeURIComponent(badgeText)}&background=f3f4f6&color=374151&bold=true&rounded=true`;
             const imageUrl = activity.imageUrl || defaultImage;
 
             const activityDateStr = activity.date || activity.createdAt;
             const activityDate = new Date(activityDateStr);
             const formattedDate = isNaN(activityDate) ? 'Tarih Bilinmiyor' : activityDate.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric' });
 
-            // Duruma göre rozet (Badge) rengi seçimi
-            let badgeColor = "bg-gray-100 text-gray-700 border-gray-200";
-            let iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-
-            const status = (activity.statusMessage || "").toLowerCase();
-            if (status.includes("onayland")) {
-                badgeColor = "bg-green-50 text-green-700 border-green-200";
-                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            } else if (status.includes("reddedil")) {
-                badgeColor = "bg-red-50 text-red-700 border-red-200";
-                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 14l2-2m0 0l2-2m-2 2l-2-2m2 2l2 2m7-2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
-            } else if (status.includes("beklemede") || status.includes("inceleniyor")) {
-                badgeColor = "bg-yellow-50 text-yellow-700 border-yellow-200";
-                iconHtml = `<svg class="w-3.5 h-3.5 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>`;
+            let targetUrl = '#';
+            if (status.includes("order") || status.includes("sipariş") || status.includes("received")) {
+                targetUrl = '/orders';
+            } else if (activity.id || activity.productId || activity.referenceId) {
+                targetUrl = '/products/' + (activity.id || activity.productId || activity.referenceId);
+            } else {
+                targetUrl = 'javascript:void(0)';
             }
 
             container.innerHTML += `
-            <a href="/student/products" class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
+            <a href="${targetUrl}" class="flex items-center justify-between p-4 mb-3 bg-white rounded-xl border border-gray-100 hover:border-blue-200 hover:shadow-md transition-all group">
                 <div class="flex items-center space-x-4">
                     <!-- Ürün Fotoğrafı / Avatar -->
                     <div class="relative h-12 w-12 rounded-lg overflow-hidden bg-gray-50 border border-gray-100 shrink-0">
-                        <img src="${imageUrl}" alt="${activity.productName}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
+                        <img src="${imageUrl}" alt="${displayTitle}" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-300">
                     </div>
                     
                     <!-- Ürün Bilgisi -->
                     <div class="flex flex-col">
-                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">${activity.productName}</h4>
+                        <h4 class="text-sm font-semibold text-gray-900 group-hover:text-blue-600 transition-colors">${displayTitle}</h4>
                         <div class="flex items-center text-xs text-gray-500 mt-1 font-medium">
                             <svg class="w-3.5 h-3.5 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
@@ -574,7 +607,7 @@ if (!$current_user) {
                 <!-- Durum Rozeti -->
                 <div class="flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${badgeColor}">
                     ${iconHtml}
-                    ${activity.statusMessage}
+                    ${badgeText}
                 </div>
             </a>
         `;

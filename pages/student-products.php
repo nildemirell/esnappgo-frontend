@@ -106,7 +106,7 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
                 title: p.name,                           // backend "name" → frontend "title"
                 description: '',                          // ❌ backend'de yok → boş string
                 price: p.finalPrice || p.suggestedPrice,
-                status: (p.status || '').toLowerCase(),   // "Pending" → "pending"
+                status: normalizeStatus(p.status),        // Frontend ile uyumlu standart durum
                 images: p.imageUrls || [],
                 created_at: null,
                 sales_count: 0,                           // ❌ backend'de yok → 0
@@ -223,26 +223,30 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
         displayProducts(filteredProducts);
     }
 
+    function normalizeStatus(status) {
+        const map = { 0: 'pending', 1: 'active', 2: 'rejected', 3: 'suspended' };
+        const raw = map[status] ?? String(status || '').toLowerCase();
+        return raw === 'approved' ? 'active' : raw;
+    }
+
     function getStatusText(status) {
         const statusTexts = {
             pending: 'Beklemede',
-            approved: 'Onaylandı', // <- active yerine approved
-            active: 'Onaylandı',   // <- geriye dönük uyumluluk için bu da kalabilir
+            active: 'Onaylandı',
             rejected: 'Reddedildi',
             suspended: 'Askıya Alındı'
         };
-        return statusTexts[status] || status;
+        return statusTexts[normalizeStatus(status)] || status;
     }
 
     function getStatusBadgeClass(status) {
         const badgeClasses = {
             pending: 'warning',
-            approved: 'success', // <- active yerine approved
             active: 'success',
             rejected: 'error',
             suspended: 'gray'
         };
-        return badgeClasses[status] || 'gray';
+        return badgeClasses[normalizeStatus(status)] || 'gray';
     }
 
 
@@ -251,24 +255,16 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
     }
 
     async function deleteProduct(id) {
-        if (!await openCustomModal('Bu ürünü silmek istediğinizden emin misiniz?')) {
-            return;
-        }
-        // ...
-
-
-        try {
-            // API endpoint eklenecek
-            showToast('Ürün silindi', 'success');
-
-            // Remove from local array
-            allProducts = allProducts.filter(p => p.id !== productId);
-            filterProducts(currentFilter);
-
-        } catch (error) {
-            showToast('Ürün silinirken hata oluştu', 'error');
-        }
+    if (!await openCustomModal('Bu ürünü silmek istediğinizden emin misiniz?')) return;
+    try {
+        await apiCall(`Products/my-products/${id}`, { method: 'DELETE' });
+        showToast('Ürün silindi', 'success');
+        allProducts = allProducts.filter(p => p.id !== id); // ← id kullan, productId değil
+        filterProducts(currentFilter);
+    } catch (error) {
+        showToast('Ürün silinirken hata oluştu', 'error');
     }
+}
 
     function viewEarnings(productId) {
         const product = allProducts.find(p => p.id === productId);
