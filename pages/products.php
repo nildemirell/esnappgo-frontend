@@ -227,21 +227,37 @@
     let categories = [];
     let priceRange = { min: 0, max: 1000 };
     let debounceTimer = null;
+    let globalFavorites = [];
 
     // Initialize
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', async function () {
         // URL'den filtreleri al
         parseUrlParams();
 
         // Kategorileri yükle
         loadCategories();
 
-        // Ürünleri yükle
+        // Favori state'i önce çek, sonra ürünleri render et (race condition önleme)
+        const isLoggedIn = <?php echo json_encode($current_user ? true : false); ?>;
+        if (isLoggedIn) {
+            try {
+                const favResp = await apiCall('Favorites');
+                // FavoriteProductDto alanı "productId" — "id" DEĞİL
+                const favData = Array.isArray(favResp) ? favResp : (favResp.items || favResp.data || []);
+                globalFavorites = favData.map(f => Number(f.productId || f.ProductId || f.id || 0));
+                console.log('Favoriler yüklendi:', globalFavorites);
+            } catch (e) {
+                console.warn('Favoriler yüklenemedi, liste boş başlıyor:', e);
+            }
+        }
+
+        // Ürünleri yükle (favoriler hazır olduktan sonra)
         loadProducts(true);
 
         // Event listeners
         setupEventListeners();
     });
+
 
     function parseUrlParams() {
         const urlParams = new URLSearchParams(window.location.search);
@@ -717,8 +733,7 @@
         // YENİ EKLENEN KISIM: Backend finalPrice dönüyor, fallback olarak price
         const displayPrice = product.finalPrice || product.suggestedPrice || product.price || 0;
 
-        const favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
-        const isFavorited = favorites.some(id => Number(id) === Number(product.id));
+        const isFavorited = globalFavorites.includes(Number(product.id));
 
         const imageHtml = imageUrl ?
             `<img 
@@ -827,12 +842,9 @@
         div.textContent = text || '';
         return div.innerHTML;
     }
-    function toggleFavorite(productId, btnElement) {
+    async function toggleFavorite(productId, btnElement) {
         const emptyHeart = btnElement.querySelector('.heart-empty');
         const fullHeart = btnElement.querySelector('.heart-full');
-
-        // LocalStorage'dan mevcut favorileri al
-        let favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
 
         // Kalp şu an boş mu dolu mu kontrol et
         const isFavorited = !fullHeart.classList.contains('hidden');
@@ -843,7 +855,7 @@
             emptyHeart.classList.remove('hidden');
             btnElement.classList.remove('text-red-500'); // hover rengini geri al
 
-            favorites = favorites.filter(id => id !== productId);
+            globalFavorites = globalFavorites.filter(id => id !== productId);
             showToast('Ürün favorilerden çıkarıldı', 'info');
         } else {
             // Favori değilse: Ekle
@@ -855,19 +867,28 @@
             btnElement.classList.add('scale-125');
             setTimeout(() => btnElement.classList.remove('scale-125'), 200);
 
-            if (!favorites.includes(productId)) {
-                favorites.push(productId);
+            if (!globalFavorites.includes(productId)) {
+                globalFavorites.push(productId);
             }
             showToast('Ürün favorilere eklendi!', 'success');
         }
 
-        // Yeni listeyi kaydet
-        localStorage.setItem('my_favorites', JSON.stringify(favorites));
+        try {
+            // Backend'e toggle isteği atıyoruz
+            await apiCall(`Favorites/toggle/${productId}`, { method: 'POST' });
+        } catch (error) {
+            console.error('Error toggling favorite:', error);
+            showToast('Favori işlemi sırasında hata oluştu', 'error');
+            
+            // Eğer hata olursa optimistik güncellemeyi geri al (isteğe bağlı)
+            // loadProducts(false) falan diyebiliriz veya tekrar kalbi eskiye çevirebiliriz.
+        }
     }
 
     // Ekstra: Sayfa yüklenince eğer ürün daha önceden favorilere eklenmişse kalbi dolu göster
-    // createProductCardHTML fonksiyonunun başlangıcında (satır 630 civarı) productId'yi kontrol edip
-    // buton HTML'ini dinamik oluşturmamız gerekir, ama şimdilik bu animasyon yapısı çalışacaktır.
+    // createProductCardHTML fonksiyonunun başlangıcında productId'yi kontrol edip
+    // globalFavorites üzerinden kalbi dolu yapıyoruz. Artık çalışıyor.
+
 
 </script>
 

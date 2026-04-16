@@ -502,8 +502,8 @@ if (!isset($product_id) || !is_numeric($product_id)) {
 
         try {
             const favsResp = await apiCall('Favorites');
-            const favList  = Array.isArray(favsResp) ? favsResp : (favsResp.data || []);
-            const isFav    = favList.some(f => (f.id || f.Id) == productId);
+            const favList  = Array.isArray(favsResp) ? favsResp : (favsResp.items || favsResp.data || []);
+            const isFav    = favList.some(f => (f.productId || f.ProductId || f.id || f.Id) == productId);
 
             if (isFav) {
                 emptyHeart.classList.add('hidden');
@@ -529,7 +529,7 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         const productId = currentProduct.id;
 
         try {
-            await apiCall(`Favorites/${productId}/toggle`, { method: 'POST' });
+            await apiCall(`Favorites/toggle/${productId}`, { method: 'POST' });
 
             // Zıplama efekti
             const btn = document.getElementById('favorite-btn');
