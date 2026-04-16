@@ -231,6 +231,13 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                 return;
             }
 
+            const rejectSuspendedBtn = e.target.closest('.reject-suspended-btn');
+            if (rejectSuspendedBtn) {
+                const productId = parseInt(rejectSuspendedBtn.dataset.productId);
+                rejectSuspendedProduct(productId);
+                return;
+            }
+
             const reactivateBtn = e.target.closest('.reactivate-product-btn');
             if (reactivateBtn) {
                 const productId = parseInt(reactivateBtn.dataset.productId);
@@ -409,11 +416,16 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                         <button type="button" data-product-id="${product.id}" class="view-product-btn w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
                             <span class="mr-2">👁️</span> Görüntüle
                         </button>
-                    ` : `
-                        <button type="button" data-product-id="${product.id}" class="reactivate-product-btn w-full bg-blue-500 hover:bg-blue-600 text-white font-medium py-2 px-4 rounded-lg transition-colors flex items-center justify-center">
-                            <span class="mr-2">🔄</span> Tekrar Aktifleştir
-                        </button>
-                    `}
+                    ` : product.status === 'suspended' ? `
+                        <div class="grid grid-cols-2 gap-2">
+                            <button type="button" data-product-id="${product.id}" class="reactivate-product-btn bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center text-sm">
+                                <span class="mr-1">✅</span> Tekrar Satışa Aç
+                            </button>
+                            <button type="button" data-product-id="${product.id}" class="reject-suspended-btn bg-red-100 hover:bg-red-200 text-red-700 font-medium py-2 px-3 rounded-lg transition-colors flex items-center justify-center text-sm border border-red-200">
+                                <span class="mr-1">❌</span> Reddet
+                            </button>
+                        </div>
+                    ` : ``}
                 </div>
             </div>
         </div>
@@ -602,6 +614,33 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
             }
         } catch (error) {
             showToast('Ürün aktifleştirilirken hata oluştu: ' + error.message, 'error');
+        }
+    }
+
+    // Askıdaki ürünü reddet
+    async function rejectSuspendedProduct(productId) {
+        if (!(await openCustomModal('Bu ürünü reddetmek istediğinizden emin misiniz? Bu işlem geri alınamaz.'))) return;
+
+        try {
+            const token = localStorage.getItem('auth_token');
+            const response = await fetch(`${API_BASE}/api/Merchant/products/${productId}/status`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ status: 'Rejected' })
+            });
+
+            if (response.ok) {
+                showToast('Ürün reddedildi.', 'info');
+                await loadMerchantProducts();
+            } else {
+                const err = await response.json().catch(() => ({}));
+                showToast('İşlem başarısız: ' + (err.message || err.error || ''), 'error');
+            }
+        } catch (error) {
+            showToast('Hata: ' + error.message, 'error');
         }
     }
 

@@ -166,7 +166,6 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
     }
     async function loadCategories() {
         try {
-            // Merkezi apiCall() kullanıyoruz
             const categories = await apiCall('Categories/tree');
             const list = Array.isArray(categories) ? categories : (categories.data || []);
 
@@ -175,10 +174,23 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
                 select.innerHTML = '<option value="">Kategori bulunamadı</option>';
                 return;
             }
-            select.innerHTML = '<option value="">Kategori seçin...</option>' +
-                list.map(c =>
-                    `<option value="${c.id}">${escapeHtml(c.name)}</option>`
-                ).join('');
+
+            // Ana kategoriler + alt kategoriler optgroup olarak
+            let html = '<option value="">Kategori seçin...</option>';
+            list.forEach(parent => {
+                const hasChildren = parent.children && parent.children.length > 0;
+                if (hasChildren) {
+                    // Ana kategori + alt kategorileri optgroup ile listele
+                    html += `<optgroup label="${escapeHtml(parent.icon ? parent.icon + ' ' : '')}${escapeHtml(parent.name)}">`;                    parent.children.forEach(child => {
+                        html += `<option value="${child.id}">&nbsp;&nbsp;&nbsp;${escapeHtml(child.name)}</option>`;
+                    });
+                    html += '</optgroup>';
+                } else {
+                    // Alt kategorisi olmayan ana kategori seçilebilir
+                    html += `<option value="${parent.id}">${escapeHtml(parent.icon ? parent.icon + ' ' : '')}${escapeHtml(parent.name)}</option>`;
+                }
+            });
+            select.innerHTML = html;
         } catch (error) {
             console.error('Error loading categories:', error);
             showToast('Kategori listesi yüklenemedi.', 'error');

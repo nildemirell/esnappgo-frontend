@@ -225,38 +225,61 @@
         sort: 'newest'
     };
     let categories = [];
+    let loadedProducts = []; // Sayfa içinde biriken tüm ürünler (count hesabı için)
+    let categoryCounts = {}; // categoryId → ürün sayısı (filtresiz, kalıcı)
     let priceRange = { min: 0, max: 1000 };
     let debounceTimer = null;
     let globalFavorites = [];
 
     // Initialize
     document.addEventListener('DOMContentLoaded', async function () {
-        // URL'den filtreleri al
+         // URL'den filtreleri al
         parseUrlParams();
 
-        // Kategorileri yükle
+        // Kategorileri yükle, sonra sayımları arka planda hesapla
         loadCategories();
+        loadCategoryCounts(); // filtresiz tüm ürünlerden kategori sayıları
+
 
         // Favori state'i önce çek, sonra ürünleri render et (race condition önleme)
         const isLoggedIn = <?php echo json_encode($current_user ? true : false); ?>;
         if (isLoggedIn) {
             try {
                 const favResp = await apiCall('Favorites');
-                // FavoriteProductDto alanı "productId" — "id" DEĞİL
                 const favData = Array.isArray(favResp) ? favResp : (favResp.items || favResp.data || []);
                 globalFavorites = favData.map(f => Number(f.productId || f.ProductId || f.id || 0));
-                console.log('Favoriler yüklendi:', globalFavorites);
             } catch (e) {
-                console.warn('Favoriler yüklenemedi, liste boş başlıyor:', e);
+                console.warn('Favoriler yüklenemedi:', e);
             }
         }
 
-        // Ürünleri yükle (favoriler hazır olduktan sonra)
+        // Ürünleri yükle
         loadProducts(true);
-
-        // Event listeners
         setupEventListeners();
     });
+
+    // Tüm ürünleri filtresiz çekip kategori sayılarını oluşturur (sadece 1 kez çalışır)
+    async function loadCategoryCounts() {
+        try {
+            const response = await apiCall('products?limit=500&offset=0');
+            const all = Array.isArray(response) ? response : (response.products || response.data || []);
+
+            const map = {};
+            all.forEach(p => {
+                const cid = p.categoryId ?? p.CategoryId ?? p.category?.id;
+                if (cid != null) map[cid] = (map[cid] || 0) + 1;
+            });
+            categoryCounts = map;
+
+            // Kategoriler hazırsa hemen güncelle
+            if (categories.length > 0) {
+                injectProductCounts();
+                renderCategories();
+            }
+        } catch(e) {
+            console.warn('Kategori sayıları yüklenemedi:', e);
+        }
+    }
 
 
     function parseUrlParams() {
@@ -337,10 +360,8 @@
 
    async function loadCategories() {
         try {
-            // BURASI DÜZELTİLDİ: Artık hiyerarşik (tree) yapıyı getirecek
-            const response = await apiCall('Categories/tree'); 
+            const response = await apiCall('Categories/tree');
 
-            // .NET backend direkt array döner
             if (Array.isArray(response)) {
                 categories = response;
             } else {
@@ -348,12 +369,30 @@
                 return;
             }
 
+            // Ürün sayılarını hesapla ve kategorilere enjekte et
+            injectProductCounts();
             renderCategories();
         } catch (error) {
             console.error('Kategoriler çekilirken hata oluştu:', error);
         }
     }
 
+    // Kategori sayılarını categoryCounts haritasından kategorilere yaz
+    function injectProductCounts() {
+        if (!categories.length || !Object.keys(categoryCounts).length) return;
+
+        function assignCounts(nodes) {
+            nodes.forEach(node => {
+                node.productCount = categoryCounts[node.id] || 0;
+                if (node.children && node.children.length > 0) {
+                    assignCounts(node.children);
+                    // Ana kategori = kendi + alt kategoriler toplamı
+                    node.productCount += node.children.reduce((sum, c) => sum + (c.productCount || 0), 0);
+                }
+            });
+        }
+        assignCounts(categories);
+    }
 
     function renderCategories() {
         const container = document.getElementById('categories-container');
@@ -622,62 +661,65 @@
         try {
             const limit = 9;
             const offset = currentPage * limit;
-            // Backend parametre isimleri: minPrice, maxPrice, search, categoryId, limit, offset, sort
-            let params = new URLSearchParams();
-            
-            params.set('limit', limit);
-            params.set('offset', offset);
 
-            if (currentFilters.search) {
-                params.set('search', currentFilters.search);
-            }
-            if (currentFilters.category && currentFilters.category.length > 0) {
-                params.set('categoryId', currentFilters.category[0]);
-            }
-            if (currentFilters.minPrice !== '' && currentFilters.minPrice !== null && currentFilters.minPrice !== undefined) {
-                params.set('minPrice', Number(currentFilters.minPrice));
-            }
-            if (currentFilters.maxPrice !== '' && currentFilters.maxPrice !== null && currentFilters.maxPrice !== undefined) {
-                params.set('maxPrice', Number(currentFilters.maxPrice));
-            }
-            if (currentFilters.sort && currentFilters.sort !== 'newest') {
-                params.set('sort', currentFilters.sort);
+            // Ortak parametreler (kategori hariç)
+            const baseParams = new URLSearchParams();
+            baseParams.set('limit', limit);
+            baseParams.set('offset', offset);
+            if (currentFilters.search)    baseParams.set('search', currentFilters.search);
+            if (currentFilters.minPrice !== '' && currentFilters.minPrice != null) baseParams.set('minPrice', Number(currentFilters.minPrice));
+            if (currentFilters.maxPrice !== '' && currentFilters.maxPrice != null) baseParams.set('maxPrice', Number(currentFilters.maxPrice));
+            if (currentFilters.sort && currentFilters.sort !== 'newest') baseParams.set('sort', currentFilters.sort);
+
+            let products = [];
+            let totalCount = null;
+
+            const selectedCats = currentFilters.category;
+
+            if (!selectedCats || selectedCats.length <= 1) {
+                // ─── Tek kategori veya tüm kategoriler ────────────────────────
+                const params = new URLSearchParams(baseParams);
+                if (selectedCats && selectedCats.length === 1) params.set('categoryId', selectedCats[0]);
+                const response = await apiCall(`products?${params.toString()}`);
+                products = Array.isArray(response) ? response : (response.products || response.data || []);
+                totalCount = response?.totalCount ?? response?.TotalCount ?? null;
+            } else {
+                // ─── Çoklu kategori: paralel istekler, birleştir + tekilleştir ──
+                const fetchPromises = selectedCats.map(catId => {
+                    const params = new URLSearchParams(baseParams);
+                    params.set('categoryId', catId);
+                    params.set('limit', 50); // Her kategori için geniş limit
+                    params.set('offset', 0);
+                    return apiCall(`products?${params.toString()}`).then(r =>
+                        Array.isArray(r) ? r : (r.products || r.data || [])
+                    ).catch(() => []);
+                });
+
+                const results = await Promise.all(fetchPromises);
+                // Birleştir ve ID'ye göre tekilleştir
+                const seen = new Set();
+                results.flat().forEach(p => {
+                    const id = p.id ?? p.Id;
+                    if (!seen.has(id)) { seen.add(id); products.push(p); }
+                });
+                totalCount = products.length;
+                // Sayfalamayı devre dışı bırak (tüm sonuçlar zaten geldi)
+                hasMoreProducts = false;
             }
 
-            const queryString = params.toString();
-            let endpoint = `products?${queryString}`;
-
-            const response = await apiCall(endpoint);
-            // .NET backend `products` array ve `totalCount` dönüyor
-            const products = Array.isArray(response) ? response : (response.products || response.data || []);
-            const totalCount = response.totalCount ?? response.TotalCount ?? null;
-            
             // Pagination hesabı
-            const meta = { 
+            const meta = {
                 has_more: totalCount !== null ? (offset + limit < totalCount) : products.length >= limit,
                 total: totalCount ?? products.length
             };
 
             const container = document.getElementById('products-container');
 
-            // Update price range from API
-            if (meta.price_range) {
-                priceRange = meta.price_range;
-                const slider = document.getElementById('price-slider');
-                slider.max = Math.ceil(priceRange.max);
-                if (!currentFilters.maxPrice) {
-                    slider.value = Math.ceil(priceRange.max);
-                    document.getElementById('price-slider-value').textContent = '₺' + Math.ceil(priceRange.max);
-                }
-            }
-
             // Update results count
             const totalText = meta.total ? `${meta.total} ürün bulundu` : `${products.length} ürün`;
             document.getElementById('results-count').textContent = totalText;
 
-            if (reset) {
-                container.innerHTML = '';
-            }
+            if (reset) container.innerHTML = '';
 
             if (products.length === 0) {
                 if (reset) {
@@ -690,9 +732,12 @@
             } else {
                 document.getElementById('no-results').style.display = 'none';
 
-                // Add products
                 const productsHTML = products.map(product => createProductCardHTML(product)).join('');
                 container.innerHTML += productsHTML;
+
+                // Ürünleri biriktir
+                if (reset) loadedProducts = [...products];
+                else loadedProducts = [...loadedProducts, ...products];
 
                 // Check if there are more products
                 hasMoreProducts = meta.has_more !== undefined ? meta.has_more : products.length >= limit;

@@ -344,8 +344,8 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
                             Dashboard
                         </a>
 
-                        <!-- Siparişler (Bireysel Satın Alımlarım) Sadece Öğrenci ve Müşteri -->
-                        <?php if ($is_student || $is_customer): ?>
+                        <!-- Siparişlerim — Sadece Müşteri -->
+                        <?php if ($is_customer): ?>
                             <a href="/orders"
                                 class="nav-link <?php echo ($current_page === 'orders') ? 'active' : ''; ?>">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -733,7 +733,7 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
                         </svg>
                         Dashboard
                     </a>
-                    <?php if (!$is_admin): ?>
+                    <?php if ($is_customer): ?>
                         <a href="/orders" class="mobile-nav-link <?php echo ($current_page === 'orders') ? 'active' : ''; ?>">
                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

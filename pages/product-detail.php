@@ -104,7 +104,7 @@ if (!isset($product_id) || !is_numeric($product_id)) {
 
                         <!-- Quantity Selector & Add to Cart -->
                         <?php if ($current_user): ?>
-                            <div class="mb-6">
+                            <div class="mb-6" id="cart-section">
                                 <div class="flex items-center space-x-4">
                                     <div class="flex items-center border border-gray-300 rounded-md">
                                         <button onclick="changeQuantity(-1)"
@@ -308,9 +308,18 @@ if (!isset($product_id) || !is_numeric($product_id)) {
     }
 
     function displayProduct(product) {
-        // Hide loading, show content
+        // Status bilgisini normalize et
+        const status = (product.status || product.Status || 'approved').toString().toLowerCase();
+        const userRole = <?php echo json_encode($current_user ? strtolower($current_user['role']) : null); ?>;
+
+        // Hide loading, show content — ürün her zaman görünür
         document.getElementById('loading-state').style.display = 'none';
         document.getElementById('product-content').style.display = 'block';
+
+        // Eğer daha önce status ekranı varsa temizle (reload durumu)
+        const old = document.getElementById('status-blocked-screen');
+        if (old) old.remove();
+
 
         // Set product info (.NET DTO isimlendirmeleri eklendi)
         document.getElementById('product-title').textContent = product.name || product.title || 'İsimsiz Ürün';
@@ -383,10 +392,106 @@ if (!isset($product_id) || !is_numeric($product_id)) {
             console.log('Using fallback image:', fallbackImage);
         }
 
-        // Update quantity controls
+        // Update quantity controls & favorite
         updateQuantityControls();
         checkFavoriteStatus(currentProduct.id);
 
+        // ── STATUS BANNER ─────────────────────────────────────────────────────
+        if (status !== 'approved') {
+            // Sepet bölümünü gizle
+            const cartSection = document.getElementById('cart-section');
+            if (cartSection) cartSection.style.display = 'none';
+
+            // Stok satırını da gizle
+            const stockEl = document.getElementById('stock-info');
+            if (stockEl) {
+                const stockRow = stockEl.closest('div.flex') || stockEl.parentElement;
+                if (stockRow) stockRow.style.display = 'none';
+            }
+
+            const cfg = {
+                suspended: {
+                    accent: '#f97316',       // turuncu
+                    accentLight: '#fff7ed',
+                    badgeBg: '#ffedd5',
+                    badgeText: '#c2410c',
+                    badgeLabel: 'Askıya Alındı',
+                    title: 'Bu ürün şu an satışa kapalı',
+                    desc: 'Ürün geçici olarak askıya alınmıştır.',
+                },
+                pending: {
+                    accent: '#3b82f6',
+                    accentLight: '#eff6ff',
+                    badgeBg: '#dbeafe',
+                    badgeText: '#1d4ed8',
+                    badgeLabel: 'Onay Bekliyor',
+                    title: 'Ürün henüz satışa açılmadı',
+                    desc: 'Esnaf onayı bekleniyor.',
+                },
+                rejected: {
+                    accent: '#ef4444',
+                    accentLight: '#fff1f2',
+                    badgeBg: '#fee2e2',
+                    badgeText: '#b91c1c',
+                    badgeLabel: 'Reddedildi',
+                    title: 'Bu ürün satışa sunulmadı',
+                    desc: 'Esnaf tarafından reddedilmiştir.',
+                },
+            }[status] || {
+                accent: '#6b7280', accentLight: '#f9fafb',
+                badgeBg: '#f3f4f6', badgeText: '#374151',
+                badgeLabel: 'Erişilemez', title: 'Ürün erişilemez', desc: ''
+            };
+
+            const productIdVal = product.id || product.Id;
+            const isMerchant = userRole === 'esnaf' || userRole === 'merchant';
+
+            const merchantBtns = (status === 'suspended' && isMerchant)
+                ? `<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
+                       <button onclick="changeProductStatus(${productIdVal},'Approved')"
+                           style="padding:8px 18px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:background .2s;"
+                           onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
+                           Tekrar Satışa Aç
+                       </button>
+                       <button onclick="changeProductStatus(${productIdVal},'Rejected')"
+                           style="padding:8px 18px;background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:8px;font-size:0.8rem;font-weight:500;cursor:pointer;transition:border-color .2s,color .2s;"
+                           onmouseover="this.style.borderColor='#ef4444';this.style.color='#ef4444'" onmouseout="this.style.borderColor='#e5e7eb';this.style.color='#6b7280'">
+                           Reddet
+                       </button>
+                   </div>`
+                : '';
+
+            const existing = document.getElementById('status-blocked-screen');
+            if (existing) existing.remove();
+
+            const bannerHtml = `
+            <div id="status-blocked-screen"
+                 style="margin:4px 0 20px;padding:14px 16px;border-radius:10px;background:#fff;border:1px solid #e5e7eb;border-left:4px solid ${cfg.accent};display:flex;align-items:flex-start;gap:12px;">
+                <div style="width:34px;height:34px;flex-shrink:0;border-radius:8px;background:${cfg.accentLight};display:flex;align-items:center;justify-content:center;">
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${cfg.accent}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>
+                    </svg>
+                </div>
+                <div style="flex:1;min-width:0;">
+                    <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:3px;">
+                        <span style="font-size:0.875rem;font-weight:600;color:#111827;">${cfg.title}</span>
+                        <span style="padding:2px 8px;border-radius:999px;background:${cfg.badgeBg};color:${cfg.badgeText};font-size:0.68rem;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap;">${cfg.badgeLabel}</span>
+                    </div>
+                    <p style="font-size:0.8rem;color:#9ca3af;margin:0;line-height:1.5;">${cfg.desc}</p>
+                    ${merchantBtns}
+                </div>
+            </div>`;
+
+            const priceEl = document.getElementById('product-price');
+            const insertTarget = priceEl?.closest('div') || priceEl?.parentElement;
+            if (insertTarget) {
+                insertTarget.insertAdjacentHTML('afterend', bannerHtml);
+            } else {
+                document.getElementById('product-content').insertAdjacentHTML('afterbegin', bannerHtml);
+            }
+
+        }
+        // ──────────────────────────────────────────────────────────────────────
     }
 
     function setupImages(images) {
@@ -590,6 +695,29 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         catch (error) {
             console.error('Cart error:', error);
             showToast(error.message || 'Sepete eklenirken hata oluştu', 'error');
+        }
+    }
+
+    async function changeProductStatus(productId, newStatus) {
+        const actionText = newStatus === 'Approved' ? 'satışa açmak' : 'reddetmek';
+        if (!await openCustomModal(`Bu ürünü ${actionText} istediğinizden emin misiniz?`)) return;
+
+        try {
+            // Esnafın kendi ürün status endpoint'i: PUT /api/Merchant/products/{id}/status
+            await apiCall(`Merchant/products/${productId}/status`, {
+                method: 'PUT',
+                body: JSON.stringify({ status: newStatus, finalPrice: null })
+            });
+
+            showToast(
+                newStatus === 'Approved' ? 'Ürün tekrar satışa açıldı!' : 'Ürün reddedildi.',
+                newStatus === 'Approved' ? 'success' : 'info'
+            );
+
+            // Ekranı yenile
+            setTimeout(() => window.location.reload(), 1200);
+        } catch (err) {
+            showToast(err.message || 'İşlem sırasında hata oluştu', 'error');
         }
     }
 
