@@ -156,43 +156,39 @@ function displayShop(shop) {
     
     // Display products
     shopProducts = products;
+    window._shopProducts = products; // navigateToProduct'un kullanması için
     displayShopProducts(products);
 }
 
 function displayShopProducts(products) {
-    const container = document.getElementById('shop-products-container');
-    
+    var container = document.getElementById('shop-products-container');
+
     if (products.length === 0) {
         container.innerHTML = '<div class="col-span-full text-center text-gray-500 py-8">Bu mağazada henüz ürün bulunmamaktadır.</div>';
         return;
     }
-    
+
     container.innerHTML = products.map(function(product) {
-        // Alan adlarını backend ProductListDto'ya göre düzelt
-        var displayName = product.name || product.title || 'İsimsiz Ürün';
+        var displayName  = product.name  || product.title || 'İsimsiz Ürün';
         var displayPrice = product.finalPrice || product.suggestedPrice || product.price || 0;
-        var imagesArr = product.imageUrls || product.images || [];
-        
-        // Resim URL'sini hesapla — IIFE olmadan
+        var imagesArr    = product.imageUrls || product.images || [];
+
         var imageHtml;
         if (imagesArr.length > 0) {
             var imageUrl = imagesArr[0];
-            if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) {
-                imageUrl = '/' + imageUrl;
-            }
-            imageHtml = '<img src="' + imageUrl + '" alt="' + escapeHtml(displayName) + '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200" onerror="this.src=\'/media/68a658361732a_1755732022.jpg\'" />';
+            if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) imageUrl = '/' + imageUrl;
+            imageHtml = '<img src="' + imageUrl + '" alt="' + escapeHtml(displayName) +
+                        '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"' +
+                        ' onerror="this.src=\'/media/68a658361732a_1755732022.jpg\'" />';
         } else {
             imageHtml = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><span class="text-4xl text-gray-400">📷</span></div>';
         }
-        
-        // Status — backend "Approved" enum dönüyor, normalize et
-        var normalizedStatus = (product.status || '').toLowerCase() === 'approved' ? 'active' : (product.status || '').toLowerCase();
-        
-        return '<a href="/products/' + product.id + '" class="group">' +
+
+        return '<a href="/products/' + product.id + '"' +
+                   ' onclick="navigateToProduct(' + product.id + ')"' +
+                   ' class="group">' +
             '<div class="bg-gray-50 rounded-lg overflow-hidden hover:shadow-md transition-shadow">' +
-                '<div class="relative h-48 bg-gray-100">' +
-                    imageHtml +
-                '</div>' +
+                '<div class="relative h-48 bg-gray-100">' + imageHtml + '</div>' +
                 '<div class="p-4">' +
                     '<h4 class="font-semibold text-gray-900 mb-2 line-clamp-1">' + escapeHtml(displayName) + '</h4>' +
                     '<p class="text-sm text-gray-600 mb-3 line-clamp-2">' + escapeHtml(product.description || '') + '</p>' +
@@ -204,6 +200,14 @@ function displayShopProducts(products) {
             '</div>' +
         '</a>';
     }).join('');
+}
+
+// Ürünü sessionStorage'a önbelleğe al — product-detail.php API'ye gitmeden okur
+function navigateToProduct(productId) {
+    try {
+        var prod = (window._shopProducts || []).find(function(p) { return p.id == productId; });
+        if (prod) sessionStorage.setItem('cached_product_' + productId, JSON.stringify(prod));
+    } catch (e) { /* sessionStorage dolu veya devre dışı — sorun değil, API fallback çalışır */ }
 }
 
 

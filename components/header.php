@@ -344,14 +344,27 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
                             Dashboard
                         </a>
 
-                        <!-- Siparişlerim — customer + merchant -->
-                        <?php if (!$is_admin): ?>
-                            <a href="/orders" class="nav-link <?php echo ($current_page === 'orders') ? 'active' : ''; ?>">
+                        <!-- Siparişler (Bireysel Satın Alımlarım) Sadece Öğrenci ve Müşteri -->
+                        <?php if ($is_student || $is_customer): ?>
+                            <a href="/orders"
+                                class="nav-link <?php echo ($current_page === 'orders') ? 'active' : ''; ?>">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                         d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                 </svg>
                                 Siparişlerim
+                            </a>
+                        <?php endif; ?>
+
+                        <!-- Esnafın Aldığı Müşteri Siparişleri (Satıcı) -->
+                        <?php if ($is_merchant): ?>
+                            <a href="/merchant/orders"
+                                class="nav-link <?php echo ($current_page === 'merchant-orders') ? 'active' : ''; ?>">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                </svg>
+                                Gelen Siparişler
                             </a>
                         <?php endif; ?>
 
@@ -369,6 +382,14 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
 
                         <!-- Student-only links -->
                         <?php if ($is_student): ?>
+                            <a href="/student/products"
+                                class="nav-link <?php echo ($current_page === 'student-products') ? 'active' : ''; ?>">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                        d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                                </svg>
+                                Ürünlerim
+                            </a>
                             <a href="/student/create-product"
                                 class="nav-link <?php echo ($current_page === 'student-create-product') ? 'active' : ''; ?>">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -525,6 +546,15 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
                                         </a>
                                     <?php endif; ?>
                                     <?php if ($is_merchant): ?>
+                                        <a href="/merchant/orders" class="quick-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                            </svg>
+                                            Gelen Siparişler
+                                        </a>
+                                    <?php endif; ?>
+                                    <?php if ($is_merchant): ?>
                                         <a href="/merchant/products" class="quick-item">
                                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -541,6 +571,13 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
                                         </a>
                                     <?php endif; ?>
                                     <?php if ($is_student): ?>
+                                        <a href="/student/products" class="quick-item">
+                                            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                    d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                            </svg>
+                                            Ürünlerim
+                                        </a>
                                         <a href="/student/create-product" class="quick-item">
                                             <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"

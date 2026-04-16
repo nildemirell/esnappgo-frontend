@@ -51,24 +51,17 @@ if (!$current_user) {
 
     async function loadFavorites() {
         try {
-            const favoriteIds = JSON.parse(localStorage.getItem('my_favorites')) || [];
             const container = document.getElementById('favorites-container');
             const emptyState = document.getElementById('empty-favorites');
 
-            if (favoriteIds.length === 0) {
-                container.innerHTML = '';
-                emptyState.style.display = 'block';
-                return;
-            }
+            // 1. DÜZELTME: localStorage ve tüm ürünleri çekme mantığı kaldırıldı.
+            // Sadece backend'deki favoriler endpoint'ine istek atıyoruz.
+            const response = await apiCall('Favorites');
+            
+            // Backend'den gelen yanıtı güvenli bir şekilde diziye çeviriyoruz
+            const favorites = Array.isArray(response) ? response : (response.data || []);
 
-            const response = await apiCall('products?limit=100');
-
-            // 1. ÇÖZÜM: .NET backend'den gelen veriyi products.php'deki gibi güvenli alıyoruz
-            const allProducts = Array.isArray(response) ? response : (response.products || response.data || []);
-
-            // 2. ÇÖZÜM: ID'leri eşleştirirken String/Number uyuşmazlığını önlemek için Number() kullanıyoruz
-            const favorites = allProducts.filter(p => favoriteIds.some(id => Number(id) === Number(p.id)));
-
+            // Eğer favori listesi boşsa empty state göster
             if (favorites.length === 0) {
                 container.innerHTML = '';
                 emptyState.style.display = 'block';
@@ -77,9 +70,8 @@ if (!$current_user) {
 
             emptyState.style.display = 'none';
 
+            // Kart tasarım kodları HİÇ DEĞİŞTİRİLMEDİ
             container.innerHTML = favorites.map(product => {
-
-                // 3. ÇÖZÜM: products.php'deki yeni .NET değişken isimlerini (name, finalPrice, imageUrls) buraya da entegre ediyoruz
                 const imagesArray = product.imageUrls || product.images || [];
                 let imageUrl = '';
                 if (imagesArray.length > 0) {
@@ -135,17 +127,24 @@ if (!$current_user) {
             document.getElementById('favorites-container').innerHTML = '<div class="col-span-full text-center text-red-500 py-8">Favoriler yüklenirken hata oluştu.</div>';
         }
     }
+
     async function removeFromFavorites(productId) {
         if (!await openCustomModal('Bu ürünü favorilerden kaldırmak istediğinizden emin misiniz?')) return;
 
-        let favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
-        favorites = favorites.filter(id => id !== productId);
-        localStorage.setItem('my_favorites', JSON.stringify(favorites));
-
-        showToast('Ürün favorilerden kaldırıldı', 'info');
-        loadFavorites(); // Listeyi ekranda hemen güncelle
+        try {
+            // 2. DÜZELTME: localStorage yerine Backend'e toggle isteği atıyoruz. 
+            // Eğer apiCall fonksiyonun varsayılan olarak GET atıyorsa, buraya 2. parametre olarak metodu girmelisin.
+            await apiCall(`Favorites/${productId}/toggle`, { method: 'POST' });
+            
+            showToast('Ürün favorilerden kaldırıldı', 'info');
+            
+            // Listeyi ekranda hemen güncelle (Artık backend'den taze datayı çekecek)
+            loadFavorites(); 
+        } catch (error) {
+            console.error('Error removing favorite:', error);
+            showToast('Ürün favorilerden kaldırılırken bir hata oluştu', 'error');
+        }
     }
-
 
     function escapeHtml(text) {
         const div = document.createElement('div');

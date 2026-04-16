@@ -470,8 +470,8 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                 },
                 body: JSON.stringify({
                     status: 'Approved',       // Backend JsonStringEnumConverter varsa ✅
-                    finalPrice: parseFloat(formData.get('final_price'))
-                    // stock ve reason kaldırıldı — DTO'da bu alanlar yok
+                    finalPrice: parseFloat(formData.get('final_price')),
+                    stock: parseInt(formData.get('stock')) || 1
                 })
 
             });
@@ -537,6 +537,8 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
             return;
         }
 
+        const currentProduct = allProducts.find(p => p.id === productId);
+
         try {
             const response = await fetch(`${API_BASE}/api/Merchant/products/${productId}/status`, {
                 method: 'PUT',
@@ -544,7 +546,11 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                 },
-                body: JSON.stringify({ status: 'Suspended' })
+                body: JSON.stringify({ 
+                    status: 'Suspended',
+                    finalPrice: currentProduct?.price || 0,
+                    stock: currentProduct?.stock || 0
+                })
             });
 
             if (response.ok) {
@@ -571,6 +577,8 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
             return;
         }
 
+        const currentProduct = allProducts.find(p => p.id === productId);
+
         try {
             const response = await fetch(`${API_BASE}/api/Merchant/products/${productId}/status`, {
                 method: 'PUT',
@@ -578,7 +586,11 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                     'Content-Type': 'application/json',
                     'Authorization': `Bearer ${localStorage.getItem('auth_token')}`
                 },
-                body: JSON.stringify({ status: 'Approved' })
+                body: JSON.stringify({ 
+                    status: 'Approved',
+                    finalPrice: currentProduct?.price || 0,
+                    stock: currentProduct?.stock || 0
+                })
             });
 
             if (response.ok) {
@@ -708,7 +720,8 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                 },
                 body: JSON.stringify({
                     status: currentStatus,
-                    finalPrice: data.price
+                    finalPrice: data.price,
+                    stock: data.stock
                 })
             });
 

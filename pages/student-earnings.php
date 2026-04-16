@@ -261,44 +261,50 @@ function renderRecentEarnings(activities) {
     `).join('');
 }
 
-function loadEarningsChart() {
-    // Mock chart data
-    const chartData = [
-        { day: 'Pzt', amount: 25.50 },
-        { day: 'Sal', amount: 18.75 },
-        { day: 'Çar', amount: 32.25 },
-        { day: 'Per', amount: 15.00 },
-        { day: 'Cum', amount: 28.50 },
-        { day: 'Cmt', amount: 22.00 },
-        { day: 'Paz', amount: 19.25 }
-    ];
-    
-    const maxAmount = Math.max(...chartData.map(d => d.amount));
+async function loadEarningsChart(period = 'week') {
     const chartContainer = document.getElementById('earnings-chart');
-    
-    chartContainer.innerHTML = chartData.map(data => {
-        const height = (data.amount / maxAmount) * 200; // Max height 200px
-        return `
-            <div class="flex flex-col items-center">
-                <div class="bg-blue-500 rounded-t w-8 mb-2 relative group" style="height: ${height}px;">
-                    <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        ₺${data.amount.toFixed(2)}
+    if (!chartContainer) return;
+
+    chartContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">Yükleniyor...</div>';
+
+    try {
+        const chartData = await apiCall(`Products/student-earnings-chart?period=${period}`);
+        // Backend [{date: "2026-04-10", amount: 25.50}, ...] formatında dönüyor
+
+        if (!Array.isArray(chartData) || chartData.length === 0) {
+            chartContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">Bu dönem için veri yok.</div>';
+            return;
+        }
+
+        const maxAmount = Math.max(...chartData.map(d => d.amount || d.Amount || 0), 1);
+
+        chartContainer.innerHTML = chartData.map(data => {
+            const amount = data.amount || data.Amount || 0;
+            const height = Math.max((amount / maxAmount) * 200, 2); // Min 2px görünebilir olsun
+            const label = new Date(data.date || data.Date).toLocaleDateString('tr-TR', { day: 'numeric', month: 'short' });
+            return `
+                <div class="flex flex-col items-center">
+                    <div class="bg-blue-500 rounded-t w-8 mb-2 relative group" style="height: ${height}px;">
+                        <div class="absolute -top-8 left-1/2 transform -translate-x-1/2 bg-gray-800 text-white text-xs rounded px-2 py-1 opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">
+                            ₺${amount.toFixed(2)}
+                        </div>
                     </div>
+                    <span class="text-xs text-gray-600">${label}</span>
                 </div>
-                <span class="text-xs text-gray-600">${data.day}</span>
-            </div>
-        `;
-    }).join('');
+            `;
+        }).join('');
+
+    } catch (e) {
+        console.error('Grafik yüklenemedi:', e);
+        chartContainer.innerHTML = '<div class="w-full h-full flex items-center justify-center text-gray-400 text-sm">Grafik yüklenemedi.</div>';
+    }
 }
 
 function setPeriod(period) {
-    // Update active button
     const buttons = document.querySelectorAll('.period-btn');
     buttons.forEach(btn => btn.classList.remove('active'));
     event.target.classList.add('active');
-    
-    // Reload chart with new period
-    loadEarningsChart();
+    loadEarningsChart(period);
 }
 
 function escapeHtml(text) {

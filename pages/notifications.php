@@ -81,7 +81,11 @@ if (!$current_user) {
                 throw new Error("Bildirimler çekilemedi");
             }
 
-            const notifications = await res.json();
+            let rawNotifications = await res.json();
+            
+            // Backend-independent Silme İşlemi Filtresi (Böylece silinenler bir daha sayfaya yüklenmez)
+            const deletedNots = JSON.parse(localStorage.getItem('esnappgo_deleted_notifications')) || [];
+            const notifications = rawNotifications.filter(n => !deletedNots.includes(n.id));
 
             if (!notifications || notifications.length === 0) {
                 listContainer.innerHTML = `
@@ -94,44 +98,87 @@ if (!$current_user) {
                 return;
             }
 
-            let htmlContent = '';
-            notifications.forEach(n => {
-                const isReadClass = n.isRead ? 'opacity-70' : 'bg-blue-50/30';
-                const iconBgClass = n.isRead ? 'bg-gray-100 text-gray-500' : 'bg-blue-100 text-blue-600';
-                const textClass = n.isRead ? '' : 'font-semibold';
-                const messageText = escapeHtml(n.message || n.content || 'Yeni Bildirim');
+let htmlContent = '';
+notifications.forEach(n => {
+    const isReadClass = n.isRead ? '' : 'bg-blue-50/40 border-l-4 border-blue-400';
+    const messageText = escapeHtml(n.message || n.content || 'Yeni Bildirim');
+    const titleText  = escapeHtml(n.title || '');
+    const isUnread   = !n.isRead;
 
-                let dateStr = '';
-                if (n.createdAt) {
-                    const d = new Date(n.createdAt);
-                    dateStr = d.toLocaleDateString('tr-TR', { hour: '2-digit', minute: '2-digit' });
-                }
+    // Durum badge rengi — başlığa veya mesaja göre tahmin et
+    let badgeColor = 'bg-gray-100 text-gray-600';
+    let badgeText  = 'Bildirim';
+    let dotColor   = 'bg-gray-400';
+    const combined = (messageText + titleText).toLowerCase();
+    if (combined.includes('onayland') || combined.includes('approved')) {
+        badgeColor = 'bg-green-100 text-green-700'; badgeText = 'Onaylandı'; dotColor = 'bg-green-500';
+    } else if (combined.includes('reddedil') || combined.includes('rejected')) {
+        badgeColor = 'bg-red-100 text-red-700'; badgeText = 'Reddedildi'; dotColor = 'bg-red-500';
+    } else if (combined.includes('bekliyor') || combined.includes('pending')) {
+        badgeColor = 'bg-yellow-100 text-yellow-700'; badgeText = 'Beklemede'; dotColor = 'bg-yellow-500';
+    } else if (combined.includes('askı') || combined.includes('suspended')) {
+        badgeColor = 'bg-gray-100 text-gray-700'; badgeText = 'Askıya Alındı'; dotColor = 'bg-gray-500';
+    } else if (combined.includes('sipariş') || combined.includes('order')) {
+        badgeColor = 'bg-blue-100 text-blue-700'; badgeText = 'Sipariş'; dotColor = 'bg-blue-500';
+    }
 
-                let buttonHtml = '';
-                if (!n.isRead) {
-                    buttonHtml = '<button onclick="markAsRead(' + n.id + ')" class="text-xs text-blue-600 hover:text-blue-800 mt-2">Okundu İşaretle</button>';
-                }
+    // Bildirimde referenceId (productId veya orderId) varsa linke götür
+    const detailLink = n.referenceId
+        ? (combined.includes('sipariş') ? `/orders` : `/products/${n.referenceId}`)
+        : '#';
 
-                htmlContent += `
-                <li class="p-4 hover:bg-gray-50 transition-colors ${isReadClass}">
-                    <div class="flex items-start space-x-3">
-                        <div class="flex-shrink-0">
-                            <div class="w-10 h-10 rounded-full ${iconBgClass} flex items-center justify-center">
-                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="flex-1 min-w-0">
-                            <p class="text-sm text-gray-900 ${textClass}">${messageText}</p>
-                            <p class="text-xs text-gray-500 mt-1">${dateStr}</p>
-                            ${buttonHtml}
-                        </div>
-                    </div>
-                </li>`;
-            });
+    // Ürün görseli varsa göster, yoksa renkli avatar
+    const imageHtml = n.imageUrl
+        ? `<img src="${escapeHtml(n.imageUrl)}" alt="" class="w-12 h-12 rounded-xl object-cover border border-gray-100">`
+        : `<div class="w-12 h-12 rounded-xl flex items-center justify-center ${badgeColor} text-xl font-bold">
+               ${badgeText.charAt(0)}
+           </div>`;
 
-            listContainer.innerHTML = htmlContent;
+    let dateStr = '';
+    if (n.createdAt) {
+        const d = new Date(n.createdAt);
+        dateStr = d.toLocaleDateString('tr-TR', { day: 'numeric', month: 'long', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    }
+
+    htmlContent += `
+    <li class="group relative">
+        <a href="${detailLink}" onclick="${!n.isRead ? `markAsRead(${n.id}); return true;` : 'return true;'}"
+           class="flex items-center gap-4 p-4 hover:bg-gray-50 transition-all duration-200 ${isReadClass}">
+            
+            <!-- Okunmadı nokta -->
+            ${isUnread ? `<span class="absolute top-5 right-4 w-2 h-2 rounded-full ${dotColor}"></span>` : ''}
+            
+            <!-- Görsel / Avatar -->
+            <div class="flex-shrink-0">${imageHtml}</div>
+            
+            <!-- Metin -->
+            <div class="flex-1 min-w-0">
+                ${titleText ? `<p class="text-sm font-semibold text-gray-900 mb-0.5">${titleText}</p>` : ''}
+                <p class="text-sm text-gray-700 ${isUnread ? 'font-medium' : ''} line-clamp-2">${messageText}</p>
+                <p class="text-xs text-gray-400 mt-1 flex items-center gap-1">
+                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                    </svg>
+                    ${dateStr}
+                </p>
+            </div>
+            
+            <!-- Badge ve Sil Butonu -->
+            <div class="flex items-center gap-3">
+                <span class="flex-shrink-0 text-xs font-semibold px-2.5 py-1 rounded-full ${badgeColor}">${badgeText}</span>
+                <button onclick="event.preventDefault(); event.stopPropagation(); deleteNotification(${n.id});"
+                        class="p-1.5 text-gray-300 hover:text-red-500 hover:bg-red-50 rounded-full transition-all focus:outline-none opacity-0 group-hover:opacity-100"
+                        title="Bildirimi Sil">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                    </svg>
+                </button>
+            </div>
+        </a>
+    </li>`;
+});
+listContainer.innerHTML = htmlContent;
+
 
         } catch (error) {
             console.error(error);
@@ -168,37 +215,41 @@ if (!$current_user) {
     }
 
     async function markAllAsRead() {
-    const token = localStorage.getItem('auth_token');
-    // Sayfadaki tüm "Okundu İşaretle" butonlarının ID'lerini topla
-    const readButtons = document.querySelectorAll('button[onclick^="markAsRead"]');
-    if (readButtons.length === 0) {
-        showLocalToast('Okunmamış bildirim yok.', 'info');
-        return;
-    }
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
 
-    // Her birini sırayla markAsRead et
-    const ids = [];
-    readButtons.forEach(btn => {
-        const match = btn.getAttribute('onclick').match(/markAsRead\((\d+)\)/);
-        if (match) ids.push(parseInt(match[1]));
-    });
-
-    showLocalToast('Tüm bildirimler okunuyor...', 'info');
-
-    let successCount = 0;
-    for (const id of ids) {
         try {
-            const res = await fetch(`${API_BASE}/api/Notifications/${id}/read`, {
+            const res = await fetch(`${API_BASE}/api/Notifications/read-all`, {
                 method: 'PUT',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
-            if (res.ok) successCount++;
-        } catch (e) { /* devam et */ }
+
+            if (res.ok || res.status === 204) {
+                showLocalToast('Tüm bildirimler okundu olarak işaretlendi.', 'success');
+                loadNotificationsPage();
+                if (typeof loadNotificationCount === 'function') loadNotificationCount();
+            } else {
+                showLocalToast('İşlem başarısız oldu.', 'error');
+            }
+        } catch (e) {
+            console.error(e);
+            showLocalToast('Bir hata oluştu.', 'error');
+        }
     }
 
-    showLocalToast(`${successCount} bildirim okundu olarak işaretlendi.`, 'success');
-    loadNotificationsPage();
-    if (typeof loadNotificationCount === 'function') loadNotificationCount();
-}
+    async function deleteNotification(id) {
+        // Backend DELETE metodu olmadığı için, 'Silinmiş' algısını tarayıcı hafızasına (Local Storage) kaydederek çözelim:
+        let deletedNots = JSON.parse(localStorage.getItem('esnappgo_deleted_notifications')) || [];
+        if (!deletedNots.includes(id)) {
+            deletedNots.push(id);
+            localStorage.setItem('esnappgo_deleted_notifications', JSON.stringify(deletedNots));
+        }
+
+        loadNotificationsPage();
+        
+        if (typeof loadNotificationCount === 'function') {
+            loadNotificationCount();
+        }
+    }
 
 </script>

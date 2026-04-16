@@ -212,8 +212,36 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         loadProduct(productId);
     });
 
+    // Ham ürün datasını (API veya cache) tutarlı bir yapıya dönüştürür
+    function normalizeProduct(raw) {
+        return {
+            ...raw,
+            id:          raw.id          || raw.Id,
+            title:       raw.name        || raw.title   || raw.Name,
+            price:       raw.finalPrice  || raw.suggestedPrice || raw.SuggestedPrice,
+            images:      raw.imageUrls   || raw.ImageUrls || [],
+            description: raw.description || 'Bu ürünün detaylı açıklaması bulunmamaktadır.',
+            shop_name:   raw.merchantName || raw.MerchantName || 'Kampüs Esnafı',
+            merchantId:  raw.merchantId   || raw.MerchantId   || null,
+        };
+    }
+
     async function loadProduct(productId) {
         console.log('Fetching real product data for ID:', productId);
+
+        // ─── ADIM 0: Mağaza sayfasından tıklandıysa ürün zaten cache'de ───
+        try {
+            const cacheKey = 'cached_product_' + productId;
+            const cached = sessionStorage.getItem(cacheKey);
+            if (cached) {
+                sessionStorage.removeItem(cacheKey); // Tek kullanımlık
+                const cachedProduct = JSON.parse(cached);
+                console.log('Product loaded from sessionStorage cache (no API call needed)');
+                currentProduct = normalizeProduct(cachedProduct);
+                setTimeout(() => displayProduct(currentProduct), 100);
+                return; // API'ye gitme
+            }
+        } catch (e) { /* sessionStorage okunamazsa API'ye düş */ }
 
         try {
             // Backend'den çekiyoruz, limit = 1000 koyarak bulma olasılığını yükseltiyoruz
@@ -267,16 +295,7 @@ if (!isset($product_id) || !is_numeric($product_id)) {
                 return;
             }
 
-            currentProduct = {
-                ...foundProduct,
-                id: foundProduct.id || foundProduct.Id,
-                title: foundProduct.name || foundProduct.title || foundProduct.Name,
-                price: foundProduct.finalPrice || foundProduct.suggestedPrice || foundProduct.SuggestedPrice,
-                images: foundProduct.imageUrls || foundProduct.ImageUrls || ['/media/68a658361732a_1755732022.jpg'],
-                description: foundProduct.description || "Bu ürünün detaylı açıklaması bulunmamaktadır.",
-                shop_name: foundProduct.merchantName || foundProduct.MerchantName || "Kampüs Esnafı",
-                merchantId: foundProduct.merchantId || foundProduct.MerchantId || null
-            };
+            currentProduct = normalizeProduct(foundProduct);
 
             setTimeout(() => {
                 displayProduct(currentProduct);
@@ -472,50 +491,62 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         increaseBtn.disabled = quantity >= maxStock;
     }
 
-    function checkFavoriteStatus(productId) {
-        const favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
-        const emptyHeart = document.getElementById('heart-empty');
-        const fullHeart = document.getElementById('heart-full');
+    async function checkFavoriteStatus(productId) {
+        const emptyHeart  = document.getElementById('heart-empty');
+        const fullHeart   = document.getElementById('heart-full');
         const favoriteBtn = document.getElementById('favorite-btn');
         const favoriteText = document.getElementById('favorite-text');
 
-        if (favorites.includes(productId)) {
-            emptyHeart.classList.add('hidden');
-            fullHeart.classList.remove('hidden');
-            favoriteBtn.classList.add('text-red-500', 'bg-red-50');
-            favoriteBtn.classList.remove('text-gray-600');
-            favoriteText.textContent = 'Favorilerden Çıkar';
-        } else {
-            emptyHeart.classList.remove('hidden');
-            fullHeart.classList.add('hidden');
-            favoriteBtn.classList.remove('text-red-500', 'bg-red-50');
-            favoriteBtn.classList.add('text-gray-600');
-            favoriteText.textContent = 'Favorilere Ekle';
+        const token = localStorage.getItem('auth_token');
+        if (!token) return; // Giriş yapmamış — buton zaten görünmez (PHP korumalı)
+
+        try {
+            const favsResp = await apiCall('Favorites');
+            const favList  = Array.isArray(favsResp) ? favsResp : (favsResp.data || []);
+            const isFav    = favList.some(f => (f.id || f.Id) == productId);
+
+            if (isFav) {
+                emptyHeart.classList.add('hidden');
+                fullHeart.classList.remove('hidden');
+                favoriteBtn.classList.add('text-red-500', 'bg-red-50');
+                favoriteBtn.classList.remove('text-gray-600');
+                favoriteText.textContent = 'Favorilerden Çıkar';
+            } else {
+                emptyHeart.classList.remove('hidden');
+                fullHeart.classList.add('hidden');
+                favoriteBtn.classList.remove('text-red-500', 'bg-red-50');
+                favoriteBtn.classList.add('text-gray-600');
+                favoriteText.textContent = 'Favorilere Ekle';
+            }
+        } catch (e) {
+            // Favoriler yüklenemezse buton sessizce boş kalır
+            console.warn('Favori durumu kontrol edilemedi:', e);
         }
     }
 
-    function toggleDetailFavorite() {
+    async function toggleDetailFavorite() {
         if (!currentProduct) return;
         const productId = currentProduct.id;
-        let favorites = JSON.parse(localStorage.getItem('my_favorites')) || [];
 
-        if (favorites.includes(productId)) {
-            // Çıkar
-            favorites = favorites.filter(id => id !== productId);
-            showToast('Ürün favorilerden çıkarıldı', 'info');
-        } else {
-            // Ekle
-            favorites.push(productId);
-            showToast('Ürün favorilere eklendi!', 'success');
+        try {
+            await apiCall(`Favorites/${productId}/toggle`, { method: 'POST' });
 
             // Zıplama efekti
             const btn = document.getElementById('favorite-btn');
             btn.classList.add('scale-110');
             setTimeout(() => btn.classList.remove('scale-110'), 200);
-        }
 
-        localStorage.setItem('my_favorites', JSON.stringify(favorites));
-        checkFavoriteStatus(productId); // Arayüzü anında güncelle
+            // Güncel durumu backend'den öğren ve arayüzü güncelle
+            await checkFavoriteStatus(productId);
+
+            const isFavNow = document.getElementById('heart-full') &&
+                             !document.getElementById('heart-full').classList.contains('hidden');
+            showToast(isFavNow ? 'Ürün favorilere eklendi!' : 'Ürün favorilerden çıkarıldı', isFavNow ? 'success' : 'info');
+
+        } catch (error) {
+            console.error('Favori toggle hatası:', error);
+            showToast(error.message || 'Bir hata oluştu', 'error');
+        }
     }
 
     async function addToCartFromDetail() {

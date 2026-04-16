@@ -180,23 +180,7 @@ if (!$current_user) {
             const response = await apiCall('cart');
             const rawItems = response.items || [];
 
-            // BÜYÜK YAMA: Backend şu an sepetin içinde orijinal ürün resimlerini BİZE GÖNDERMİYOR!
-            // Çözüm olarak biz de ana ürün listesini arkada 1 kez çekip, sepetteki ürünlerin ID'sine bakıp resimlerini eşleştireceğiz.
-            try {
-                const allProductsResp = await apiCall('products');
-                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
-
-                rawItems.forEach(cartItem => {
-                    // Sepetteki ürünün ID'si ile, gerçek listedeki ürünün ID'sini buluştur (Id .NET'ten büyük de küçük de gelebilir)
-                    const matchedProduct = allProductsList.find(p => p.id == cartItem.productId || p.Id == cartItem.productId);
-                    if (matchedProduct) {
-                        // Eğer eşleşirse, orijinal resimleri sepet öğesine kopyala!
-                        cartItem.imageUrls = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
-                    }
-                });
-            } catch (e) {
-                console.error("Resim eşleştirmesi için ana ürün dosyası çekilemedi:", e);
-            }
+            // Backend artık CartItemDto içinde imageUrls döndürüyor — ayrı ürün listesi çekmeye gerek yok!
 
             // Backendden gelen isimleri (.NET), sizin frontend izinlerinize (PHP) otomatik çeviriyoruz
             cartItems = rawItems.map(item => ({
