@@ -219,8 +219,8 @@ if (!isset($product_id) || !is_numeric($product_id)) {
             id:          raw.id          || raw.Id,
             title:       raw.name        || raw.title   || raw.Name,
             price:       raw.finalPrice  || raw.suggestedPrice || raw.SuggestedPrice,
-            images:      raw.imageUrls   || raw.ImageUrls || [],
-            description: raw.description || 'Bu ürünün detaylı açıklaması bulunmamaktadır.',
+            images:      raw.imageUrls   || raw.ImageUrls || (raw.imageUrl ? [raw.imageUrl] : []) || (raw.ImageUrl ? [raw.ImageUrl] : []),
+            description: raw.description || raw.Description || 'Bu ürünün detaylı açıklaması bulunmamaktadır.',
             shop_name:   raw.merchantName || raw.MerchantName || 'Kampüs Esnafı',
             merchantId:  raw.merchantId   || raw.MerchantId   || null,
         };
@@ -244,50 +244,64 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         } catch (e) { /* sessionStorage okunamazsa API'ye düş */ }
 
         try {
-            // Backend'den çekiyoruz, limit = 1000 koyarak bulma olasılığını yükseltiyoruz
-            const response = await apiCall('products?limit=1000');
-            const allProducts = Array.isArray(response) ? response : (response.products || response.data || []);
-            let foundProduct = allProducts.find(p => p.id == productId || p.Id == productId);
+            // PHP Session'ına (%100 güvenemeyiz) alternatif olarak JWT'den okuyalım.
+            let userRole = <?php echo json_encode($current_user ? $current_user['role'] : null); ?>;
+            const token = localStorage.getItem('auth_token');
+            if (token) {
+                try {
+                    const payload = JSON.parse(atob(token.split('.')[1]));
+                    const jwtRole = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload.role;
+                    if (jwtRole) userRole = jwtRole.toLowerCase();
+                } catch (e) { }
+            }
 
-            // Eğer ürün onaylanmamış/reddedilmiş ise public listede çıkmaz. 
+            // Backend'den yeni tekil ürün endpoint'i ile çekiyoruz
+            let foundProduct = null;
+            try {
+                const response = await apiCall(`products/${productId}`);
+                foundProduct = response.data || response;
+            } catch (err) {
+                console.log('Public endpoint ürünü bulamadı (belki onaylı değil), private listelere bakılacak.');
+            }
+
+            let isMine = false;
+
+            // Eğer ürün public endpoint'te bulunamadıysa (örneğin henüz onaylanmamışsa)
             // Kullanıcının rolüne göre kendi ürünleri listesinde tekrar ara!
-            if (!foundProduct) {
-                // PHP Session'ına (%100 güvenemeyiz) alternatif olarak JWT'den okuyalım.
-                let userRole = <?php echo json_encode($current_user ? $current_user['role'] : null); ?>;
-                const token = localStorage.getItem('auth_token');
-                if (token) {
-                    try {
-                        const payload = JSON.parse(atob(token.split('.')[1]));
-                        const jwtRole = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'] || payload.role;
-                        if (jwtRole) userRole = jwtRole.toLowerCase();
-                    } catch (e) { }
-                }
-
-                if (userRole) {
-                    try {
-                        console.log('Searching in private list for role:', userRole);
-                        let privateResponse = null;
-                        if (userRole === 'esnaf' || userRole === 'merchant') {
-                            privateResponse = await apiCall('Merchant/products');
-                        } else if (userRole === 'ogrenci' || userRole === 'student') {
-                            privateResponse = await apiCall('Products/my-products');
-                        } else if (userRole === 'admin') {
-                            privateResponse = await apiCall('Admin/products');
-                        }
-
-                        if (privateResponse) {
-                            console.log('Private response:', privateResponse);
-                            const privateProducts = Array.isArray(privateResponse)
-                                ? privateResponse
-                                : (privateResponse.products || privateResponse.data || privateResponse.items || Object.values(privateResponse).find(v => Array.isArray(v)) || []);
-
-                            console.log('Parsed private products list:', privateProducts);
-                            foundProduct = privateProducts.find(p => p.id == productId || p.Id == productId);
-                        }
-                    } catch (e) {
-                        console.log('Kullanıcıya özel listede ürün aranırken hata oluştu:', e);
+            if (!foundProduct && userRole) {
+                try {
+                    console.log('Searching in private list for role:', userRole);
+                    let privateResponse = null;
+                    if (userRole === 'esnaf' || userRole === 'merchant') {
+                        privateResponse = await apiCall('Merchant/products');
+                    } else if (userRole === 'ogrenci' || userRole === 'student') {
+                        privateResponse = await apiCall('Products/my-products');
+                    } else if (userRole === 'admin') {
+                        privateResponse = await apiCall('Admin/products');
                     }
+
+                    if (privateResponse) {
+                        const privateProducts = Array.isArray(privateResponse)
+                            ? privateResponse
+                            : (privateResponse.products || privateResponse.data || privateResponse.items || []);
+
+                        foundProduct = privateProducts.find(p => p.id == productId || p.Id == productId);
+                        if (foundProduct && (userRole === 'esnaf' || userRole === 'merchant')) {
+                            isMine = true;
+                        }
+                    }
+                } catch (e) {
+                    console.log('Kullanıcıya özel listede ürün aranırken hata oluştu:', e);
                 }
+            } else if (foundProduct && (userRole === 'esnaf' || userRole === 'merchant')) {
+                // Public listesinde bulunduyduysa ve kullanıcı esnafsa, benim ürünüm mü kontrolü
+                try {
+                    const myProductsRes = await apiCall('Merchant/products');
+                    const myProds = Array.isArray(myProductsRes) ? myProductsRes : (myProductsRes.data || myProductsRes.products || []);
+                    if (myProds.some(p => p.id == productId || p.Id == productId)) {
+                        isMine = true;
+                    }
+                } catch(e) {}
             }
 
             if (!foundProduct) {
@@ -296,6 +310,7 @@ if (!isset($product_id) || !is_numeric($product_id)) {
             }
 
             currentProduct = normalizeProduct(foundProduct);
+            currentProduct.isMine = isMine;
 
             setTimeout(() => {
                 displayProduct(currentProduct);
@@ -328,15 +343,40 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         const displayPrice = product.finalPrice || product.suggestedPrice || product.price || 0;
         document.getElementById('product-price').textContent = `₺${parseFloat(displayPrice).toFixed(2)}`;
 
-        product.stock = product.stock || product.stockQuantity || 10;
-        document.getElementById('stock-info').textContent = `Stok: ${product.stock} adet`;
+        // Backend artık stok verisini dönüyor! 
+        const stockVal = (product.stock !== undefined && product.stock !== null)
+            ? product.stock
+            : (product.Stock !== undefined && product.Stock !== null)
+                ? product.Stock
+                : (product.stockQuantity !== undefined && product.stockQuantity !== null ? product.stockQuantity : null);
+
+        // Değer null veya undefined ise (eski ürün) 99 ata. Eğer rakam gerçekten 0 ise 0 olarak bırak ki "Stokta Yok" bloklaması çalışsın.
+        product.stock = (stockVal !== null && stockVal !== undefined) ? stockVal : 99;
+
+        const stockInfoEl = document.getElementById('stock-info');
+        if (product.stock === 0) {
+            stockInfoEl.textContent = 'Stokta Yok';
+            stockInfoEl.style.color = '#ef4444';
+            // Sepete ekle butonunu devre dışı bırak
+            const addBtn = document.querySelector('button[onclick="addToCartFromDetail()"]');
+            if (addBtn) {
+                addBtn.disabled = true;
+                addBtn.textContent = 'Stokta Yok';
+                addBtn.classList.remove('btn-primary');
+                addBtn.classList.add('btn-disabled');
+                addBtn.style.opacity = '0.55';
+                addBtn.style.cursor = 'not-allowed';
+            }
+        } else {
+            stockInfoEl.textContent = `Stok: ${product.stock} adet`;
+            stockInfoEl.style.color = '';
+        }
 
 
         // Set shop info
         if (product.shop_name) {
             document.getElementById('shop-name').textContent = product.shop_name;
-            // Address backendden gelmediği taktirde gizle veya varsayılan göster
-            document.getElementById('shop-address').textContent = product.shop_address || 'Kampüs İçi';
+            document.getElementById('shop-address').textContent = product.shop_address || '';
 
             const shopLinkBtn = document.getElementById('shop-link');
             if (product.merchantId) {
@@ -445,13 +485,14 @@ if (!isset($product_id) || !is_numeric($product_id)) {
 
             const productIdVal = product.id || product.Id;
             const isMerchant = userRole === 'esnaf' || userRole === 'merchant';
+            const showMerchantBtns = isMerchant && (status === 'suspended' || status === 'pending');
 
-            const merchantBtns = (status === 'suspended' && isMerchant)
+            const merchantBtns = showMerchantBtns
                 ? `<div style="display:flex;gap:8px;margin-top:14px;flex-wrap:wrap;">
                        <button onclick="changeProductStatus(${productIdVal},'Approved')"
                            style="padding:8px 18px;background:#16a34a;color:#fff;border:none;border-radius:8px;font-size:0.8rem;font-weight:600;cursor:pointer;letter-spacing:.01em;transition:background .2s;"
                            onmouseover="this.style.background='#15803d'" onmouseout="this.style.background='#16a34a'">
-                           Tekrar Satışa Aç
+                           ${status === 'pending' ? 'Ürünü Onayla ve Satışa Aç' : 'Tekrar Satışa Aç'}
                        </button>
                        <button onclick="changeProductStatus(${productIdVal},'Rejected')"
                            style="padding:8px 18px;background:#fff;color:#6b7280;border:1px solid #e5e7eb;border-radius:8px;font-size:0.8rem;font-weight:500;cursor:pointer;transition:border-color .2s,color .2s;"
@@ -490,6 +531,58 @@ if (!isset($product_id) || !is_numeric($product_id)) {
                 document.getElementById('product-content').insertAdjacentHTML('afterbegin', bannerHtml);
             }
 
+        }
+        if (status === 'approved') {
+            const isMerchant = userRole === 'esnaf' || userRole === 'merchant';
+            if (isMerchant && product.isMine) {
+                // Sadece KENDİ ürünü ise esnaf yetkilerini göster ve sepeti kapat
+                const cartSection = document.getElementById('cart-section');
+                if (cartSection) cartSection.style.display = 'none';
+
+                // Favoriler de esnaf için gerekli değil (kendi ürününde)
+                const favBtn = document.getElementById('favorite-btn');
+                if (favBtn) {
+                    const favContainer = favBtn.closest('.mb-6');
+                    if (favContainer) favContainer.style.display = 'none';
+                }
+
+                const productIdVal = product.id || product.Id;
+
+                // Daha önce eklenmiş butonları temizle
+                const existing = document.getElementById('merchant-approved-actions');
+                if (existing) existing.remove();
+
+                const div = document.createElement('div');
+                div.id = 'merchant-approved-actions';
+                div.style.marginBottom = '1.5rem';
+                div.innerHTML = `
+                <div style="background:#fffbeb;border:1px solid #fde68a;border-left:4px solid #f59e0b;border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;align-items:center;gap:10px;">
+                    <svg width="18" height="18" fill="none" stroke="#b45309" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span style="font-size:.82rem;color:#92400e;font-weight:500;">Bu ürün sizin mağazanızda satışta. Aşağıdan yönetebilirsiniz.</span>
+                </div>
+                <div style="display:flex;gap:10px;flex-wrap:wrap;">
+                    <a href="/merchant/products"
+                        style="flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;background:#2563eb;color:#fff;border-radius:10px;font-weight:600;font-size:.875rem;text-decoration:none;transition:background .2s;"
+                        onmouseover="this.style.background='#1d4ed8'" onmouseout="this.style.background='#2563eb'">
+                        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/></svg>
+                        Ürünü Düzenle
+                    </a>
+                    <button onclick="changeProductStatus(${productIdVal}, 'Suspended')"
+                        style="flex:1;min-width:120px;display:flex;align-items:center;justify-content:center;gap:8px;padding:12px 18px;background:#f97316;color:#fff;border:none;border-radius:10px;font-weight:600;font-size:.875rem;cursor:pointer;transition:background .2s;"
+                        onmouseover="this.style.background='#ea6d10'" onmouseout="this.style.background='#f97316'">
+                        <svg width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M10 9v6m4-6v6m7-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                        Askıya Al
+                    </button>
+                </div>`;
+
+                // Cart section'ın bulunduğu yere ekle
+                if (cartSection && cartSection.parentNode) {
+                    cartSection.parentNode.insertBefore(div, cartSection.nextSibling);
+                } else {
+                    const infoSection = document.querySelector('#product-content .p-6');
+                    if (infoSection) infoSection.insertAdjacentElement('afterbegin', div);
+                }
+            }
         }
         // ──────────────────────────────────────────────────────────────────────
     }
@@ -703,10 +796,23 @@ if (!isset($product_id) || !is_numeric($product_id)) {
         if (!await openCustomModal(`Bu ürünü ${actionText} istediğinizden emin misiniz?`)) return;
 
         try {
-            // Esnafın kendi ürün status endpoint'i: PUT /api/Merchant/products/{id}/status
+            // Fiyat ve stoku otomatik çek (Backend Approved için mandatory bekliyor)
+            const currentPrice = currentProduct?.price || currentProduct?.finalPrice || currentProduct?.suggestedPrice || 0;
+            const stock = currentProduct?.stock || currentProduct?.stockQuantity || 0;
+
+            const payload = { status: newStatus };
+            
+            // Eğer satışa açılıyorsa boş gönderilemeyeceği için mevcut veriyi gönder
+            if (newStatus === 'Approved') {
+                payload.finalPrice = parseFloat(currentPrice);
+                payload.stock = parseInt(stock);
+            } else {
+                payload.finalPrice = null;
+            }
+
             await apiCall(`Merchant/products/${productId}/status`, {
                 method: 'PUT',
-                body: JSON.stringify({ status: newStatus, finalPrice: null })
+                body: JSON.stringify(payload)
             });
 
             showToast(
@@ -714,12 +820,10 @@ if (!isset($product_id) || !is_numeric($product_id)) {
                 newStatus === 'Approved' ? 'success' : 'info'
             );
 
-            // Ekranı yenile
             setTimeout(() => window.location.reload(), 1200);
         } catch (err) {
             showToast(err.message || 'İşlem sırasında hata oluştu', 'error');
         }
     }
-
 
 </script>

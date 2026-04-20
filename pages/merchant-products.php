@@ -73,7 +73,79 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
             <?php endfor; ?>
         </div>
 
-        <!-- Empty Products -->
+<!-- Product Detail Modal (Dynamic & Modern) -->
+<div id="product-detail-modal" class="fixed inset-0 z-[100] flex items-center justify-center hidden">
+    <div class="absolute inset-0 bg-gray-900/60 backdrop-blur-sm transition-opacity opacity-0 duration-300" id="pdm-backdrop" onclick="closeProductDetailModal()"></div>
+    <div class="bg-white rounded-2xl shadow-2xl w-full max-w-4xl mx-4 overflow-hidden transform scale-95 opacity-0 transition-all duration-300 flex flex-col md:flex-row relative z-10 max-h-[90vh]" id="pdm-content">
+        <!-- Close Button -->
+        <button onclick="closeProductDetailModal()" class="absolute top-4 right-4 z-20 p-2.5 bg-white/90 backdrop-blur-md rounded-full text-gray-500 hover:text-red-600 hover:bg-red-50 transition-all focus:outline-none focus:ring-4 focus:ring-red-100 shadow-sm border border-gray-100">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+        </button>
+        
+        <!-- Image Section -->
+        <div class="w-full md:w-2/5 h-64 md:h-auto bg-gray-50 relative flex items-center justify-center border-b md:border-b-0 md:border-r border-gray-100 group">
+            <img id="pdm-image" src="" alt="" class="w-full h-full object-cover hidden transition-transform duration-700 group-hover:scale-105" />
+            <div id="pdm-no-image" class="w-full h-full flex flex-col items-center justify-center hidden bg-gray-100/50">
+                <div class="text-5xl mb-3 opacity-40">📷</div>
+                <div class="text-gray-400 font-medium tracking-wide">Görsel Yok</div>
+            </div>
+            <!-- Gradient Overlay for Image Image -->
+            <div class="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent pointer-events-none"></div>
+            <div id="pdm-status-badge" class="absolute top-4 left-4 z-10 shadow-sm"></div>
+        </div>
+        
+        <!-- Info Section -->
+        <div class="w-full md:w-3/5 p-6 md:p-8 flex flex-col overflow-y-auto custom-scrollbar bg-white">
+            <h2 id="pdm-title" class="text-2xl md:text-3xl font-extrabold text-gray-900 mb-3 leading-tight tracking-tight"></h2>
+            
+            <div class="flex items-center text-sm text-gray-500 mb-6 pb-5 border-b border-gray-100">
+                <span class="flex items-center bg-blue-50 text-blue-700 px-3 py-1.5 rounded-full font-medium border border-blue-100">
+                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"></path>
+                    </svg>
+                    <span id="pdm-student-name"></span>
+                </span>
+                <span class="mx-3 text-gray-300">•</span>
+                <span id="pdm-date" class="flex items-center font-medium">
+                    <svg class="w-4 h-4 mr-1.5 opacity-70" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"></path>
+                    </svg>
+                    <span id="pdm-date-text"></span>
+                </span>
+            </div>
+            
+            <div id="pdm-status-alert" class="mb-6 rounded-xl p-4 md:p-5 border hidden transition-all shadow-sm"></div>
+            
+            <div class="flex-1 mb-8">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 flex items-center">
+                    <span class="w-6 h-px bg-gray-200 mr-2"></span> Ürün Açıklaması
+                </h4>
+                <p id="pdm-desc" class="text-gray-700 leading-relaxed bg-gray-50/50 p-5 rounded-xl border border-gray-100 text-sm md:text-base shadow-inner"></p>
+            </div>
+            
+            <div class="mt-auto pt-6 border-t border-gray-100 bg-white">
+                <div class="flex items-center justify-between mb-6 bg-slate-50 p-5 rounded-2xl border border-slate-100">
+                    <div>
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Satış Fiyatı</div>
+                        <div id="pdm-price" class="text-3xl font-extrabold text-blue-600 tracking-tight"></div>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5 flex items-center justify-end">
+                            <span class="w-2 h-2 rounded-full bg-green-500 mr-2 shadow-sm"></span> Mevcut Stok
+                        </div>
+                        <div id="pdm-stock" class="text-xl font-bold text-slate-800"></div>
+                    </div>
+                </div>
+                
+                <div id="pdm-actions" class="flex flex-col sm:flex-row gap-3 mt-2">
+                    <!-- Buttons injected via JS -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Empty Products -->
         <div id="empty-products" class="text-center py-12" style="display: none;">
             <svg class="w-16 h-16 text-gray-400 mx-auto mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -244,6 +316,14 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
                 reactivateProduct(productId);
                 return;
             }
+
+            // Eğer butona tıklanmadıysa ve kartın kendisine tıklandıysa modalı aç
+            const productCard = e.target.closest('.product-card-clickable');
+            if (productCard) {
+                const productId = parseInt(productCard.dataset.productId);
+                openProductDetailModal(productId);
+                return;
+            }
         });
     });
 
@@ -319,13 +399,19 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
         document.getElementById('empty-products').style.display = 'none';
 
         container.innerHTML = products.map(product => `
-        <div class="bg-white rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-100">
-            <div class="relative h-56 bg-gradient-to-br from-gray-100 to-gray-200">
+        <div data-product-id="${product.id}" class="product-card-clickable bg-white rounded-xl shadow-[0_4px_20px_-4px_rgba(0,0,0,0.05)] hover:shadow-[0_8px_30px_-4px_rgba(37,99,235,0.15)] transition-all duration-300 overflow-hidden border border-gray-100 hover:border-blue-300 cursor-pointer group transform hover:-translate-y-1">
+            <div class="relative h-56 bg-gradient-to-br from-gray-50 to-gray-200 overflow-hidden">
+                <div class="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300 z-10 flex items-center justify-center">
+                    <span class="opacity-0 group-hover:opacity-100 px-4 py-2 bg-white/95 backdrop-blur-sm text-gray-900 font-medium rounded-lg shadow-lg transform translate-y-4 group-hover:translate-y-0 transition-all duration-300 pointer-events-none flex items-center shadow-blue-900/10">
+                        <svg class="w-4 h-4 mr-1.5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path></svg>
+                        Detayları Gör
+                    </span>
+                </div>
                 ${product.images && Array.isArray(product.images) && product.images.length > 0 ? `
                     <img 
                         src="${product.images[0]}" 
                         alt="${escapeHtml(product.title)}"
-                        class="w-full h-full object-cover"
+                        class="absolute inset-0 w-full h-full object-contain object-center bg-white p-3 transition-transform duration-700 group-hover:scale-105"
                         onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
                     />
                     <div class="w-full h-full flex-col items-center justify-center hidden">
@@ -430,6 +516,189 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
             </div>
         </div>
     `).join('');
+    }
+
+    function openProductDetailModal(productId) {
+        window.location.href = `/products/${productId}`;
+    }
+
+    function closeProductDetailModal() {
+        // no-op — modal is no longer used
+    }
+
+    function _unusedModalLogic(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        const modal = document.getElementById('product-detail-modal');
+        const backdrop = document.getElementById('pdm-backdrop');
+        const content = document.getElementById('pdm-content');
+
+        // Geçerli kullanıcı rolünü al:
+        const userRole = <?php echo json_encode($current_user ? strtolower($current_user['role']) : 'guest'); ?>;
+        const isMerchant = userRole === 'esnaf' || userRole === 'merchant';
+        const isStudent = userRole === 'ogrenci' || userRole === 'student';
+
+        // Image
+        const imgSrc = product.images && product.images.length > 0 ? getImageUrl(product.images[0]) : '';
+        const imgEl = document.getElementById('pdm-image');
+        const noImgEl = document.getElementById('pdm-no-image');
+        
+        if(imgSrc) {
+            imgEl.src = imgSrc;
+            imgEl.classList.remove('hidden');
+            noImgEl.classList.add('hidden');
+        } else {
+            imgEl.classList.add('hidden');
+            noImgEl.classList.remove('hidden');
+        }
+
+        // Basic Info
+        document.getElementById('pdm-title').textContent = product.title || 'İsimsiz Ürün';
+        document.getElementById('pdm-student-name').textContent = product.student_name || 'Bilinmeyen';
+        document.getElementById('pdm-date-text').textContent = formatDate(product.created_at);
+        document.getElementById('pdm-desc').innerHTML = product.description ? escapeHtml(product.description).replace(/\\n/g, '<br>') : '<span class="italic text-gray-400">Açıklama bulunmuyor</span>';
+        
+        // Price & Stock
+        const displayPrice = parseFloat(product.status === 'pending' ? (product.suggested_price || product.price || 0) : (product.price || 0)).toFixed(2);
+        document.getElementById('pdm-price').textContent = `₺${displayPrice}`;
+        document.getElementById('pdm-stock').innerHTML = `${product.stock || 0} <span class="text-sm font-normal text-gray-500">adet</span>`;
+
+        // Badge
+        document.getElementById('pdm-status-badge').innerHTML = `
+            <span class="inline-flex items-center px-4 py-1.5 rounded-full text-sm font-bold shadow-md bg-white ${getStatusBadgeClass(product.status)} border-0 ring-1 ring-black/5">
+                ${getStatusIcon(product.status)} <span class="ml-1.5">${getStatusText(product.status)}</span>
+            </span>
+        `;
+
+        // Status Based Rendering
+        const alertBox = document.getElementById('pdm-status-alert');
+        const actionsBox = document.getElementById('pdm-actions');
+        
+        alertBox.className = 'mb-6 rounded-xl p-4 md:p-5 border hidden transition-all shadow-sm';
+        actionsBox.innerHTML = '';
+        
+        let alertHtml = '';
+        let actionHtml = '';
+
+        if (product.status === 'active') { // ONAYLI
+            if (isStudent) {
+                actionHtml = `
+                    <button class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex justify-center items-center gap-2 transform hover:-translate-y-0.5" onclick="showToast('Sepete Ekleme simülasyonu', 'success'); closeProductDetailModal();">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4m0 0L7 13m0 0l-1.5 6M7 13l-1.5 6m0 0h9m-9 0V19a2 2 0 002 2h6a2 2 0 002-2v-4"></path></svg>
+                        Sepete Ekle
+                    </button>
+                `;
+            } else if (isMerchant) {
+                actionHtml = `
+                    <button class="flex-1 bg-white hover:bg-blue-50 text-blue-700 font-bold py-3.5 px-4 rounded-xl transition-all border-2 border-blue-100 hover:border-blue-400 shadow-sm flex justify-center items-center gap-2" onclick="editProduct(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">✏️</span> Ürünü Düzenle
+                    </button>
+                    <button class="flex-1 bg-white hover:bg-orange-50 text-orange-700 font-bold py-3.5 px-4 rounded-xl transition-all border-2 border-orange-100 hover:border-orange-400 shadow-sm flex justify-center items-center gap-2" onclick="suspendProduct(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">⏸️</span> Askıya Al
+                    </button>
+                `;
+            }
+        } 
+        else if (product.status === 'suspended') { // ASKIDA
+            alertBox.classList.remove('hidden');
+            if (isMerchant) {
+                alertBox.classList.add('bg-orange-50', 'border-orange-200');
+                alertHtml = `
+                    <div class="flex items-start gap-4">
+                        <div class="bg-orange-200 p-2.5 rounded-lg text-xl shadow-sm border border-orange-300">⏸️</div>
+                        <div>
+                            <h4 class="font-bold text-orange-900 text-base mb-0.5">Bu ürün askıya alınmıştır</h4>
+                            <p class="text-sm text-orange-700 mt-1">Ürünü tekrar satışa açabilir veya tamamen reddedebilirsiniz.</p>
+                        </div>
+                    </div>
+                `;
+                actionHtml = `
+                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex justify-center items-center gap-2 transform hover:-translate-y-0.5" onclick="reactivateProduct(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">✅</span> Tekrar Satışa Aç
+                    </button>
+                    <button class="flex-1 bg-white hover:bg-red-50 text-red-600 font-bold py-3.5 px-4 rounded-xl transition-all border-2 border-red-200 hover:border-red-500 shadow-sm flex justify-center items-center gap-2" onclick="rejectSuspendedProduct(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">❌</span> Tamamen Reddet
+                    </button>
+                `;
+            } else if (isStudent) {
+                alertBox.classList.add('bg-orange-50', 'border-orange-200');
+                alertHtml = `
+                    <div class="flex items-center gap-4">
+                        <div class="bg-orange-200 p-2.5 rounded-lg text-xl shadow-sm border border-orange-300">⏸️</div>
+                        <h4 class="font-bold text-orange-900 text-base">Bu ürün şu anda askıya alınmıştır. Satın alınamaz.</h4>
+                    </div>
+                `;
+            }
+        } 
+        else if (product.status === 'rejected') { // REDDEDİLMİŞ
+            alertBox.classList.remove('hidden');
+            alertBox.classList.add('bg-red-50', 'border-red-200');
+            alertHtml = `
+                <div class="flex items-center gap-4">
+                    <div class="bg-red-200 p-2.5 rounded-lg text-xl shadow-sm border border-red-300">❌</div>
+                    <h4 class="font-bold text-red-900 text-base">Bu ürün reddedilmiştir. Herhangi bir işlem yapılamaz.</h4>
+                </div>
+            `;
+        }
+        else if (product.status === 'pending') { // BEKLEMEDE
+            alertBox.classList.remove('hidden');
+            alertBox.classList.add('bg-yellow-50', 'border-yellow-300');
+            alertHtml = `
+                <div class="flex items-start gap-4">
+                    <div class="bg-yellow-200 p-2.5 rounded-lg text-xl text-yellow-800 animate-pulse shadow-sm border border-yellow-300">⏳</div>
+                    <div>
+                        <h4 class="font-bold text-yellow-900 text-base mb-0.5">Ürün onay bekliyor</h4>
+                        <p class="text-sm text-yellow-700 mt-1">Öğrenci bu ürünü ekledi. Fiyatı onaylayıp satışa açabilirsiniz.</p>
+                    </div>
+                </div>
+            `;
+            if (isMerchant) {
+                actionHtml = `
+                    <button class="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3.5 px-4 rounded-xl transition-all shadow-md hover:shadow-lg flex justify-center items-center gap-2 transform hover:-translate-y-0.5" onclick="openApprovalModal(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">✅</span> Ürünü Onayla
+                    </button>
+                    <button class="flex-1 bg-white hover:bg-red-50 text-red-600 font-bold py-3.5 px-4 rounded-xl transition-all border-2 border-red-200 hover:border-red-500 shadow-sm flex justify-center items-center gap-2" onclick="rejectProduct(${product.id}); closeProductDetailModal();">
+                        <span class="text-xl">❌</span> Reddet
+                    </button>
+                `;
+            }
+        }
+
+        if (alertHtml) alertBox.innerHTML = alertHtml;
+
+        if (actionHtml) {
+            actionsBox.innerHTML = actionHtml;
+            actionsBox.style.display = 'flex';
+        } else {
+            actionsBox.style.display = 'none';
+        }
+
+        // Show Modal with Animation
+        modal.classList.remove('hidden');
+        void modal.offsetWidth; // trigger reflow
+        
+        backdrop.classList.remove('opacity-0');
+        content.classList.remove('opacity-0', 'scale-95');
+        content.classList.add('opacity-100', 'scale-100');
+        document.body.style.overflow = 'hidden';
+    }
+
+    function closeProductDetailModal() {
+        const modal = document.getElementById('product-detail-modal');
+        const backdrop = document.getElementById('pdm-backdrop');
+        const content = document.getElementById('pdm-content');
+
+        if(!modal || modal.classList.contains('hidden')) return;
+
+        backdrop.classList.add('opacity-0');
+        content.classList.remove('opacity-100', 'scale-100');
+        content.classList.add('opacity-0', 'scale-95');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+            document.body.style.overflow = '';
+        }, 300);
     }
 
     function filterProducts(status, clickedBtn) {
@@ -579,7 +848,7 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
 
     // Ürün görüntüleme fonksiyonu
     function viewProduct(productId) {
-        window.open(`/product-detail?id=${productId}`, '_blank');
+        window.open(`/products/${productId}`, '_blank');
     }
 
 
@@ -777,6 +1046,15 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
         }
     }
 
+    // Escape tuşu ile modalları kapat
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            closeProductDetailModal();
+            closeApprovalModal();
+            closeEditModal();
+        }
+    });
+
     // Close modal when clicking outside
     document.addEventListener('click', function (e) {
         const approvalModal = document.getElementById('approval-modal');
@@ -793,6 +1071,18 @@ if (!$current_user || ($current_user['role'] !== 'merchant' && $current_user['ro
 </script>
 
 <style>
+    /* Custom scrollbar for modal */
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 6px;
+    }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: transparent;
+    }
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background-color: #cbd5e1;
+        border-radius: 20px;
+    }
+
     .status-filter-btn {
         color: rgb(75 85 99);
         background-color: rgb(249 250 251);

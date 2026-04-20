@@ -214,27 +214,17 @@ if (!$current_user) {
                 ...o,
                 status: (o.status || '').toLowerCase() 
             }));
-            // YENİ EKLEME: Sipariş resimlerini Ana Ürün listesiyle (products) eşleştiriyoruz
-            try {
-                const allProductsResp = await apiCall('products');
-                // Sayfalanmış DTO'dan products dizisini çıkarıyoruz
-                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
 
-                orders.forEach(order => {
-                    if (order.orderItems) {
-                        order.orderItems.forEach(item => {
-                            const matchedProduct = allProductsList.find(p => p.id == item.productId || p.Id == item.productId);
-                            if (matchedProduct) {
-                                // Bulunan orijinal ürünün ilk resmini item içerisine yedekle
-                                const images = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
-                                item.imageUrl = images.length > 0 ? images[0] : null;
-                            }
-                        });
-                    }
-                });
-            } catch (e) {
-                console.error("Resim eşleşmesi başarısız", e);
-            }
+            // FIX: Önceden ürün resimleri için products API'si tekrar çağrılıyordu (N+2 problem).
+            // OrderItemDto zaten productImageUrl alanını taşıyor, doğrudan kullanıyoruz.
+            orders.forEach(order => {
+                if (order.orderItems) {
+                    order.orderItems.forEach(item => {
+                        // ProductImageUrl(.NET PascalCase) veya productImageUrl (camelCase)
+                        item.imageUrl = item.ProductImageUrl || item.productImageUrl || null;
+                    });
+                }
+            });
 
             const container = document.getElementById('orders-container');
 
@@ -433,19 +423,7 @@ if (!$current_user) {
         });
     }
 
-    async function cancelOrder(orderId) {
-        if (!await openCustomModal('Bu siparişi iptal etmek istediğinizden emin misiniz?')) {
-            return;
-        }
 
-        try {
-            await apiCall(`orders/${orderId}/cancel`, { method: 'PUT' });
-            showToast('Sipariş iptal edildi', 'success');
-            loadOrders(); // Refresh the list
-        } catch (error) {
-            showToast(error.message, 'error');
-        }
-    }
 
     async function viewOrderDetails(orderId) {
         // Modal'ı aç
@@ -462,22 +440,13 @@ if (!$current_user) {
             let rawOrder = response.data ? response.data : response;
             // Durumu küçük harfe zorla
             const order = { ...rawOrder, status: (rawOrder.status || '').toLowerCase() };
-            // YENİ EKLEME: Detay Modal'ı içindeki resim eşleştirmesi
-            try {
-                const allProductsResp = await apiCall('products');
-                const allProductsList = Array.isArray(allProductsResp) ? allProductsResp : (allProductsResp.products || allProductsResp.data || []);
 
-                if (order.orderItems) {
-                    order.orderItems.forEach(item => {
-                        const matchedProduct = allProductsList.find(p => p.id == item.productId || p.Id == item.productId);
-                        if (matchedProduct) {
-                            const images = matchedProduct.imageUrls || matchedProduct.ImageUrls || [];
-                            item.imageUrl = images.length > 0 ? images[0] : null;
-                        }
-                    });
-                }
-            } catch (e) {
-                console.error("Modal resim eşleşmesi başarısız", e);
+            // FIX: Önceden modal her açıldığında products API'si tekrar çağrılıyordu.
+            // OrderItemDto.productImageUrl alanı zaten mevcut, doğrudan kullanıyoruz.
+            if (order.orderItems) {
+                order.orderItems.forEach(item => {
+                    item.imageUrl = item.ProductImageUrl || item.productImageUrl || null;
+                });
             }
 
             // Header bilgileri
@@ -556,8 +525,8 @@ if (!$current_user) {
                 document.getElementById('modal-support-row').style.display = 'none';
             }
 
-            // Order Summary
-            const subtotal = order.totalAmount - (order.studentSupportAmount || 0);
+            // FIX: OrderDto.Subtotal alanı backend'den zaten geliyor, hesaplama yerine doğrudan kulllan
+            const subtotal = order.subtotal || order.Subtotal || (order.totalAmount - (order.studentSupportAmount || 0));
             document.getElementById('modal-subtotal').textContent = `₺${parseFloat(subtotal).toFixed(2)}`;
             document.getElementById('modal-total').textContent = `₺${parseFloat(order.totalAmount).toFixed(2)}`;
 
@@ -661,24 +630,54 @@ if (!$current_user) {
             const response = await apiCall(`orders/${orderId}`);
             const order = response.data ? response.data : response;
 
-            // Her ürünü sepete ekle (Yeni .NET DTO formatına göre)
-            for (const item of (order.orderItems || [])) {
-                await apiCall('cart', {
+            // Çoklu Api Çağrılarını Hazırla
+            const apiPromises = (order.orderItems || []).map(item => 
+                apiCall('cart/items', {
                     method: 'POST',
                     body: JSON.stringify({
-                        productId: item.productId, // .NET tarafı muhtemelen productId bekler
-                        quantity: item.quantity
+                        productId: item.productId || item.ProductId,
+                        quantity: item.quantity,
+                        extraSupportRate: 0
                     })
-                });
+                })
+            );
+
+            // Fetch Tüm İstekleri Paralel (Toleranslı) Çalıştırır
+            const results = await Promise.allSettled(apiPromises);
+            
+            // Sadece başarısız (rejected) eklemeleri kontrol et
+            const failedItems = results.filter(r => r.status === 'rejected');
+
+            if (failedItems.length > 0) {
+                if (failedItems.length === apiPromises.length) {
+                    showToast('Ürünlerin stoğu kalmadığı veya pasif olduğu için sepetinize eklenemedi.', 'error');
+                    return;
+                } else {
+                    showToast('Bazı ürünler stokta olmadığı için eklenemedi, kalanlar sepete eklendi.', 'warning');
+                }
+            } else {
+                showToast('Tüm ürünler başarıyla sepete eklendi!', 'success');
             }
 
-            showToast('Ürünler sepete eklendi!', 'success');
             setTimeout(() => {
                 window.location.href = '/cart';
             }, 1000);
 
         } catch (error) {
             showToast(error.message || 'Bir hata oluştu', 'error');
+        }
+    }
+
+    async function cancelOrder(orderId) {
+        if (!await openCustomModal('Bu siparişi iptal etmek istediğinize emin misiniz?')) return;
+        
+        try {
+            await apiCall(`orders/${orderId}/cancel`, { method: 'PUT' });
+            showToast('Sipariş başarıyla iptal edildi.', 'success');
+            loadOrders(); // Listeyi yenile
+        } catch (error) {
+            console.error('Sipariş iptali başarısız:', error);
+            showToast(error.message || 'Sipariş iptal edilemedi.', 'error');
         }
     }
 

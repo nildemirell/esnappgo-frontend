@@ -178,7 +178,7 @@ function displayShopProducts(products) {
             var imageUrl = imagesArr[0];
             if (!imageUrl.startsWith('/') && !imageUrl.startsWith('http')) imageUrl = '/' + imageUrl;
             imageHtml = '<img src="' + imageUrl + '" alt="' + escapeHtml(displayName) +
-                        '" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-200"' +
+                        '" class="w-full h-full object-contain object-center bg-white p-3 group-hover:scale-105 transition-transform duration-200"' +
                         ' onerror="this.src=\'/media/68a658361732a_1755732022.jpg\'" />';
         } else {
             imageHtml = '<div class="w-full h-full flex items-center justify-center bg-gray-200"><span class="text-4xl text-gray-400">📷</span></div>';

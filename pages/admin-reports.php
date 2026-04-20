@@ -68,7 +68,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Toplam Satış</p>
+                        <p class="text-sm font-medium text-gray-500" id="label-total-sales">Toplam Satış</p>
                         <p class="text-2xl font-bold text-gray-900" id="total-sales">₺0</p>
                     </div>
                 </div>
@@ -82,7 +82,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <p class="text-sm font-medium text-gray-500">Toplam Sipariş</p>
+                        <p class="text-sm font-medium text-gray-500" id="label-total-orders">Toplam Sipariş</p>
                         <p class="text-2xl font-bold text-gray-900" id="total-orders">0</p>
                     </div>
                 </div>
@@ -154,6 +154,14 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <script>
 document.addEventListener('DOMContentLoaded', function() {
+    // Token yoksa uyar ve yönlendir
+    const token = localStorage.getItem('auth_token');
+    if (!token) {
+        showToast('Oturumunuz sona ermiş, lütfen giriş yapın.', 'error');
+        setTimeout(() => window.location.href = '/login', 2000);
+        return;
+    }
+
     // Varsayılan tarihleri ayarla
     const today = new Date();
     const lastMonth = new Date();
@@ -200,6 +208,7 @@ async function generateReport() {
         document.getElementById('merchant-earnings').textContent = '₺0';
 
         if (reportType === 'sales') {
+            updateCardLabels('Toplam Satış', 'Toplam Sipariş');
             // SalesReportDto: totalSales, totalOrders, merchantEarnings, weeklySales, topProducts
             document.getElementById('total-sales').textContent       = `₺${parseFloat(data.totalSales || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
             document.getElementById('total-orders').textContent      = (data.totalOrders || 0).toLocaleString();
@@ -208,6 +217,7 @@ async function generateReport() {
             if (Array.isArray(data.topProducts) && data.topProducts.length) loadTopProducts(data.topProducts);
         }
         else if (reportType === 'students') {
+            updateCardLabels('Öğrenci Sayısı', 'Sipariş Sayısı');
             // StudentEarningsReportDto: totalStudentEarnings, totalOrders, totalStudents, studentDetails
             document.getElementById('student-earnings').textContent = `₺${parseFloat(data.totalStudentEarnings || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
             document.getElementById('total-orders').textContent     = (data.totalOrders || 0).toLocaleString();
@@ -232,6 +242,7 @@ async function generateReport() {
             }
         }
         else if (reportType === 'merchants') {
+            updateCardLabels('Esnaf Sayısı', 'Sipariş Sayısı');
             // MerchantEarningsReportDto: totalMerchantEarnings, totalOrders, totalMerchants, merchantDetails
             document.getElementById('merchant-earnings').textContent = `₺${parseFloat(data.totalMerchantEarnings || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
             document.getElementById('total-orders').textContent      = (data.totalOrders || 0).toLocaleString();
@@ -256,6 +267,7 @@ async function generateReport() {
             }
         }
         else if (reportType === 'products') {
+            updateCardLabels('Toplam Gelir', 'Aktif Ürün Sayısı');
             // ProductPerformanceReportDto: totalProducts, activeProducts, totalRevenue, topProducts
             document.getElementById('total-sales').textContent  = `₺${parseFloat(data.totalRevenue || 0).toLocaleString('tr-TR', {minimumFractionDigits:2})}`;
             document.getElementById('total-orders').textContent = (data.activeProducts || 0).toLocaleString();
@@ -267,6 +279,14 @@ async function generateReport() {
     } catch (error) {
         showToast('Rapor oluşturulurken hata oluştu: ' + error.message, 'error');
     }
+}
+
+// Kart başlıklarını rapor türüne göre güncelle
+function updateCardLabels(salesLabel, ordersLabel) {
+    const lblSales  = document.getElementById('label-total-sales');
+    const lblOrders = document.getElementById('label-total-orders');
+    if (lblSales)  lblSales.textContent  = salesLabel;
+    if (lblOrders) lblOrders.textContent = ordersLabel;
 }
 
 function loadSalesChart(weeklySales) {

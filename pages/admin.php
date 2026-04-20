@@ -8,6 +8,26 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <div class="min-h-screen bg-gradient-to-br from-gray-50 to-blue-50">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+        <!-- 401 Token Expired Warning Banner -->
+        <div id="auth-error-banner" class="hidden mb-6 bg-red-50 border border-red-200 rounded-2xl p-5 flex items-start space-x-4">
+            <div class="flex-shrink-0 w-10 h-10 bg-red-100 rounded-xl flex items-center justify-center">
+                <svg class="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path>
+                </svg>
+            </div>
+            <div class="flex-1">
+                <h3 class="text-red-800 font-semibold text-lg">Oturum Süresi Doldu</h3>
+                <p class="text-red-700 text-sm mt-1">JWT token süresi dolmuş veya geçersiz (401 Unauthorized). İstatistikler yüklenemiyor.</p>
+                <p class="text-red-600 text-xs mt-2">Lütfen çıkış yapıp tekrar giriş yapın.</p>
+            </div>
+            <div class="flex-shrink-0">
+                <button onclick="reLogin()" class="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors">
+                    Yeniden Giriş Yap
+                </button>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="mb-8">
             <div class="flex items-center justify-between">
@@ -34,7 +54,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         <!-- Stats Overview -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <!-- Total Users -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
+            <a href="/admin/users" class="block bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl hover:border-blue-200 transition-all cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 mb-1">Toplam Kullanıcı</p>
@@ -49,10 +69,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                 </div>
-            </div>
+            </a>
 
             <!-- Total Products -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
+            <a href="/admin/products" class="block bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl hover:border-green-200 transition-all cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 mb-1">Aktif Ürün</p>
@@ -67,10 +87,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                 </div>
-            </div>
+            </a>
 
             <!-- Total Orders -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
+            <a href="/admin/orders" class="block bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl hover:border-purple-200 transition-all cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 mb-1">Toplam Sipariş</p>
@@ -86,10 +106,10 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                 </div>
-            </div>
+            </a>
 
             <!-- Total Revenue -->
-            <div class="bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl transition-shadow">
+            <a href="/admin/reports" class="block bg-white rounded-2xl shadow-lg p-6 border border-gray-100 hover:shadow-xl hover:border-yellow-200 transition-all cursor-pointer">
                 <div class="flex items-center justify-between">
                     <div>
                         <p class="text-sm font-medium text-gray-500 mb-1">Toplam Gelir</p>
@@ -105,7 +125,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         </svg>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
 
         <!-- User Type Breakdown -->
@@ -445,54 +465,173 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
 <script>
     document.addEventListener('DOMContentLoaded', function () {
-        initDashboard();
+        checkTokenAndInit();
     });
+
+    function reLogin() {
+        localStorage.removeItem('auth_token');
+        localStorage.removeItem('user_name');
+        localStorage.removeItem('user_email');
+        localStorage.removeItem('user_role');
+        // PHP session'u da temizle, yoksa /login sayfası /dashboard'a yönlendirir
+        fetch('/api/auth/logout', { method: 'POST', credentials: 'include' })
+            .finally(() => { window.location.href = '/login'; });
+    }
+
+    function showAuthError() {
+        const banner = document.getElementById('auth-error-banner');
+        if (banner) banner.classList.remove('hidden');
+        // Set all stat fields to '-' to show they're not loaded
+        ['total-users','total-products','total-orders','total-revenue',
+         'pending-products','today-orders','month-revenue',
+         'student-count','active-students','new-students',
+         'merchant-count','active-shops','new-merchants',
+         'customer-count','active-customers','new-customers'].forEach(id => {
+            const el = document.getElementById(id);
+            if (el) el.textContent = '—';
+        });
+        const recentUsers = document.getElementById('recent-users');
+        if (recentUsers) recentUsers.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">Oturum sona erdi. Yeniden giriş gerekli.</p>';
+        const recentOrders = document.getElementById('recent-orders');
+        if (recentOrders) recentOrders.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">Oturum sona erdi. Yeniden giriş gerekli.</p>';
+        const timeline = document.getElementById('activity-timeline');
+        if (timeline) timeline.innerHTML = '<p class="text-gray-400 text-center py-6 text-sm">Oturum sona erdi. Yeniden giriş gerekli.</p>';
+    }
+
+    async function checkTokenAndInit() {
+        const token = localStorage.getItem('auth_token');
+
+        if (!token) {
+            // Token yok: login'e yönlendir değil — PHP session aktifse /login → /dashboard döngüsü olur.
+            // Bunun yerine auth banner'u göster ve kullanıcıdan manuel logout yapmasını iste.
+            showAuthError();
+            return;
+        }
+
+        // Token var — direkt dashboard'u yükle
+        initDashboard();
+    }
 
     async function initDashboard() {
         try {
-            // Bütün kullanıcıları bir kez alıyoruz (3x apiCall sorununu çözer)
-           const response = await apiCall('Admin/users');
-            const users = Array.isArray(response) ? response : (response.data || []);
-            window._cachedUsers = users;
-
-            loadAdminStats(users);
+            loadAdminStats();
             loadActivityTimeline();
         } catch (error) {
-            console.error('Erişim hatası veya kullanıcılar çekilemedi', error);
+            console.error('İstatistikler veya aktiviteler çekilemedi', error);
         }
     }
 
-    async function loadAdminStats(users = []) {
+    async function loadAdminStats() {
+        const token = localStorage.getItem('auth_token');
+
+        // 1. Admin/stats endpoint'ini raw fetch ile dene (401 ayırt etmek için)
+        let stats = {};
+        let usedFallback = false;
+
         try {
-            // Tüm istatistikleri Backend AdminDashboardDto'dan çekiyoruz
-            const statsResponse = await apiCall('Admin/stats');
-            const stats = statsResponse.data || statsResponse || {};
+            const rawRes = await fetch(`${API_BASE}/api/Admin/stats`, {
+                headers: { 'Authorization': 'Bearer ' + token, 'Content-Type': 'application/json' }
+            });
 
-            // Toplam kullanıcı
-            document.getElementById('total-users').textContent = stats.totalUsers !== undefined ? stats.totalUsers.toLocaleString() : (users.length || '—');
+            if (rawRes.status === 401) {
+                showAuthError();
+                return;
+            }
 
-            // Ürün / Sipariş / Gelir kartları (camelCase — .NET JSON varsayılanı)
-            document.getElementById('total-products').textContent = stats.activeProducts    !== undefined ? stats.activeProducts.toLocaleString()                              : '—';
-            document.getElementById('total-orders').textContent   = stats.totalOrders      !== undefined ? stats.totalOrders.toLocaleString()                                : '—';
-            document.getElementById('total-revenue').textContent  = stats.totalRevenue     !== undefined ? `₺${parseFloat(stats.totalRevenue).toFixed(2)}`                  : '—';
-
-            if (document.getElementById('pending-products')) document.getElementById('pending-products').textContent = stats.pendingProducts    !== undefined ? stats.pendingProducts : '—';
-            if (document.getElementById('today-orders'))     document.getElementById('today-orders').textContent     = stats.todayOrders        !== undefined ? stats.todayOrders     : '—';
-            if (document.getElementById('month-revenue'))    document.getElementById('month-revenue').textContent    = stats.thisMonthRevenue   !== undefined ? `₺${parseFloat(stats.thisMonthRevenue).toFixed(2)}` : '—';
-
-            // Rol bazlı istatistik kartları
-            updateRoleStats('student', stats.students  || {});
-            updateRoleStats('merchant', stats.merchants || {});
-            updateRoleStats('customer', stats.customers || {});
-
-            // Eğer stats içinde zaten recentUsers ve recentOrders geliyorsa onları kullanalım
-            loadRecentUsers(stats.recentUsers || stats.RecentUsers || []);
-            loadRecentOrders(stats.recentOrders || stats.RecentOrders || null);
-
-        } catch (error) {
-            console.error('Admin stats yüklenemedi:', error);
-            document.getElementById('total-users').textContent = users.length > 0 ? users.length : '0';
+            if (rawRes.ok) {
+                const json = await rawRes.json();
+                const data = json.data || json || {};
+                if (data.totalUsers !== undefined) {
+                    stats = data;
+                } else {
+                    usedFallback = true;
+                }
+            } else {
+                usedFallback = true;
+            }
+        } catch (e) {
+            console.warn('[Admin/stats] Erişilemez, fallback deniyor.', e.message);
+            usedFallback = true;
         }
+
+        // 2. Fallback: bireysel endpointlerden topla
+        if (usedFallback) {
+            stats = await getFallbackStats();
+            if (stats._authError) return; // 401 → banner gösterildi
+        }
+
+        // 3. DOM'u güncelle
+        renderDashboardStats(stats);
+
+        // 4. Son kullanıcılar ve siparişler
+        loadRecentUsers(stats.recentUsers || stats.RecentUsers || stats.fallbackUsers || []);
+        loadRecentOrders(stats.recentOrders || stats.RecentOrders || null);
+    }
+
+    function renderDashboardStats(stats) {
+        const set = (id, val, prefix = '') => {
+            const el = document.getElementById(id);
+            if (!el) return;
+            el.textContent = (val !== undefined && val !== null) ? prefix + val : '—';
+        };
+
+        set('total-users',    stats.totalUsers !== undefined ? Number(stats.totalUsers).toLocaleString() : undefined);
+        set('total-products', stats.activeProducts !== undefined ? Number(stats.activeProducts).toLocaleString() : undefined);
+        set('total-orders',   stats.totalOrders !== undefined ? Number(stats.totalOrders).toLocaleString() : undefined);
+        set('total-revenue',  stats.totalRevenue !== undefined ? `₺${parseFloat(stats.totalRevenue).toFixed(2)}` : undefined);
+
+        set('pending-products', stats.pendingProducts);
+        set('today-orders',     stats.todayOrders);
+        set('month-revenue',    stats.thisMonthRevenue !== undefined ? `₺${parseFloat(stats.thisMonthRevenue).toFixed(2)}` : undefined);
+
+        updateRoleStats('student',  stats.students  || { total: stats.studentCount,  active: stats.activeStudents });
+        updateRoleStats('merchant', stats.merchants || { total: stats.merchantCount, active: stats.activeMerchants });
+        updateRoleStats('customer', stats.customers || { total: stats.customerCount, active: stats.activeCustomers });
+    }
+
+    async function getFallbackStats() {
+        const token = localStorage.getItem('auth_token');
+        const fallbacks = {
+            totalUsers: 0, activeProducts: 0, totalOrders: 0, totalRevenue: 0,
+            fallbackUsers: [], studentCount: 0, merchantCount: 0, customerCount: 0
+        };
+
+        const [usersRes, productsRes, ordersRes] = await Promise.allSettled([
+            fetch(`${API_BASE}/api/Admin/users`,    { headers: { 'Authorization': 'Bearer ' + token } }),
+            fetch(`${API_BASE}/api/Admin/products`, { headers: { 'Authorization': 'Bearer ' + token } }),
+            fetch(`${API_BASE}/api/Admin/orders`,   { headers: { 'Authorization': 'Bearer ' + token } })
+        ]);
+
+        // Tüm cevaplar 401 mi? → Token geçersiz
+        const statuses = [usersRes, productsRes, ordersRes].map(r =>
+            r.status === 'fulfilled' ? r.value.status : 0
+        );
+        if (statuses.every(s => s === 401)) {
+            console.error('[Admin] Tüm endpointler 401. Token geçersiz, auth banner gösteriliyor.');
+            showAuthError();
+            return { _authError: true };
+        }
+
+        const parseRes = async (result) => {
+            if (result.status !== 'fulfilled' || !result.value.ok) return [];
+            try { const d = await result.value.json(); return Array.isArray(d) ? d : (d.data || []); }
+            catch { return []; }
+        };
+
+        const [users, products, orders] = await Promise.all([
+            parseRes(usersRes), parseRes(productsRes), parseRes(ordersRes)
+        ]);
+
+        fallbacks.totalUsers     = users.length;
+        fallbacks.activeProducts = products.filter(p => p.isActive || p.status === 'approved').length || products.length;
+        fallbacks.totalOrders    = orders.length;
+        fallbacks.fallbackUsers  = users;
+        fallbacks.studentCount   = users.filter(u => u.role === 'student'  || u.role === 'ogrenci').length;
+        fallbacks.merchantCount  = users.filter(u => u.role === 'merchant' || u.role === 'esnaf').length;
+        fallbacks.customerCount  = users.filter(u => u.role === 'customer' || u.role === 'musteri').length;
+        fallbacks.totalRevenue   = orders.reduce((s, o) => s + parseFloat(o.totalAmount || 0), 0);
+
+        return fallbacks;
     }
 
     // Rol bazlı istatistik kartlarını güncelle (RoleStatsDto: total, active, newThisMonth)
@@ -607,23 +746,43 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 container.innerHTML = '<p class="text-gray-500 text-center py-4">Henüz aktivite yok</p>';
                 return;
             }
-const activityColors = { 0: 'blue', 1: 'green', 2: 'purple', 3: 'teal' };
-const activityIcons  = { 0: 'user-plus', 1: 'plus', 2: 'check', 3: 'shield-check' };
 
-container.innerHTML = activities.map(activity => {
-    const color = activityColors[activity.type] || 'gray';
-    const icon  = activityIcons[activity.type]  || 'plus';
-    return `
-    <div class="flex items-start space-x-4">
-        <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center">
-            ${getActivityIcon(icon, color)}
-        </div>
-        <div class="flex-1">
-            <p class="text-sm font-semibold text-gray-900">${escapeHtml(activity.title)}</p>
-            <p class="text-xs text-gray-500 mt-1">${formatDate(activity.createdAt)}</p>
-        </div>
-    </div>`;
-}).join('');
+            // Backend JsonStringEnumConverter ile string döndürüyor (örn: "UserRegistered")
+            // Hem string hem sayısal enum değerlerini destekliyoruz
+            const colorByNum  = { 0: 'blue', 1: 'green', 2: 'purple', 3: 'teal', 4: 'orange', 5: 'red', 6: 'yellow' };
+            const iconByNum   = { 0: 'user-plus', 1: 'plus', 2: 'check', 3: 'shield-check', 4: 'check', 5: 'shield-check', 6: 'plus' };
+            const colorByStr  = {
+                'UserRegistered': 'blue', 'user_registered': 'blue',
+                'ProductAdded': 'green', 'product_added': 'green',
+                'ProductApproved': 'purple', 'product_approved': 'purple',
+                'OrderPlaced': 'teal', 'order_placed': 'teal',
+                'ProductSuspended': 'red', 'product_suspended': 'red',
+                'ProductRejected': 'red', 'product_rejected': 'red'
+            };
+            const iconByStr   = {
+                'UserRegistered': 'user-plus', 'user_registered': 'user-plus',
+                'ProductAdded': 'plus', 'product_added': 'plus',
+                'ProductApproved': 'check', 'product_approved': 'check',
+                'OrderPlaced': 'shield-check', 'order_placed': 'shield-check',
+                'ProductSuspended': 'shield-check', 'product_suspended': 'shield-check',
+                'ProductRejected': 'shield-check', 'product_rejected': 'shield-check'
+            };
+
+            container.innerHTML = activities.map(activity => {
+                const typeVal = activity.type ?? activity.Type;
+                const color = colorByNum[typeVal] || colorByStr[typeVal] || 'blue';
+                const icon  = iconByNum[typeVal]  || iconByStr[typeVal]  || 'plus';
+                return `
+                <div class="flex items-start space-x-4">
+                    <div class="w-10 h-10 bg-${color}-100 rounded-full flex items-center justify-center flex-shrink-0">
+                        ${getActivityIcon(icon, color)}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-semibold text-gray-900">${escapeHtml(activity.title || activity.Title || 'Aktivite')}</p>
+                        <p class="text-xs text-gray-500 mt-1">${formatDate(activity.createdAt || activity.CreatedAt)}</p>
+                    </div>
+                </div>`;
+            }).join('');
 
 
         } catch (error) {

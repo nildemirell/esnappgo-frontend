@@ -83,9 +83,8 @@ if (!$current_user) {
 
             let rawNotifications = await res.json();
             
-            // Backend-independent Silme İşlemi Filtresi (Böylece silinenler bir daha sayfaya yüklenmez)
-            const deletedNots = JSON.parse(localStorage.getItem('esnappgo_deleted_notifications')) || [];
-            const notifications = rawNotifications.filter(n => !deletedNots.includes(n.id));
+            // Backend'den gelen yeni DELETE endpointleri aktif olduğu için localStorage filtresi kaldırıldı
+            const notifications = rawNotifications;
 
             if (!notifications || notifications.length === 0) {
                 listContainer.innerHTML = `
@@ -200,11 +199,11 @@ listContainer.innerHTML = htmlContent;
 
             if (res.ok) {
                 loadNotificationsPage();
-                if (typeof loadNotificationCount === 'function') {
-                    loadNotificationCount();
-                }
+                // FIX: Önceden fetchNotificationCount kullanılıyordu, diğer fonksiyonlar loadNotificationCount kullanıyor.
+                // Tutarlılık için loadNotificationCount'a çevrildi.
+                if (typeof loadNotificationCount === 'function') loadNotificationCount();
             } else if (res.status === 401) {
-                window.location.href = '/login'; // Token bitmişse logine at
+                window.location.href = '/login';
             } else {
                 showLocalToast('İşlem başarısız', 'error');
             }
@@ -238,17 +237,28 @@ listContainer.innerHTML = htmlContent;
     }
 
     async function deleteNotification(id) {
-        // Backend DELETE metodu olmadığı için, 'Silinmiş' algısını tarayıcı hafızasına (Local Storage) kaydederek çözelim:
-        let deletedNots = JSON.parse(localStorage.getItem('esnappgo_deleted_notifications')) || [];
-        if (!deletedNots.includes(id)) {
-            deletedNots.push(id);
-            localStorage.setItem('esnappgo_deleted_notifications', JSON.stringify(deletedNots));
-        }
+        if (!await openCustomModal('Bu bildirimi silmek istediğinizden emin misiniz?')) return;
 
-        loadNotificationsPage();
-        
-        if (typeof loadNotificationCount === 'function') {
-            loadNotificationCount();
+        try {
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch(`${API_BASE}/api/Notifications/${id}`, {
+                method: 'DELETE',
+                headers: { 'Authorization': 'Bearer ' + token }
+            });
+
+            if (res.ok || res.status === 204) {
+                showLocalToast('Bildirim başarıyla silindi.', 'success');
+                loadNotificationsPage();
+                
+                if (typeof loadNotificationCount === 'function') {
+                    loadNotificationCount();
+                }
+            } else {
+                showLocalToast('Bildirim silinemedi.', 'error');
+            }
+        } catch (e) {
+            console.error('Bildirim silme hatası:', e);
+            showLocalToast('Bildirim silinirken hata oluştu.', 'error');
         }
     }
 

@@ -126,6 +126,42 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     </div>
 </div>
 
+<!-- Role Edit Modal -->
+<div id="roleEditModal" class="hidden fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closeRoleModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+            <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
+                <div class="sm:flex sm:items-start">
+                    <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-blue-100 sm:mx-0 sm:h-10 sm:w-10">
+                        <svg class="h-6 w-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                        </svg>
+                    </div>
+                    <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
+                        <h3 class="text-lg leading-6 font-medium text-gray-900" id="modal-title">Kullanıcı Rolünü Düzenle</h3>
+                        <div class="mt-4">
+                            <input type="hidden" id="editUserId">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Yeni Rol</label>
+                            <select id="editUserRole" class="w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                <option value="musteri">Müşteri</option>
+                                <option value="ogrenci">Öğrenci</option>
+                                <option value="esnaf">Esnaf</option>
+                                <option value="admin">Admin</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
+                <button type="button" onclick="saveUserRole()" class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-blue-600 text-base font-medium text-white hover:bg-blue-700 focus:outline-none sm:ml-3 sm:w-auto sm:text-sm">Kaydet</button>
+                <button type="button" onclick="closeRoleModal()" class="mt-3 w-full inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none sm:mt-0 sm:ml-3 sm:w-auto sm:text-sm">İptal</button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let allUsers = [];
 
@@ -225,11 +261,14 @@ if (!$current_user || $current_user['role'] !== 'admin') {
             </td>
             <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                 <div class="flex space-x-2">
-                    <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-900">
+                    <button onclick="editUser(${user.id})" class="text-blue-600 hover:text-blue-900 border border-blue-600 px-2 py-1 rounded">
                         Düzenle
                     </button>
-                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.isActive ? 'red' : 'green'}-600 hover:text-${user.isActive ? 'red' : 'green'}-900">
+                    <button onclick="toggleUserStatus(${user.id})" class="text-${user.isActive ? 'yellow' : 'green'}-600 hover:text-${user.isActive ? 'yellow' : 'green'}-900 border border-${user.isActive ? 'yellow' : 'green'}-600 px-2 py-1 rounded">
                         ${user.isActive ? 'Pasifleştir' : 'Aktifleştir'}
+                    </button>
+                    <button onclick="deleteUser(${user.id})" class="text-red-600 hover:text-red-900 border border-red-600 px-2 py-1 rounded">
+                        Sil
                     </button>
                 </div>
             </td>
@@ -261,19 +300,31 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     }
     // ← BURADA FAZLADAN catch OLMAMALI
 
-    async function editUser(userId) {
+    function editUser(userId) {
         const user = allUsers.find(u => u.id === userId);
         if (!user) return;
+        
+        document.getElementById('editUserId').value = userId;
+        // Fix for legacy enum values in UI just in case
+        const mappedRole = ['student', 'merchant', 'customer'].includes(user.role) 
+            ? { student: 'ogrenci', merchant: 'esnaf', customer: 'musteri' }[user.role] 
+            : user.role;
+        document.getElementById('editUserRole').value = mappedRole;
+        
+        document.getElementById('roleEditModal').classList.remove('hidden');
+    }
+    
+    function closeRoleModal() {
+        document.getElementById('roleEditModal').classList.add('hidden');
+    }
 
-        const newRole = prompt(
-            `Rol değiştir (ogrenci / esnaf / musteri / admin):\nMevcut: ${user.role}`,
-            user.role
-        );
-        if (!newRole || newRole === user.role) return;
-
-        const validRoles = ['ogrenci', 'esnaf', 'musteri', 'admin'];
-        if (!validRoles.includes(newRole)) {
-            showToast('Geçersiz rol. Geçerli değerler: ogrenci, esnaf, musteri, admin', 'error');
+    async function saveUserRole() {
+        const userId = document.getElementById('editUserId').value;
+        const newRole = document.getElementById('editUserRole').value;
+        const user = allUsers.find(u => Number(u.id) === Number(userId));
+        
+        if (!user || user.role === newRole) {
+            closeRoleModal();
             return;
         }
 
@@ -283,9 +334,28 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                 body: JSON.stringify({ newRole: newRole })
             });
             showToast('Kullanıcı rolü güncellendi.', 'success');
+            closeRoleModal();
             await loadUsers();
         } catch (error) {
             showToast('Hata: ' + error.message, 'error');
+        }
+    }
+
+    async function deleteUser(userId) {
+        const user = allUsers.find(u => u.id === userId);
+        // Admin kullanıcısı silinemez
+        if (user?.role === 'admin') {
+            showToast('Admin kullanıcısı silinemez.', 'error');
+            return;
+        }
+        if (!(await openCustomModal(`Bu kullanıcıyı kalıcı olarak silmek istediğinize emin misiniz? Bu işlem geri alınamaz.`))) return;
+        
+        try {
+            await apiCall(`Admin/users/${userId}`, { method: 'DELETE' });
+            showToast('Kullanıcı silindi.', 'success');
+            await loadUsers();
+        } catch (error) {
+            showToast('Silme işlemi başarısız: ' + error.message, 'error');
         }
     }
     function exportUsers() {

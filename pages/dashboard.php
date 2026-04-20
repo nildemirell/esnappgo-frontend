@@ -741,7 +741,18 @@ if (!$current_user) {
                                 : 'Ürün onayı sistem tarafından reddedildi.';
 
             } else if (rawStatus.includes('order') || rawStatus.includes('sipariş') || rawStatus.includes('received')) {
-                badgeText = 'Sipariş Geldi';
+                let badgeTxt = 'Sipariş Geldi';
+                // Öğrenci ürünü mü satıldı, yoksa müşteri kendi mi aldı?
+                if (userRole === 'customer' || userRole === 'musteri') {
+                    badgeTxt = 'Sipariş Verildi';
+                    // Müşteri için siparişin alt durumu varsa daha spesifik badge göster
+                    if (activity.statusMessage === 'Kargoda') badgeTxt = 'Kargoda';
+                    if (activity.statusMessage === 'Teslim Edildi') badgeTxt = 'Teslim Edildi';
+                } else if (userRole === 'student') {
+                    badgeTxt = 'Ürününüz Satıldı!';
+                }
+                
+                badgeText = badgeTxt;
                 badgeClass = 'bg-blue-50 text-blue-700 border-blue-200';
                 iconSvg = `<svg class="w-6 h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/></svg>`;
                 
@@ -802,10 +813,29 @@ if (!$current_user) {
 
             // 4. Hedef Link (Tıklanabilir Card İçin)
             let targetUrl = '#';
-            if (rawStatus.includes('order') || rawStatus.includes('sipariş')) {
+            if (rawStatus.includes('order') || rawStatus.includes('sipariş') || rawStatus.includes('received')) {
                 targetUrl = (userRole === 'merchant' || userRole === 'esnaf') ? '/merchant/orders' : '/orders';
             } else if (activity.id || activity.productId || activity.referenceId) {
-                targetUrl = '/products/' + (activity.id || activity.productId || activity.referenceId);
+                const pId = activity.productId || activity.id || activity.referenceId;
+                
+                if (userRole === 'merchant' || userRole === 'esnaf') {
+                    // Esnaf ürün aktivitelerine (onaylama vs.) tıklarsa ürün onayı sayfasına atsın
+                    let tab = '';
+                    if (rawStatus.includes('pend') || rawStatus.includes('bekle')) tab = '?status=0';
+                    else if (rawStatus.includes('approv') || rawStatus.includes('onay')) tab = '?status=1';
+                    else if (rawStatus.includes('reject') || rawStatus.includes('red')) tab = '?status=2';
+                    
+                    targetUrl = '/merchant/products' + tab;
+                } else if (userRole === 'student' || userRole === 'ogrenci') {
+                    // Öğrenci kendi ürün işlemlerine tıklarsa
+                    let statusQuery = '';
+                    if (rawStatus.includes('pend') || rawStatus.includes('bekle')) statusQuery = '?status=pending';
+                    else if (rawStatus.includes('approv') || rawStatus.includes('onay')) statusQuery = '?status=approved';
+                    
+                    targetUrl = '/student/products' + statusQuery;
+                } else {
+                    targetUrl = '/products/' + pId;
+                }
             }
 
             const delay = index * 50; // Sıralı Yükleme Efekti

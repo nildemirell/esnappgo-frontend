@@ -662,7 +662,12 @@ switch ($page) {
             return new Promise((resolve) => {
                 const overlay = document.getElementById('customModal');
                 if (!overlay) return resolve(false);
-                document.getElementById('customModalMessage').textContent = message;
+                // 'alert' tipinde HTML render et (sipariş detayları gibi); 'confirm' tipi için textContent (güvenli)
+                if (type === 'alert') {
+                    document.getElementById('customModalMessage').innerHTML = message;
+                } else {
+                    document.getElementById('customModalMessage').textContent = message;
+                }
                 const titleEl = document.getElementById('customModalTitle');
                 const confirmBtn = document.getElementById('customModalConfirm');
                 const cancelBtn = document.getElementById('customModalCancel');
@@ -763,6 +768,13 @@ switch ($page) {
             }
 
             if (!response.ok) {
+                // Eğer API token'ımızı reddederse (Süresi doldu vb.) güvenli bir şekilde çıkışa yönlendir.
+                if (response.status === 401) {
+                    localStorage.removeItem('auth_token');
+                    window.location.href = '/login?session_expired=1';
+                    throw new Error('Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
+                }
+
                 // .NET ProblemDetails formatını destekle
                 const errorMessage =
                     data.message ||

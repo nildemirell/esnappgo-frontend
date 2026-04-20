@@ -89,7 +89,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         Ara
                     </label>
                     <input type="text" id="search" placeholder="Ürün adı ara..." class="w-full"
-                        onkeyup="filterProducts()" />
+                        onkeyup="debounceProducts()" />
                 </div>
 
                 <div>
@@ -144,9 +144,39 @@ if (!$current_user || $current_user['role'] !== 'admin') {
     </div>
 </div>
 
+<!-- Fiyat Onay Modali -->
+<div id="priceApproveModal" class="hidden fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true">
+    <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" onclick="closePriceModal()"></div>
+        <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+        <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-sm sm:w-full">
+            <div class="bg-white px-6 pt-5 pb-4">
+                <input type="hidden" id="approvePriceProductId">
+                <h3 class="text-lg font-semibold text-gray-900 mb-1">Ürünü Onayla</h3>
+                <p class="text-sm text-gray-500 mb-4">Onaylanan satış fiyatını girin. Boş bırakırsanız önerilen fiyat kullanılır.</p>
+                <label class="block text-sm font-medium text-gray-700 mb-1">Satış Fiyatı (₺)</label>
+                <input type="number" id="approvePrice" min="0.01" step="0.01"
+                    class="w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring-green-500"
+                    placeholder="Örn: 150.00" />
+            </div>
+            <div class="bg-gray-50 px-6 py-3 flex flex-row-reverse gap-3">
+                <button type="button" onclick="confirmApproveProduct()"
+                    class="inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-sm font-medium text-white hover:bg-green-700">
+                    Onayla
+                </button>
+                <button type="button" onclick="closePriceModal()"
+                    class="inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-sm font-medium text-gray-700 hover:bg-gray-50">
+                    İptal
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
 <script>
     let allProducts = [];
     let filteredProducts = [];
+    let _productFilterTimer = null;
 
     document.addEventListener('DOMContentLoaded', function () {
         loadProducts();
@@ -154,7 +184,17 @@ if (!$current_user || $current_user['role'] !== 'admin') {
 
     async function loadProducts() {
         try {
-            const response = await apiCall('Admin/products');
+            // Server-side filtreleme — backend ?search=&status= destekliyor
+            const search       = document.getElementById('search')?.value || '';
+            const statusFilter = document.getElementById('status-filter')?.value || '';
+
+            let url = 'Admin/products';
+            const params = [];
+            if (search)       params.push(`search=${encodeURIComponent(search)}`);
+            if (statusFilter) params.push(`status=${encodeURIComponent(statusFilter)}`);
+            if (params.length) url += '?' + params.join('&');
+
+            const response = await apiCall(url);
 
             // Backend { success: true, data: [...] } sarıcısını açıyoruz
             const products = Array.isArray(response) ? response : (response.data || []);
@@ -187,7 +227,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                             src="${imageUrl}" 
                             alt="${escapeHtml(product.name)}"
 
-                            class="w-full h-full object-cover"
+                            class="w-full h-full object-contain object-center bg-white p-3"
                             onerror="this.src='/media/68a658361732a_1755732022.jpg'"
                         />
                     `;
@@ -290,26 +330,30 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         });
     }
 
+    // Debounce: kullanıcı yazmayı bırakınca 400ms sonra arama yap
+    function debounceProducts() {
+        clearTimeout(_productFilterTimer);
+        _productFilterTimer = setTimeout(() => filterProducts(), 400);
+    }
+
     function filterProducts() {
-        const search = document.getElementById('search').value.toLowerCase();
-        const statusFilter = document.getElementById('status-filter').value;
         const studentFilter = document.getElementById('student-filter').value;
 
-        filteredProducts = allProducts.filter(product => {
-            const matchesSearch = !search ||
-                product.name.toLowerCase().includes(search) ||
-                product.categoryName?.toLowerCase().includes(search);
+        // Status ve search filtreleri server-side'a gidiyor
+        // Sadece student filtresi client-side (student ID backend parametresi farklı — studentName vs studentId)
+        if (!studentFilter) {
+            // Tüm filtreler server-side
+            loadProducts();
+            return;
+        }
 
-            // Filtreleme için tek kaynak global normalizeStatus fonksiyonu kullanıldı
-            const normalizedStatus = normalizeStatus(product.status, product.isActive);
-            const matchesStatus = !statusFilter || normalizedStatus === statusFilter;
-
-            const matchesStudent = !studentFilter || product.studentName === studentFilter;
-
-            return matchesSearch && matchesStatus && matchesStudent;
+        // Student filtresi uygulandığında önce server'dan çek, sonra client-side filtrele
+        loadProducts().then(() => {
+            filteredProducts = allProducts.filter(product =>
+                product.studentName === studentFilter
+            );
+            displayProducts();
         });
-
-        displayProducts();
     }
 
     function normalizeStatus(status, isActive = true) {
@@ -349,29 +393,48 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         return badgeClasses[normalizeStatus(status, isActive)] || 'gray';
     }
 
-    async function approveProduct(productId) {
+    // Fiyat Onay Modal fonksiyonları
+    function openPriceModal(productId) {
+        const product = allProducts.find(p => p.id === productId);
+        document.getElementById('approvePriceProductId').value = productId;
+        document.getElementById('approvePrice').value = product?.suggestedPrice || '';
+        document.getElementById('priceApproveModal').classList.remove('hidden');
+        // Fiyat inputuna otomatik odaklan
+        setTimeout(() => document.getElementById('approvePrice').focus(), 100);
+    }
+
+    function closePriceModal() {
+        document.getElementById('priceApproveModal').classList.add('hidden');
+    }
+
+    async function confirmApproveProduct() {
+        const productId  = parseInt(document.getElementById('approvePriceProductId').value);
+        const priceInput = document.getElementById('approvePrice').value;
+        const finalPrice = priceInput ? parseFloat(String(priceInput).replace(',', '.')) : null;
+
+        if (priceInput && (isNaN(finalPrice) || finalPrice <= 0)) {
+            showToast('Lütfen geçerli bir fiyat girin.', 'error');
+            return;
+        }
+
+        closePriceModal();
         try {
-            const product = allProducts.find(p => p.id === productId);
-            const finalPriceStr = prompt('Onaylanan fiyatı giriniz (örn: 150.50):', product ? product.suggestedPrice : '');
-            if (finalPriceStr === null) return; // İptal edildi
-
-            const finalPrice = parseFloat(finalPriceStr.replace(',', '.'));
-
-            const response = await apiCall(`Admin/products/${productId}/status`, {
+            await apiCall(`Admin/products/${productId}/status`, {
                 method: 'PUT',
                 body: JSON.stringify({
                     status: 1, // 1: Approved
-                    finalPrice: isNaN(finalPrice) ? null : finalPrice
+                    finalPrice: finalPrice
                 })
             });
-
-
-
             await loadProducts();
             showToast('Ürün onaylandı', 'success');
         } catch (error) {
             showToast('Ürün onaylanırken hata oluştu: ' + error.message, 'error');
         }
+    }
+
+    async function approveProduct(productId) {
+        openPriceModal(productId);
     }
 
     async function rejectProduct(productId) {

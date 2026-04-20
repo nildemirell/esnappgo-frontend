@@ -30,7 +30,7 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                         id="search"
                         placeholder="Sipariş no, müşteri ara..."
                         class="w-full"
-                        onkeyup="filterOrders()"
+                        onkeyup="debounceOrders()"
                     />
                 </div>
                 
@@ -214,6 +214,13 @@ function displayOrders() {
     `).join('');
 }
 
+// Debounce: kullanıcı yazmayı bırakınca 400ms bekle
+let _orderFilterTimer = null;
+function debounceOrders() {
+    clearTimeout(_orderFilterTimer);
+    _orderFilterTimer = setTimeout(() => loadOrders(), 400);
+}
+
 function filterOrders() {
     // Filtreler backend'e gönderildiği için loadOrders'ı yeniden çağırıyoruz
     loadOrders();
@@ -258,26 +265,26 @@ async function viewOrderDetails(orderId) {
         const response = await apiCall(`Admin/orders/${orderId}`);
         const order = response.data || response;
         
-        // Modal ile detay göster
+        // Backend OrderDto → OrderItems array'i (camelCase: orderItems)
+        const items = order.orderItems || order.items || order.OrderItems || [];
         let itemsHtml = '';
-        if (order.items && order.items.length > 0) {
-            itemsHtml = order.items.map(item => `
-                <div class="flex justify-between py-2 border-b">
-                    <span>${escapeHtml(item.productName)} x${item.quantity}</span>
-                    <span>₺${parseFloat(item.price || 0).toFixed(2)}</span>
+        if (items.length > 0) {
+            itemsHtml = items.map(item => `
+                <div class="flex justify-between py-2 border-b border-gray-100">
+                    <span class="text-sm">${escapeHtml(item.productName || item.ProductName || 'Ürün')} <span class="text-gray-400">x${item.quantity || 1}</span></span>
+                    <span class="text-sm font-medium">₺${parseFloat(item.unitPrice || item.totalPrice || item.price || 0).toFixed(2)}</span>
                 </div>
             `).join('');
         }
         
         const detailHtml = `
-            <div class="text-left">
+            <div class="text-left space-y-1">
                 <p><strong>Sipariş No:</strong> #${escapeHtml(order.orderNumber || String(order.id))}</p>
-                <p><strong>Müşteri:</strong> ${escapeHtml(order.customerName || '')}</p>
-                <p><strong>Email:</strong> ${escapeHtml(order.customerEmail || '')}</p>
-                <p><strong>Toplam:</strong> ₺${parseFloat(order.totalAmount || 0).toFixed(2)}</p>
                 <p><strong>Durum:</strong> ${getStatusText(order.status)}</p>
+                <p><strong>Toplam:</strong> ₺${parseFloat(order.totalAmount || 0).toFixed(2)}</p>
                 <p><strong>Tarih:</strong> ${formatDate(order.createdAt)}</p>
-                ${itemsHtml ? '<hr class="my-2"><h4 class="font-bold">Ürünler:</h4>' + itemsHtml : ''}
+                ${order.shippingAddress ? `<p><strong>Teslimat Adresi:</strong> ${escapeHtml(order.shippingAddress)}</p>` : ''}
+                ${items.length > 0 ? `<hr class="my-2"><h4 class="font-bold mt-2">Ürünler (${items.length}):</h4>${itemsHtml}` : ''}
             </div>
         `;
         

@@ -188,7 +188,8 @@ if (!$current_user) {
     id: item.id || item.Id,
     price: item.unitPrice || item.price || 0,
     title: item.productName || item.name || 'Ürün',
-    shopName: item.shopName || item.merchantName || item.shop_name || '',
+    shopName: item.MerchantShopName || item.merchantShopName || item.shopName || item.merchantName || item.shop_name || 'Bilinmeyen Mağaza',
+    isProductActive: item.IsProductActive !== undefined ? item.IsProductActive : (item.isProductActive !== undefined ? item.isProductActive : true),
     images: item.imageUrls ? item.imageUrls : (item.imageUrl ? [item.imageUrl] : []),
     student_donation_percentage: Math.round((item.extraSupportRate || 0) * 100)
 }));
@@ -294,32 +295,39 @@ if (!$current_user) {
                     
                     <!-- Price and Quantity -->
                     <div class="flex items-center justify-between mb-4">
-                        <div class="flex items-center space-x-4">
-                            <div class="flex items-center border border-gray-300 rounded-lg">
-                                <button 
-                                    onclick="updateQuantity(${item.id}, ${item.quantity - 1})"
-                                    class="p-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 rounded-l-lg hover:bg-gray-50"
-                                    ${item.quantity <= 1 ? 'disabled' : ''}
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
-                                    </svg>
-                                </button>
-                                <span class="px-4 py-2 text-sm font-semibold bg-gray-50 min-w-[3rem] text-center">${item.quantity}</span>
-                                <button 
-                                    onclick="updateQuantity(${item.id}, ${item.quantity + 1})"
-                                    class="p-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 rounded-r-lg hover:bg-gray-50"
-                                    ${item.quantity >= (item.stock || 99) ? 'disabled' : ''}
-                                >
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
-                                    </svg>
-                                </button>
+                        ${!item.isProductActive ? `
+                            <div class="bg-red-50 text-red-600 px-3 py-1.5 rounded-lg text-sm font-medium flex items-center">
+                                <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                                Bu ürün artık satılmıyor veya askıya alınmış
                             </div>
-                        </div>
+                        ` : `
+                            <div class="flex items-center space-x-4">
+                                <div class="flex items-center border border-gray-300 rounded-lg">
+                                    <button 
+                                        onclick="updateQuantity(${item.id}, ${item.quantity - 1})"
+                                        class="p-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 rounded-l-lg hover:bg-gray-50"
+                                        ${item.quantity <= 1 ? 'disabled' : ''}
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"></path>
+                                        </svg>
+                                    </button>
+                                    <span class="px-4 py-2 text-sm font-semibold bg-gray-50 min-w-[3rem] text-center">${item.quantity}</span>
+                                    <button 
+                                        onclick="updateQuantity(${item.id}, ${item.quantity + 1})"
+                                        class="p-2 text-gray-600 hover:text-gray-800 disabled:opacity-50 rounded-r-lg hover:bg-gray-50"
+                                        ${item.quantity >= (item.stock !== undefined && item.stock !== null ? item.stock : 99) ? 'disabled' : ''}
+                                    >
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"></path>
+                                        </svg>
+                                    </button>
+                                </div>
+                            </div>
+                        `}
                         
                         <div class="text-right">
-                            <div class="text-xl font-bold text-gray-900">₺${itemTotal.toFixed(2)}</div>
+                            <div class="text-xl font-bold text-gray-900 ${!item.isProductActive ? 'line-through text-gray-400' : ''}">₺${itemTotal.toFixed(2)}</div>
                             <div class="text-sm text-gray-500">₺${item.price} × ${item.quantity}</div>
                         </div>
                     </div>
@@ -385,8 +393,8 @@ if (!$current_user) {
                                         type="number" 
                                         id="manual-${item.id}"
                                         min="0" 
-                                        max="100" 
-                                        step="1"
+                                        max="50"
+                                        step="5"
                                         value="${item.student_donation_percentage || 0}"
                                         class="w-20 px-3 py-2 border border-gray-300 rounded-lg text-sm focus:border-purple-500 focus:ring-0"
                                     />
@@ -458,7 +466,9 @@ if (!$current_user) {
         const item = cartItems.find(i => i.id === itemId);
         if (!item) return;
 
-        percentage = Math.max(0, Math.min(100, parseInt(percentage) || 0));
+        // FIX: Önceden Math.min(100, ...) ile slider maxından (50) farklı bir değer kabul ediliyordu.
+        // Şimdi: Slider ile tutarlı — maksimum %50 eşleşti.
+        percentage = Math.max(0, Math.min(50, parseInt(percentage) || 0));
 
         try {
             // Sunucuya kaydet (.NET backend formatına tamamen uygun)
@@ -496,13 +506,14 @@ if (!$current_user) {
 
     function updateOrderSummary() {
         // Calculate subtotal
-        subtotalAmount = cartItems.reduce((total, item) => total + (item.price * item.quantity), 0);
+        subtotalAmount = cartItems.reduce((total, item) => item.isProductActive ? total + (item.price * item.quantity) : total, 0);
 
         // Calculate student support
         let totalNaturalSupport = 0;
         let totalExtraSupport = 0;
 
         cartItems.forEach(item => {
+            if (!item.isProductActive) return; // Pasif ürün destek hesaplamasina katilmaz
             const itemTotal = item.price * item.quantity;
             totalNaturalSupport += itemTotal * 0.10; // %10 doğal
             totalExtraSupport += itemTotal * (item.student_donation_percentage || 0) / 100;
@@ -517,17 +528,42 @@ if (!$current_user) {
         document.getElementById('extra-support').textContent = `₺${totalExtraSupport.toFixed(2)}`;
         document.getElementById('total-student-support').textContent = `₺${totalStudentSupport.toFixed(2)}`;
         document.getElementById('final-total').textContent = `₺${finalTotal.toFixed(2)}`;
+
+        // Ödemeye Geç butonunu kontrol et
+        const checkoutBtn = document.querySelector('button[onclick="proceedToCheckout()"]');
+        if (checkoutBtn) {
+            const hasActiveItems = cartItems.some(item => item.isProductActive);
+            checkoutBtn.disabled = !hasActiveItems;
+            if (!hasActiveItems) {
+                checkoutBtn.classList.remove('btn-primary');
+                checkoutBtn.classList.add('bg-gray-400', 'cursor-not-allowed', 'text-white');
+            } else {
+                checkoutBtn.classList.add('btn-primary');
+                checkoutBtn.classList.remove('bg-gray-400', 'cursor-not-allowed');
+            }
+        }
     }
 
+    let isQuantityUpdating = {};
+
     async function updateQuantity(itemId, newQuantity) {
+        if (isQuantityUpdating[itemId]) return; // Devam eden bir işlem varsa blokla
+        
         if (newQuantity <= 0) {
             await removeFromCart(itemId);
             return;
         }
 
-        try {
-            const itemToUpdate = cartItems.find(i => i.id === itemId);
+        isQuantityUpdating[itemId] = true; // Kilitle
+        
+        // Optimistic UI Update (Kullanıcı beklemez)
+        const itemToUpdate = cartItems.find(i => i.id === itemId);
+        const oldQuantity = itemToUpdate.quantity;
+        itemToUpdate.quantity = newQuantity;
+        displayCartItems();
+        updateOrderSummary();
 
+        try {
             // Sunucuya kaydet (.NET backend formatına tamamen uygun)
             await apiCall(`cart/items/${itemId}`, {
                 method: 'PUT',
@@ -537,22 +573,17 @@ if (!$current_user) {
                 })
             });
 
-
-
-            // Update local state
-            const item = cartItems.find(i => i.id === itemId);
-            if (item) {
-                item.quantity = newQuantity;
-                displayCartItems();
-                updateOrderSummary();
-            }
-
             showToast('Miktar güncellendi', 'success');
             updateCartCount();
 
         } catch (error) {
+            // Hata olursa UI'ı eski haline çevir
+            itemToUpdate.quantity = oldQuantity;
+            displayCartItems();
+            updateOrderSummary();
             showToast('Miktar güncellenirken hata oluştu', 'error');
-            loadCartItems(); // Reload to get correct state
+        } finally {
+            isQuantityUpdating[itemId] = false; // Kilidi kaldır
         }
     }
 
@@ -606,14 +637,27 @@ if (!$current_user) {
 
 
     async function proceedToCheckout() {
-        if (cartItems.length === 0) {
-            showToast('Sepetiniz boş', 'error');
+        const activeItems = cartItems.filter(item => item.isProductActive);
+
+        // ÖZEL KORUMA: Kullanıcının sepetindeki ürün mevcut stoktan büyükse ödemeye geçişi engelle
+        const outOfStockItems = activeItems.filter(item => {
+            const currentStock = (item.stock !== undefined && item.stock !== null) ? item.stock : 99;
+            return item.quantity > currentStock;
+        });
+
+        if (outOfStockItems.length > 0) {
+            showToast('Sepetinizdeki bazı ürünlerin stoğu yetersiz. Lütfen miktarı güncelleyin.', 'error');
+            return;
+        }
+
+        if (activeItems.length === 0) {
+            showToast('Sepetinizde ödemeye geçebileceğiniz aktif ürün bulunmamaktadır.', 'error');
             return;
         }
 
         // Redirect to checkout with support data
         const checkoutData = {
-            items: cartItems.map(item => ({
+            items: activeItems.map(item => ({
                 id: item.id,
                 product_id: item.productId,   // backend camelCase ile geliyor
                 quantity: item.quantity,

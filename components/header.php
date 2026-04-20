@@ -888,4 +888,47 @@ $first_letter = $is_logged_in ? mb_strtoupper(mb_substr($current_user['full_name
         if (typeof showToast === 'function') showToast('Çıkış yapıldı', 'success');
         setTimeout(function () { window.location.href = '/'; }, 900);
     }
+
+    // ─── BİLDİRİM ROZETİ (Polling) ───────────────────────────────────────────
+    <?php if ($is_logged_in): ?>
+    async function fetchNotificationCount() {
+        const token = localStorage.getItem('auth_token');
+        if (!token) return;
+
+        try {
+            const res = await fetch(`${API_BASE}/api/Notifications`, {
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                }
+            });
+            if (!res.ok) return;
+
+            const notifications = await res.json();
+            const list = Array.isArray(notifications)
+                ? notifications
+                : (notifications.data || notifications.items || []);
+
+            const unreadCount = list.filter(n => !n.isRead && !n.IsRead).length;
+            const badge = document.getElementById('notification-badge');
+            if (!badge) return;
+
+            if (unreadCount > 0) {
+                badge.textContent = unreadCount > 99 ? '99+' : unreadCount;
+                badge.style.display = 'flex';
+            } else {
+                badge.style.display = 'none';
+            }
+        } catch (e) {
+            // Sessizce hata yut — badge görünmezse sorun değil
+        }
+    }
+
+    // Sayfa yüklenince hemen çalıştır, sonra her 60 saniyede bir yenile
+    document.addEventListener('DOMContentLoaded', function () {
+        fetchNotificationCount();
+        setInterval(fetchNotificationCount, 60000);
+    });
+    <?php endif; ?>
+    // ─────────────────────────────────────────────────────────────────────────
 </script>

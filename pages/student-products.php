@@ -80,6 +80,56 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
     </div>
 </div>
 
+<!-- Edit Product Modal -->
+<div id="edit-product-modal" class="fixed inset-0 z-50 hidden bg-black bg-opacity-50 flex items-center justify-center">
+    <div class="bg-white rounded-lg shadow-xl w-full max-w-lg overflow-hidden transform transition-all scale-95 opacity-0" id="edit-modal-content">
+        <div class="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-gray-50">
+            <h3 class="text-lg font-bold text-gray-900">Ürünü Düzenle</h3>
+            <button onclick="closeEditModal()" class="text-gray-400 hover:text-gray-600 transition-colors focus:outline-none">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+        </div>
+        <form id="edit-product-form" onsubmit="submitEditProduct(event)" class="p-6 space-y-4">
+            <input type="hidden" id="edit-product-id">
+            
+            <div>
+                <label for="edit-title" class="block text-sm font-medium text-gray-700 mb-1">Ürün Adı</label>
+                <input type="text" id="edit-title" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+            
+            <div>
+                <label for="edit-price" class="block text-sm font-medium text-gray-700 mb-1">Önerilen Fiyat (₺)</label>
+                <input type="number" id="edit-price" step="0.01" min="0" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+            </div>
+
+            <div>
+                <label for="edit-category" class="block text-sm font-medium text-gray-700 mb-1">Kategori</label>
+                <select id="edit-category" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Kategori Yükleniyor...</option>
+                </select>
+                <p class="text-xs text-gray-500 mt-1">Ürününüzün ait olduğu yeni kategori</p>
+            </div>
+
+            <div>
+                <label for="edit-description" class="block text-sm font-medium text-gray-700 mb-1">Açıklama</label>
+                <textarea id="edit-description" rows="3" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-blue-500 focus:border-blue-500"></textarea>
+            </div>
+            
+            <div class="bg-blue-50 p-3 rounded-lg flex items-start space-x-2">
+                <svg class="w-5 h-5 text-blue-500 flex-shrink-0 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                <p class="text-xs text-blue-700">Ürünü düzenlediğinizde onay durumu sıfırlanır ve esnafa yeniden onay talebi gider.</p>
+            </div>
+
+            <div class="pt-4 border-t border-gray-100 flex justify-end space-x-3">
+                <button type="button" onclick="closeEditModal()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors font-medium">İptal</button>
+                <button type="submit" id="edit-submit-btn" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium flex items-center">
+                    Kaydet
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <script>
     let allProducts = [];
     let currentFilter = 'all';
@@ -103,14 +153,15 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
             // Backend → Frontend mapping (UI'daki alanları koruyoruz)
             allProducts = data.map(p => ({
                 id: p.id,
-                title: p.name,                           // backend "name" → frontend "title"
-                description: '',                          // ❌ backend'de yok → boş string
-                price: p.finalPrice || p.suggestedPrice,
-                status: normalizeStatus(p.status),        // Frontend ile uyumlu standart durum
+                title: p.name,                           
+                description: p.description || '',      // Backend'den gelen açıklamayı al   
+                price: p.finalPrice || p.suggestedPrice || 0, // Fiyat garantileme
+                categoryId: p.categoryId,              // Edit modalı için categoryId eklendi
+                status: normalizeStatus(p.status),        
                 images: p.imageUrls || [],
                 created_at: null,
-                sales_count: 0,                           // ❌ backend'de yok → 0
-                total_earned: 0                           // ❌ backend'de yok → 0
+                sales_count: p.sales_count || 0,       // Eğer backend gönderirse kullan, yoksa 0 (bildirildi)
+                total_earned: p.total_earned || 0      // Eğer backend gönderirse kullan, yoksa 0 (bildirildi)
             }));
 
             displayProducts(allProducts);
@@ -139,7 +190,7 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
                     <img 
                         src="${product.images[0]}" 
                         alt="${escapeHtml(product.title)}"
-                        class="w-full h-full object-cover"
+                        class="w-full h-full object-contain object-center bg-white p-3"
                     />
                 ` : `
                     <div class="w-full h-full flex items-center justify-center bg-gray-200">
@@ -250,8 +301,102 @@ if (!$current_user || ($current_user['role'] !== 'student' && $current_user['rol
     }
 
 
+    // Kategori listesi cache
+    let categoryCache = null;
+
     async function editProduct(productId) {
-        window.location.href = `/student/products/${productId}/edit`;
+        const product = allProducts.find(p => p.id === productId);
+        if (!product) return;
+
+        // Modalı doldur
+        document.getElementById('edit-product-id').value = product.id;
+        document.getElementById('edit-title').value = product.title;
+        document.getElementById('edit-price').value = product.price;
+        document.getElementById('edit-description').value = product.description || '';
+
+        // Modalı aç
+        const modal = document.getElementById('edit-product-modal');
+        const modalContent = document.getElementById('edit-modal-content');
+        modal.classList.remove('hidden');
+        
+        // Animasyon için frame bekle
+        requestAnimationFrame(() => {
+            modalContent.classList.remove('scale-95', 'opacity-0');
+            modalContent.classList.add('scale-100', 'opacity-100');
+        });
+
+        // Kategorileri yükle (sadece 1 kere)
+        const select = document.getElementById('edit-category');
+        if (!categoryCache) {
+            try {
+                const categories = await apiCall('Categories/tree');
+                categoryCache = Array.isArray(categories) ? categories : (categories.data || []);
+            } catch (e) {
+                console.error("Kategoriler yüklenemedi:", e);
+                select.innerHTML = '<option value="">Kategori yüklenemedi</option>';
+                return;
+            }
+        }
+        
+        // Kategorileri select içine bas
+        let html = '<option value="">Kategori seçin...</option>';
+        categoryCache.forEach(parent => {
+            if (parent.children && parent.children.length > 0) {
+                html += `<optgroup label="${escapeHtml(parent.name)}">`;
+                parent.children.forEach(child => {
+                    html += `<option value="${child.id}">${escapeHtml(child.name)}</option>`;
+                });
+                html += '</optgroup>';
+            } else {
+                html += `<option value="${parent.id}">${escapeHtml(parent.name)}</option>`;
+            }
+        });
+        select.innerHTML = html;
+        select.value = product.categoryId || '';
+    }
+
+    function closeEditModal() {
+        const modal = document.getElementById('edit-product-modal');
+        const modalContent = document.getElementById('edit-modal-content');
+        
+        modalContent.classList.remove('scale-100', 'opacity-100');
+        modalContent.classList.add('scale-95', 'opacity-0');
+        
+        setTimeout(() => {
+            modal.classList.add('hidden');
+        }, 200); // 200ms Tailwind transition süresi
+    }
+
+    async function submitEditProduct(e) {
+        e.preventDefault();
+        const btn = document.getElementById('edit-submit-btn');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = 'Kaydediliyor...';
+
+        const id = document.getElementById('edit-product-id').value;
+        const payload = {
+            name: document.getElementById('edit-title').value,
+            description: document.getElementById('edit-description').value,
+            suggestedPrice: parseFloat(document.getElementById('edit-price').value),
+            categoryId: parseInt(document.getElementById('edit-category').value) || null
+        };
+
+        try {
+            await apiCall(`Products/my-products/${id}`, {
+                method: 'PUT',
+                body: JSON.stringify(payload)
+            });
+            showToast('Ürün başarıyla güncellendi!', 'success');
+            closeEditModal();
+            loadStudentProducts(); // Listeyi yenile
+        } catch (error) {
+            console.error('Update error:', error);
+            showToast('Ürün güncellenirken hata oluştu', 'error');
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = originalText;
+        }
     }
 
     async function deleteProduct(id) {

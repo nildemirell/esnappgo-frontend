@@ -292,7 +292,8 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         document.getElementById('category-parent-id').value = cat.parentId || ''; 
         
         document.getElementById('status-container').classList.remove('hidden');
-        document.getElementById('category-is-active').checked = true; 
+        // Kategorinin mevcut isActive durumunu yükle (her zaman true değil!)
+        document.getElementById('category-is-active').checked = cat.isActive !== false;
 
         document.getElementById('category-modal').classList.remove('hidden');
     }

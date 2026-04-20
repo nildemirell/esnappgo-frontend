@@ -682,7 +682,9 @@
                 if (selectedCats && selectedCats.length === 1) params.set('categoryId', selectedCats[0]);
                 const response = await apiCall(`products?${params.toString()}`);
                 products = Array.isArray(response) ? response : (response.products || response.data || []);
-                totalCount = response?.totalCount ?? response?.TotalCount ?? null;
+                // FIX: Önceden totalCount (camelCase) önce geliyordu.
+                // .NET default JSON serializer PascalCase döndürür, bu yüzden TotalCount önce kontrol edilmeli.
+                totalCount = response?.TotalCount ?? response?.totalCount ?? null;
             } else {
                 // ─── Çoklu kategori: paralel istekler, birleştir + tekilleştir ──
                 const fetchPromises = selectedCats.map(catId => {
@@ -784,10 +786,10 @@
             `<img 
             src="${imageUrl}" 
             alt="${escapeHtml(displayName)}"
-            class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+            class="absolute inset-0 w-full h-full object-contain object-center bg-white p-3 group-hover:scale-105 transition-transform duration-300"
             onerror="this.src='/media/68a658361732a_1755732022.jpg'"
         />` :
-            `<div class="w-full h-full flex items-center justify-center bg-gray-100">
+            `<div class="absolute inset-0 flex items-center justify-center bg-gray-100">
             <span class="text-gray-400 text-4xl">📷</span>
         </div>`;
 
@@ -841,13 +843,7 @@
                         <span class="text-xl font-bold text-blue-600">
                             ₺${parseFloat(displayPrice).toFixed(2)}
                         </span>
-                        
-                        <div class="flex items-center text-sm text-gray-500">
-                            <svg class="w-4 h-4 text-yellow-400 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"></path>
-                            </svg>
-                            4.8
-                        </div>
+                        <!-- FIX: Hardcoded 4.8 yıldız kaldırıldı — backend'de rating sistemi yok -->
                     </div>
 
                     <div class="pt-3 border-t border-gray-100 flex items-center justify-between">
@@ -855,9 +851,14 @@
                             ${escapeHtml(product.merchantName || product.shop?.name || 'Esnaf')}
                         </span>
                         
+                        ${(product.stock === 0 || product.stockQuantity === 0 || product.Stock === 0) ? `
+                        <span class="flex items-center justify-center px-3 py-1.5 bg-red-50 text-red-500 border border-red-200 text-sm font-medium rounded-lg w-full max-w-[100px] text-center">
+                            Stokta Yok
+                        </span>
+                        ` : `
                         <button 
-                            onclick="event.preventDefault(); event.stopPropagation(); addToCart(${product.id}); return false;" 
-                            class="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                            onclick="event.preventDefault(); event.stopPropagation(); const btn = this; btn.disabled=true; addToCart(${product.id}); setTimeout(()=>btn.disabled=false, 1500); return false;" 
+                            class="flex items-center justify-center px-3 py-1.5 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50"
                             <?php echo !$current_user ? 'disabled title="Giriş yapmalısınız"' : ''; ?>
                         >
                             <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -865,6 +866,7 @@
                             </svg>
                             Sepete
                         </button>
+                        `}
                     </div>
                 </div>
             </div>

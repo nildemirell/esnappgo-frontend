@@ -120,6 +120,16 @@ if ($current_user) {
 </div>
 <script>
     document.addEventListener('DOMContentLoaded', function () {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (urlParams.get('session_expired') === '1') {
+            // Toast fonksiyonu index.php'den veya layout'dan gelmektedir
+            if (typeof showToast !== 'undefined') {
+                showToast('Oturumunuzun süresi doldu. Güvenliğiniz için lütfen tekrar giriş yapın.', 'warning');
+            }
+            // URL'deki parametreyi sayfayı yenilemelere karşı temizle
+            window.history.replaceState({}, document.title, window.location.pathname);
+        }
+
         const form = document.getElementById('login-form');
         const submitBtn = document.getElementById('login-btn');
         const submitBtnText = document.getElementById('login-btn-text');

@@ -261,20 +261,27 @@ if (!$current_user) {
         event.target.classList.add('active');
     }
 
-    // ✅ YENİ — .NET Backend API'ye bağlı
+    // ✅ — .NET Backend API'ye bağlı
     async function handleProfileSubmit(e) {
         e.preventDefault();
 
+        // FIX: formData tanımsız değişken kullanılıyordu — e.target'tan okunuyor
+        const formData = new FormData(e.target);
+
+        // FIX: Sadece backend UpdateProfileDto'da gerçekten var olan alanlar gönderiliyor
+        // (Address, BirthDate, Gender backend DTO'sunda yok, kaldırıldı)
         const data = {
             FullName: formData.get('full_name'),
-            PhoneNumber: formData.get('phone') || '',
-            Address: formData.get('address') || null,
-            BirthDate: formData.get('birth_date') ? `${formData.get('birth_date')}T00:00:00Z` : null,
-            Gender: formData.get('gender') || null
+            PhoneNumber: formData.get('phone') || ''
         };
 
+        if (!data.FullName || data.FullName.trim() === '') {
+            showToast('Ad Soyad boş bırakılamaz.', 'error');
+            return;
+        }
+
         try {
-            const response = await apiCall('User/profile', {
+            await apiCall('User/profile', {
                 method: 'PUT',
                 body: JSON.stringify(data)
             });
