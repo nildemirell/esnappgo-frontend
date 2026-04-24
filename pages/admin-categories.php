@@ -84,26 +84,58 @@ if (!$current_user || $current_user['role'] !== 'admin') {
                             </h3>
                             <div class="mt-4 space-y-4">
                                 <input type="hidden" id="category-id" name="id" value="" />
+                                <!-- Hidden final parentId that gets set by the 2-stage selectors -->
+                                <input type="hidden" id="category-parent-id" name="parentId" value="" />
                                 
                                 <div>
                                     <label for="category-name" class="block text-sm font-medium text-gray-700 mb-1">Kategori Adı</label>
                                     <input type="text" id="category-name" name="name" required class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors" placeholder="Örn: Elektronik">
                                 </div>
 
+                                <!-- STAGE 1: Main category -->
                                 <div>
-                                    <label for="category-parent-id" class="block text-sm font-medium text-gray-700 mb-1">Üst Kategori (Opsiyonel)</label>
-                                    <select id="category-parent-id" name="parentId" class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors">
-                                        <option value="">-- Ana Kategori (Üst Kategori Yok) --</option>
+                                    <label for="select-main-cat" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-600 text-white text-xs font-bold">1</span>
+                                            Ana Kategori
+                                        </span>
+                                    </label>
+                                    <select id="select-main-cat" onchange="onMainCatChange()"
+                                        class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors">
+                                        <option value="">— Ana Kategori Yok (Bu bir ana kategori olacak) —</option>
                                     </select>
-                                    <p class="mt-1 text-xs text-gray-500">Alt kategori eklemek istiyorsanız bir üst kategori seçin.</p>
+                                    <p class="mt-1 text-xs text-gray-500">Bu kategori bir ana kategorinin altına eklenecekse seçin.</p>
+                                </div>
+
+                                <!-- STAGE 2: Subcategory (dinamik) -->
+                                <div id="subcategory-stage" class="hidden">
+                                    <label for="select-sub-cat" class="block text-sm font-medium text-gray-700 mb-1">
+                                        <span class="inline-flex items-center gap-1.5">
+                                            <span class="inline-flex items-center justify-center w-5 h-5 rounded-full bg-teal-600 text-white text-xs font-bold">2</span>
+                                            Alt Kategori (Opsiyonel)
+                                        </span>
+                                    </label>
+                                    <select id="select-sub-cat" onchange="onSubCatChange()"
+                                        class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors">
+                                        <option value="">— Seçilmedi (Seçilen ana kategorinin altına ekle) —</option>
+                                    </select>
+                                    <p class="mt-1 text-xs text-gray-500">Bir alt kategorinin altına eklemek istiyorsanız seçin (opsiyonel).</p>
+                                </div>
+
+                                <!-- Preview badge -->
+                                <div id="parent-preview" class="hidden">
+                                    <div class="flex items-center gap-2 bg-teal-50 border border-teal-200 rounded-lg px-3 py-2 text-sm">
+                                        <svg class="w-4 h-4 text-teal-600 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                                        <span class="text-teal-800">Üst kategori: <strong id="parent-preview-text"></strong></span>
+                                    </div>
                                 </div>
                                 
                                 <div>
-                                    <label for="category-icon" class="block text-sm font-medium text-gray-700 mb-1">İkon Sınıfı veya URL (Opsiyonel)</label>
+                                    <label for="category-icon" class="block text-sm font-medium text-gray-700 mb-1">İkon (Emoji veya CSS sınıfı, opsiyonel)</label>
                                     <input type="text" id="category-icon" name="icon"
                                         class="w-full rounded-lg border-gray-300 shadow-sm focus:border-teal-500 focus:ring-teal-500 transition-colors"
-                                        placeholder="Örn: fa-solid fa-laptop">
-                                    <p class="mt-1 text-xs text-gray-500">İkon için class ismi veya emoji kullanabilirsiniz.</p>
+                                        placeholder="Örn: 🖥️  veya  fa-solid fa-laptop">
+                                    <p class="mt-1 text-xs text-gray-500">Emoji veya FontAwesome sınıfı kullanabilirsiniz.</p>
                                 </div>
                                 
                                 <div id="status-container" class="hidden">
@@ -240,27 +272,79 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         return escapeHtml(iconStr);
     }
 
-    function getFlatCategories(categories, flatList = [], prefix = '') {
-        categories.forEach(cat => {
-            flatList.push({ id: cat.id, name: prefix + cat.name });
-            let children = cat.subCategories || cat.children || [];
-            if (children.length > 0) {
-                getFlatCategories(children, flatList, prefix + '-- ');
+    // ── 2-STAGE PARENT SELECTOR LOGIC ──────────────────────────────────────
+
+    // Populate the MAIN category dropdown (root categories only)
+    function populateMainCatSelect(excludeId = null) {
+        const sel = document.getElementById('select-main-cat');
+        sel.innerHTML = '<option value="">— Ana Kategori Yok (Bu bir ana kategori olacak) —</option>';
+        allCategories.forEach(cat => {
+            if (cat.id !== excludeId) {
+                sel.innerHTML += `<option value="${cat.id}">${cat.icon ? cat.icon + '  ' : ''}${escapeHtml(cat.name)}</option>`;
             }
         });
-        return flatList;
     }
 
+    // When main category changes: populate sub-category dropdown
+    function onMainCatChange() {
+        const mainId = parseInt(document.getElementById('select-main-cat').value);
+        const subStage  = document.getElementById('subcategory-stage');
+        const subSel    = document.getElementById('select-sub-cat');
+        const preview   = document.getElementById('parent-preview');
+        const previewTxt = document.getElementById('parent-preview-text');
+        const hiddenParent = document.getElementById('category-parent-id');
+
+        if (!mainId) {
+            subStage.classList.add('hidden');
+            preview.classList.add('hidden');
+            hiddenParent.value = '';
+            return;
+        }
+
+        // Find the chosen main category
+        const mainCat = allCategories.find(c => c.id === mainId);
+        const children = mainCat ? (mainCat.children || mainCat.subCategories || []) : [];
+
+        // Set hidden parentId to main category by default
+        hiddenParent.value = mainId;
+        previewTxt.textContent = mainCat ? (mainCat.icon ? mainCat.icon + ' ' : '') + mainCat.name : '';
+        preview.classList.remove('hidden');
+
+        if (children.length > 0) {
+            // Populate sub dropdown
+            subSel.innerHTML = '<option value="">— Seçilmedi (Seçilen ana kategorinin altına ekle) —</option>';
+            children.forEach(child => {
+                subSel.innerHTML += `<option value="${child.id}">${child.icon ? child.icon + '  ' : ''}${escapeHtml(child.name)}</option>`;
+            });
+            subStage.classList.remove('hidden');
+        } else {
+            subStage.classList.add('hidden');
+        }
+    }
+
+    // When sub-category changes: update hidden parentId
+    function onSubCatChange() {
+        const mainId   = parseInt(document.getElementById('select-main-cat').value);
+        const subId    = parseInt(document.getElementById('select-sub-cat').value);
+        const hiddenParent  = document.getElementById('category-parent-id');
+        const previewTxt    = document.getElementById('parent-preview-text');
+        const mainCat  = allCategories.find(c => c.id === mainId);
+
+        if (subId) {
+            hiddenParent.value = subId;
+            const subCat = (mainCat ? (mainCat.children || mainCat.subCategories || []) : []).find(c => c.id === subId);
+            previewTxt.textContent = (mainCat ? (mainCat.icon ? mainCat.icon + ' ' : '') + mainCat.name : '') +
+                ' › ' + (subCat ? (subCat.icon ? subCat.icon + ' ' : '') + subCat.name : '');
+        } else {
+            // Back to main category
+            hiddenParent.value = mainId;
+            previewTxt.textContent = mainCat ? (mainCat.icon ? mainCat.icon + ' ' : '') + mainCat.name : '';
+        }
+    }
+
+    // Legacy function kept for backward compatibility (no longer populates old dropdown)
     function populateParentSelect(excludeId = null) {
-        const select = document.getElementById('category-parent-id');
-        select.innerHTML = '<option value="">-- Ana Kategori (Üst Kategori Yok) --</option>';
-        
-        const flatCats = getFlatCategories(allCategories);
-        flatCats.forEach(cat => {
-            if (cat.id !== excludeId) { 
-                select.innerHTML += `<option value="${cat.id}">${escapeHtml(cat.name)}</option>`;
-            }
-        });
+        populateMainCatSelect(excludeId);
     }
 
     function openCategoryModal() {
@@ -268,14 +352,18 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         document.getElementById('category-id').value = '';
         document.getElementById('category-name').value = '';
         document.getElementById('category-icon').value = '';
+        document.getElementById('category-parent-id').value = '';
         document.getElementById('status-container').classList.add('hidden');
         document.getElementById('category-is-active').checked = true;
+
+        // Reset 2-stage selectors
+        populateMainCatSelect();
+        document.getElementById('select-main-cat').value = '';
+        document.getElementById('select-sub-cat').innerHTML = '<option value="">— Seçilmedi —</option>';
+        document.getElementById('subcategory-stage').classList.add('hidden');
+        document.getElementById('parent-preview').classList.add('hidden');
         
-        populateParentSelect(); 
-        document.getElementById('category-parent-id').value = ''; 
-        
-        const modal = document.getElementById('category-modal');
-        modal.classList.remove('hidden');
+        document.getElementById('category-modal').classList.remove('hidden');
     }
 
     function closeCategoryModal() {
@@ -287,14 +375,56 @@ if (!$current_user || $current_user['role'] !== 'admin') {
         document.getElementById('category-id').value = cat.id;
         document.getElementById('category-name').value = cat.name;
         document.getElementById('category-icon').value = cat.icon || '';
+        document.getElementById('category-parent-id').value = cat.parentId || '';
         
-        populateParentSelect(cat.id); 
-        document.getElementById('category-parent-id').value = cat.parentId || ''; 
-        
-        document.getElementById('status-container').classList.remove('hidden');
-        // Kategorinin mevcut isActive durumunu yükle (her zaman true değil!)
-        document.getElementById('category-is-active').checked = cat.isActive !== false;
+        // Populate main cat select (exclude self to avoid circular ref)
+        populateMainCatSelect(cat.id);
 
+        const subStage   = document.getElementById('subcategory-stage');
+        const subSel     = document.getElementById('select-sub-cat');
+        const preview    = document.getElementById('parent-preview');
+        const previewTxt = document.getElementById('parent-preview-text');
+
+        if (cat.parentId) {
+            // Find whether parentId is a root category or a sub-category
+            const parentRoot = allCategories.find(c => c.id === cat.parentId);
+            if (parentRoot) {
+                // Parent is a root category
+                document.getElementById('select-main-cat').value = cat.parentId;
+                subSel.innerHTML = '<option value="">— Seçilmedi —</option>';
+                subStage.classList.add('hidden');
+                previewTxt.textContent = (parentRoot.icon ? parentRoot.icon + ' ' : '') + parentRoot.name;
+                preview.classList.remove('hidden');
+            } else {
+                // Parent is a sub-category — find its root
+                let rootCat = null;
+                let subCat  = null;
+                for (const root of allCategories) {
+                    const children = root.children || root.subCategories || [];
+                    const found = children.find(c => c.id === cat.parentId);
+                    if (found) { rootCat = root; subCat = found; break; }
+                }
+                if (rootCat) {
+                    document.getElementById('select-main-cat').value = rootCat.id;
+                    const children = rootCat.children || rootCat.subCategories || [];
+                    subSel.innerHTML = `<option value="">— Seçilmedi —</option>` +
+                        children.map(c => `<option value="${c.id}" ${c.id === cat.parentId ? 'selected' : ''}>${c.icon ? c.icon + '  ' : ''}${escapeHtml(c.name)}</option>`).join('');
+                    subStage.classList.remove('hidden');
+                    previewTxt.textContent = (rootCat.icon ? rootCat.icon + ' ' : '') + rootCat.name +
+                        ' › ' + (subCat ? (subCat.icon ? subCat.icon + ' ' : '') + subCat.name : '');
+                    preview.classList.remove('hidden');
+                }
+            }
+        } else {
+            // No parent — root category
+            document.getElementById('select-main-cat').value = '';
+            subSel.innerHTML = '<option value="">— Seçilmedi —</option>';
+            subStage.classList.add('hidden');
+            preview.classList.add('hidden');
+        }
+
+        document.getElementById('status-container').classList.remove('hidden');
+        document.getElementById('category-is-active').checked = cat.isActive !== false;
         document.getElementById('category-modal').classList.remove('hidden');
     }
 

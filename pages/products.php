@@ -412,40 +412,75 @@
     `;
 
         categories.forEach(category => {
-            const catId = category.id ?? category.categoryId;
-            const catName = category.name ?? category.categoryName ?? 'Kategori';
+            const catId      = category.id ?? category.categoryId;
+            const catName    = category.name ?? category.categoryName ?? 'Kategori';
             const isSelected = currentFilters.category.includes(String(catId));
-            html += `
-            <div class="category-group">
-                <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${isSelected ? 'bg-blue-50 text-blue-700' : ''}">
-                    <input type="checkbox" value="${catId}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('${catId}')">
-                    <span class="text-sm flex-1">
+            const hasChildren = category.children && category.children.length > 0;
+
+            // Herhangi bir alt kategori seçiliyse grup otomatik açık
+            const anyChildSelected = hasChildren && category.children.some(
+                ch => currentFilters.category.includes(String(ch.id))
+            );
+            const isOpen = anyChildSelected;
+
+            html += `<div class="category-group">`;
+
+            if (hasChildren) {
+                // Ana kategori satırı: checkbox + isim + ok butonu
+                html += `
+                <div class="flex items-center p-2 rounded-lg hover:bg-gray-50 transition ${isSelected ? 'bg-blue-50 text-blue-700' : ''}">
+                    <input type="checkbox" value="${catId}" ${isSelected ? 'checked' : ''} class="mr-2 text-blue-600 rounded flex-shrink-0" onchange="toggleCategory('${catId}')">
+                    <span class="text-sm flex-1 cursor-pointer select-none" onclick="event.preventDefault(); toggleCategory('${catId}')">
                         ${category.icon ? category.icon + ' ' : ''}${escapeHtml(catName)}
                     </span>
-                    <span class="text-xs text-gray-400 ml-2">${category.productCount ?? category.product_count ?? 0}</span>
-                </label>
-        `;
-            // Alt kategoriler
-            if (category.children && category.children.length > 0) {
-                html += '<div class="ml-6 mt-1 space-y-1">';
+                    <span class="text-xs text-gray-400 mr-1.5">${category.productCount ?? category.product_count ?? 0}</span>
+                    <button type="button"
+                        onclick="toggleCatExpand('cat-ch-${catId}', this)"
+                        class="p-1 rounded-md hover:bg-gray-200 transition-colors flex-shrink-0"
+                        title="Alt kategorileri göster/gizle">
+                        <svg class="w-3.5 h-3.5 text-gray-500 transition-transform duration-200 ${isOpen ? 'rotate-180' : ''}"
+                             fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                        </svg>
+                    </button>
+                </div>`;
+
+                // Alt kategoriler paneli
+                html += `<div id="cat-ch-${catId}" class="ml-5 mt-0.5 space-y-0.5 border-l-2 border-gray-100 pl-2.5 ${isOpen ? '' : 'hidden'}">`;
                 category.children.forEach(child => {
                     const isChildSelected = currentFilters.category.includes(String(child.id));
                     html += `
                     <label class="flex items-center p-1.5 rounded cursor-pointer hover:bg-gray-50 transition text-sm ${isChildSelected ? 'bg-blue-50 text-blue-700' : 'text-gray-600'}">
-                        <input type="checkbox" value="${child.id}" ${isChildSelected ? 'checked' : ''} class="mr-2 text-blue-600 h-3 w-3 rounded" onchange="toggleCategory('${child.id}')">
+                        <input type="checkbox" value="${child.id}" ${isChildSelected ? 'checked' : ''} class="mr-2 text-blue-600 h-3 w-3 rounded flex-shrink-0" onchange="toggleCategory('${child.id}')">
                         <span class="flex-1">${child.icon ? child.icon + ' ' : ''}${escapeHtml(child.name)}</span>
-                      <span class="text-xs text-gray-400">${child.productCount ?? child.product_count ?? 0}</span>
-
-                    </label>
-                `;
+                        <span class="text-xs text-gray-400">${child.productCount ?? child.product_count ?? 0}</span>
+                    </label>`;
                 });
-                html += '</div>';
+                html += `</div>`;
+            } else {
+                // Alt kategorisi olmayan düz satır
+                html += `
+                <label class="flex items-center p-2 rounded-lg cursor-pointer hover:bg-gray-50 transition ${isSelected ? 'bg-blue-50 text-blue-700' : ''}">
+                    <input type="checkbox" value="${catId}" ${isSelected ? 'checked' : ''} class="mr-3 text-blue-600 rounded" onchange="toggleCategory('${catId}')">
+                    <span class="text-sm flex-1">${category.icon ? category.icon + ' ' : ''}${escapeHtml(catName)}</span>
+                    <span class="text-xs text-gray-400 ml-2">${category.productCount ?? category.product_count ?? 0}</span>
+                </label>`;
             }
 
-            html += '</div>';
+            html += `</div>`;
         });
 
         container.innerHTML = html;
+    }
+
+    // ▾ ok butonuna basınca alt kategori panelini aç/kapat
+    function toggleCatExpand(panelId, btn) {
+        const panel = document.getElementById(panelId);
+        const icon  = btn.querySelector('svg');
+        if (!panel) return;
+        const willHide = !panel.classList.contains('hidden');
+        panel.classList.toggle('hidden', willHide);
+        icon.classList.toggle('rotate-180', !willHide);
     }
 
     function toggleCategory(categoryId) {

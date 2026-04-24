@@ -735,12 +735,17 @@ switch ($page) {
 
         // API helper functions
         async function apiCall(endpoint, options = {}) {
+            // silent: true → 401 durumunda token silinmez ve login'e yönlendirilmez
+            const silent = options.silent === true;
+            const fetchOptions = { ...options };
+            delete fetchOptions.silent;
+
             const defaultOptions = {
                 method: 'GET',
                 headers: {
                     'Content-Type': 'application/json',
                 }
-                // credentials: 'include' satırını tamamen SİLDİK. 
+                // credentials: 'include' satırını tamamen SİLDİK.
                 // .NET JWT sisteminde header yeterlidir, CORS'u bozmasına gerek yok.
             };
 
@@ -749,13 +754,12 @@ switch ($page) {
                 defaultOptions.headers['Authorization'] = 'Bearer ' + token;
             }
 
-            const response = await fetch(`${API_BASE}/api/${endpoint}`, { // ← API_BASE ekle
-
+            const response = await fetch(`${API_BASE}/api/${endpoint}`, {
                 ...defaultOptions,
-                ...options,
+                ...fetchOptions,
                 headers: {
                     ...defaultOptions.headers,
-                    ...options.headers,
+                    ...fetchOptions.headers,
                 }
             });
 
@@ -768,10 +772,12 @@ switch ($page) {
             }
 
             if (!response.ok) {
-                // Eğer API token'ımızı reddederse (Süresi doldu vb.) güvenli bir şekilde çıkışa yönlendir.
                 if (response.status === 401) {
-                    localStorage.removeItem('auth_token');
-                    window.location.href = '/login?session_expired=1';
+                    if (!silent) {
+                        // Sadece kritik çağrılarda token'ı sil ve login'e yönlendir
+                        localStorage.removeItem('auth_token');
+                        window.location.href = '/login?session_expired=1';
+                    }
                     throw new Error('Oturumunuzun süresi doldu. Lütfen tekrar giriş yapın.');
                 }
 
@@ -784,7 +790,6 @@ switch ($page) {
                     'Bir hata oluştu';
                 throw new Error(errorMessage);
             }
-
 
             return data;
         }
@@ -835,7 +840,7 @@ switch ($page) {
             if (!token) return;
 
             try {
-                const response = await apiCall('cart');
+                const response = await apiCall('cart', { silent: true });
                 const cartCount = response.items ? response.items.length : 0;
 
                 const cartButton = document.getElementById('cart-count');
@@ -848,13 +853,13 @@ switch ($page) {
             }
         }
 
-        // YENİ EKLEDİĞİMİZ FONKSİYON: Bildirimleri Çek
+        // Bildirimleri Çek — silent:true ile 401 gelirse token silinmez, sayfa yönlendirilmez
         async function loadNotificationCount() {
             const token = localStorage.getItem('auth_token');
             if (!token) return;
 
             try {
-                const notifications = await apiCall('Notifications'); 
+                const notifications = await apiCall('Notifications', { silent: true });
                 const unread = Array.isArray(notifications) ? notifications.filter(n => !n.isRead).length : 0;
 
                 const badge = document.getElementById('notification-badge');
@@ -867,7 +872,8 @@ switch ($page) {
                     }
                 }
             } catch (error) {
-                console.error('Bildirimler çekilemedi:', error);
+                // Bildirim yüklenemedi (örn. izin hatası) — sessizce geç, oturumu sonlandırma
+                console.warn('Bildirimler yüklenemedi:', error.message);
             }
         }
 
